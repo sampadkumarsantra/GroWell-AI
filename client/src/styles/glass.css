@@ -1,0 +1,13 @@
+.glass{
+
+    background:var(--bg-glass);
+
+    backdrop-filter:blur(22px);
+
+    border:1px solid var(--border-glass);
+
+    border-radius:var(--radius-xl);
+
+    box-shadow:var(--shadow-medium);
+
+}

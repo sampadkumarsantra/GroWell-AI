@@ -1,0 +1,1331 @@
+/* =====================================================
+   GROWELL AI — MARKET ANALYTICS
+   DARK PREMIUM / TRADING TERMINAL
+   ===================================================== */
+
+.analytics-page {
+    width: 100%;
+    min-height: 100vh;
+    padding: 28px;
+    box-sizing: border-box;
+
+    color: #edf5ef;
+    background: #070b09;
+
+    /* MAIN PAGE SCROLL */
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    scrollbar-width: thin;
+    scrollbar-color: #294033 transparent;
+}
+
+/* =====================================================
+   SCROLLBAR
+   ===================================================== */
+
+.analytics-page::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+}
+
+.analytics-page::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.analytics-page::-webkit-scrollbar-thumb {
+    background: #1b2921;
+    border-radius: 10px;
+}
+
+.analytics-page::-webkit-scrollbar-thumb:hover {
+    background: #294033;
+}
+
+/* =====================================================
+   HEADER
+   ===================================================== */
+
+.analytics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 24px;
+    margin-bottom: 22px;
+}
+
+.analytics-eyebrow {
+    display: block;
+
+    margin-bottom: 7px;
+
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.7px;
+
+    color: #6bdc98;
+}
+
+.analytics-header h1 {
+    margin: 0;
+
+    font-size: 30px;
+    font-weight: 750;
+
+    letter-spacing: -0.7px;
+}
+
+.analytics-header p {
+    margin: 8px 0 0;
+
+    color: #8d9b92;
+
+    font-size: 13px;
+}
+
+.analytics-live {
+    display: flex;
+    align-items: center;
+
+    gap: 7px;
+
+    padding: 8px 12px;
+
+    border: 1px solid rgba(105, 220, 153, 0.2);
+    border-radius: 20px;
+
+    color: #69dc99;
+    background: #0b1710;
+
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+
+    white-space: nowrap;
+}
+
+/* =====================================================
+   SEARCH
+   ===================================================== */
+
+.analytics-search {
+    width: 100%;
+    max-width: 420px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 0 14px;
+    margin-bottom: 20px;
+
+    box-sizing: border-box;
+
+    background: #0a0f0c;
+
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+
+    color: #7f8d84;
+}
+
+.analytics-search:focus-within {
+    border-color: rgba(101, 216, 146, 0.25);
+    background: #0c120f;
+}
+
+.analytics-search input {
+    width: 100%;
+
+    border: none;
+    outline: none;
+
+    background: transparent;
+    color: #edf5ef;
+
+    font-size: 13px;
+}
+
+.analytics-search input::placeholder {
+    color: #69766f;
+}
+
+/* =====================================================
+   MAIN 3 COLUMN LAYOUT
+   ===================================================== */
+
+.analytics-layout {
+    display: grid;
+
+    grid-template-columns:
+        190px
+        minmax(0, 1fr)
+        260px;
+
+    gap: 18px;
+
+    width: 100%;
+
+    align-items: start;
+
+    min-width: 0;
+}
+
+/* =====================================================
+   WATCHLIST
+   ===================================================== */
+
+.analytics-watchlist {
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 14px;
+
+    background: #0b100e;
+
+    border: 1px solid rgba(255, 255, 255, 0.055);
+    border-radius: 14px;
+
+    overflow: visible;
+
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, 0.28);
+}
+
+.analytics-panel-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 8px;
+
+    margin-bottom: 12px;
+
+    color: #829088;
+
+    font-size: 10px;
+    font-weight: 800;
+
+    letter-spacing: 1.2px;
+}
+
+.watch-item {
+    width: 100%;
+    min-width: 0;
+
+    height: 39px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 10px;
+    margin-bottom: 5px;
+
+    box-sizing: border-box;
+
+    border: 1px solid transparent;
+    border-radius: 8px;
+
+    background: transparent;
+    color: #77827c;
+
+    font-size: 12px;
+    text-align: left;
+
+    cursor: pointer;
+
+    transition:
+        background 0.18s ease,
+        color 0.18s ease,
+        border 0.18s ease;
+}
+
+.watch-item:hover {
+    background: #111713;
+    color: #edf5ef;
+}
+
+.watch-item.active {
+    background: #0e1d15;
+
+    border-color: rgba(105, 220, 153, 0.18);
+
+    color: #69dc99;
+}
+
+/* =====================================================
+   MAIN MARKET
+   ===================================================== */
+
+.analytics-main {
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+}
+
+/* =====================================================
+   PRICE HEADER
+   ===================================================== */
+
+.price-header {
+    width: 100%;
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 20px;
+
+    margin-bottom: 14px;
+}
+
+.price-header > div:first-child {
+    min-width: 0;
+}
+
+.price-header > div:first-child > span {
+    font-size: 9px;
+    font-weight: 800;
+
+    letter-spacing: 1.4px;
+
+    color: #68766e;
+}
+
+.price-header h2 {
+    margin: 4px 0 0;
+
+    font-size: 24px;
+}
+
+.current-price {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    white-space: nowrap;
+}
+
+.current-price strong {
+    font-size: 25px;
+    font-weight: 750;
+}
+
+.current-price span {
+    display: flex;
+    align-items: center;
+
+    gap: 2px;
+
+    font-size: 12px;
+    font-weight: 750;
+}
+
+.positive {
+    color: #69dc99 !important;
+}
+
+.negative {
+    color: #ff7272 !important;
+}
+
+/* =====================================================
+   GOVERNMENT DATA NOTICE
+   ===================================================== */
+
+.market-warning {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 10px;
+
+    padding: 12px 14px;
+
+    margin-bottom: 14px;
+
+    border: 1px solid rgba(255, 193, 89, 0.13);
+    border-radius: 10px;
+
+    background: #100f0a;
+}
+
+.market-warning svg {
+    flex-shrink: 0;
+
+    color: #e6b45d;
+}
+
+.market-warning div {
+    display: flex;
+    flex-direction: column;
+
+    gap: 3px;
+
+    min-width: 0;
+}
+
+.market-warning strong {
+    font-size: 11px;
+
+    color: #e7c47e;
+}
+
+.market-warning span {
+    font-size: 10px;
+    line-height: 1.5;
+
+    color: #8d968f;
+}
+
+/* =====================================================
+   PRICE CHART CARD
+   ===================================================== */
+
+.price-chart-card {
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 18px;
+
+    background: #0b100e;
+
+    border: 1px solid rgba(255, 255, 255, 0.055);
+    border-radius: 14px;
+
+    overflow: visible;
+
+    box-shadow:
+        0 14px 40px rgba(0, 0, 0, 0.32);
+}
+
+/* =====================================================
+   CHART HEADING
+   ===================================================== */
+
+.chart-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 16px;
+
+    margin-bottom: 12px;
+}
+
+.chart-heading > div:first-child {
+    min-width: 0;
+}
+
+.chart-heading span {
+    font-size: 9px;
+    font-weight: 800;
+
+    letter-spacing: 1.2px;
+
+    color: #68766e;
+}
+
+.chart-heading h3 {
+    margin: 5px 0 0;
+
+    font-size: 15px;
+    font-weight: 650;
+}
+
+/* =====================================================
+   CHART CONTAINER
+   ===================================================== */
+
+.live-chart {
+    width: 100%;
+
+    height: 500px;
+    min-height: 500px;
+
+    position: relative;
+
+    margin-top: 10px;
+
+    background: #08110d;
+
+    border-radius: 10px;
+
+    overflow: hidden;
+}
+
+/* =====================================================
+   TRADING CHART SHELL
+   ===================================================== */
+
+.market-chart-shell {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    background: #08110d;
+
+    border-radius: 10px;
+
+    overflow: hidden;
+}
+
+/* =====================================================
+   CHART TOOLBAR
+   ===================================================== */
+
+.market-chart-toolbar {
+    height: 36px;
+    min-height: 36px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 10px;
+
+    box-sizing: border-box;
+
+    background: #08110d;
+
+    border-bottom:
+        1px solid rgba(130, 150, 138, 0.07);
+}
+
+/* =====================================================
+   TIMEFRAME BUTTONS
+   ===================================================== */
+
+.chart-timeframes {
+    display: flex;
+    align-items: center;
+
+    gap: 3px;
+}
+
+.chart-timeframes button {
+    min-width: 30px;
+    height: 24px;
+
+    padding: 0 7px;
+
+    border: 1px solid transparent;
+    border-radius: 4px;
+
+    background: transparent;
+
+    color: #69786f;
+
+    font-size: 9px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        color 0.15s ease;
+}
+
+.chart-timeframes button:hover {
+    background: #112219;
+
+    color: #c1cec5;
+}
+
+.chart-timeframes button.active {
+    background: #123021;
+
+    color: #69dc99;
+
+    border-color:
+        rgba(105, 220, 153, 0.16);
+}
+
+/* =====================================================
+   CHART INFO
+   ===================================================== */
+
+.chart-info {
+    display: flex;
+    align-items: center;
+
+    gap: 9px;
+
+    color: #536159;
+
+    font-size: 8px;
+    font-weight: 700;
+}
+
+/* =====================================================
+   CHART INSTRUMENT
+   ===================================================== */
+
+.chart-instrument {
+    display: flex;
+    align-items: center;
+
+    gap: 6px;
+
+    color: #69dc99;
+
+    font-size: 8px;
+    font-weight: 800;
+
+    letter-spacing: 1px;
+}
+
+.chart-instrument::before {
+    content: "";
+
+    width: 6px;
+    height: 6px;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background: #69dc99;
+
+    box-shadow:
+        0 0 8px rgba(105, 220, 153, 0.55);
+}
+
+/* =====================================================
+   OHLC
+   ===================================================== */
+
+.chart-ohlc {
+    height: 31px;
+    min-height: 31px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 0 10px;
+
+    box-sizing: border-box;
+
+    background: #08110d;
+
+    border-bottom:
+        1px solid rgba(130, 150, 138, 0.05);
+
+    font-size: 9px;
+}
+
+.chart-ohlc > div {
+    display: flex;
+    align-items: center;
+
+    gap: 4px;
+}
+
+.chart-ohlc span {
+    color: #59665e;
+
+    font-weight: 800;
+}
+
+.chart-ohlc strong {
+    color: #aebcb3;
+
+    font-weight: 700;
+}
+
+.ohlc-positive {
+    color: #69dc99 !important;
+
+    font-weight: 800;
+}
+
+.ohlc-negative {
+    color: #ff7272 !important;
+
+    font-weight: 800;
+}
+
+/* =====================================================
+   ACTUAL MARKET CHART
+   ===================================================== */
+
+.market-trading-chart,
+.market-candlestick-wrapper {
+    width: 100%;
+
+    flex: 1;
+
+    min-width: 0;
+    min-height: 0;
+
+    height: calc(100% - 67px);
+
+    background: #08110d;
+}
+
+/* =====================================================
+   MARKET CHART LINKS
+   ===================================================== */
+
+.market-trading-chart a,
+.market-candlestick-wrapper a {
+    color: #71877b !important;
+
+    font-size: 10px !important;
+}
+
+/* =====================================================
+   MARKET METRICS
+   ===================================================== */
+
+.market-metrics {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 10px;
+
+    margin-top: 12px;
+}
+
+.market-metrics > div {
+    min-width: 0;
+
+    padding: 13px;
+
+    background: #0b100e;
+
+    border: 1px solid rgba(255, 255, 255, 0.055);
+    border-radius: 10px;
+
+    box-sizing: border-box;
+}
+
+.market-metrics span {
+    display: block;
+
+    margin-bottom: 5px;
+
+    font-size: 9px;
+    font-weight: 700;
+
+    letter-spacing: 1px;
+
+    color: #69766f;
+}
+
+.market-metrics strong {
+    display: block;
+
+    font-size: 14px;
+
+    color: #dce7df;
+}
+
+/* =====================================================
+   DEMAND / SUPPLY
+   ===================================================== */
+
+.demand-panel {
+    margin-top: 12px;
+
+    padding: 15px;
+
+    background: #0b100e;
+
+    border: 1px solid rgba(255, 255, 255, 0.055);
+    border-radius: 12px;
+}
+
+.demand-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 12px;
+}
+
+.demand-grid > div {
+    min-width: 0;
+}
+
+.demand-grid span {
+    display: block;
+
+    margin-bottom: 5px;
+
+    font-size: 9px;
+    font-weight: 700;
+
+    color: #68766e;
+
+    letter-spacing: 0.8px;
+}
+
+.demand-grid strong {
+    font-size: 13px;
+}
+
+/* =====================================================
+   AI MARKET INTELLIGENCE
+   ===================================================== */
+
+.ai-market-card {
+    display: flex;
+
+    gap: 12px;
+
+    margin-top: 12px;
+
+    padding: 15px;
+
+    background: #0b1710;
+
+    border: 1px solid rgba(105, 220, 153, 0.1);
+
+    border-radius: 12px;
+}
+
+.ai-icon {
+    width: 36px;
+    height: 36px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 9px;
+
+    background: rgba(105, 220, 153, 0.09);
+
+    color: #69dc99;
+}
+
+.ai-market-card > div:last-child {
+    min-width: 0;
+}
+
+.ai-market-card span {
+    font-size: 9px;
+    font-weight: 800;
+
+    letter-spacing: 1px;
+
+    color: #69dc99;
+}
+
+.ai-market-card h3 {
+    margin: 5px 0 6px;
+
+    font-size: 13px;
+}
+
+.ai-market-card p {
+    margin: 0;
+
+    color: #8b988f;
+
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+/* =====================================================
+   RIGHT SIDEBAR
+   ===================================================== */
+
+.analytics-right {
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 12px;
+
+    /*
+       IMPORTANT:
+       Do NOT give this sidebar a fixed height.
+       It must grow with the content so the main
+       analytics page can scroll normally.
+    */
+
+    height: auto;
+    max-height: none;
+
+    overflow: visible;
+}
+
+/* =====================================================
+   RIGHT PANELS
+   ===================================================== */
+
+.research-panel,
+.news-panel,
+.events-panel,
+.location-panel {
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 15px;
+
+    background: #0b100e;
+
+    border: 1px solid rgba(255, 255, 255, 0.055);
+    border-radius: 12px;
+
+    /*
+       IMPORTANT:
+       Prevent the right panel from becoming
+       an independent scroll container.
+    */
+    overflow: visible;
+}
+
+/* =====================================================
+   RESEARCH
+   ===================================================== */
+
+.research-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 10px;
+
+    padding: 9px 0;
+
+    border-top:
+        1px solid rgba(255, 255, 255, 0.045);
+}
+
+.research-item span {
+    font-size: 9px;
+
+    color: #69766f;
+
+    font-weight: 700;
+}
+
+.research-item strong {
+    font-size: 11px;
+
+    color: #dce7df;
+
+    text-align: right;
+}
+
+/* =====================================================
+   NEWS
+   ===================================================== */
+
+.news-panel article {
+    padding: 11px 0;
+
+    border-top:
+        1px solid rgba(255, 255, 255, 0.045);
+}
+
+.news-panel article small {
+    font-size: 8px;
+
+    font-weight: 800;
+
+    letter-spacing: 1px;
+
+    color: #69dc99;
+}
+
+.news-panel article h3 {
+    margin: 5px 0 0;
+
+    font-size: 11px;
+
+    line-height: 1.45;
+
+    font-weight: 600;
+
+    color: #cbd5ce;
+}
+
+/* =====================================================
+   EVENTS
+   ===================================================== */
+
+.events-panel {
+    overflow: visible;
+}
+
+.event-row {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 9px;
+
+    padding: 10px 0;
+
+    border-top:
+        1px solid rgba(255, 255, 255, 0.045);
+
+    color: #89958d;
+
+    font-size: 10px;
+
+    line-height: 1.4;
+
+    overflow: visible;
+}
+
+.event-row svg {
+    flex-shrink: 0;
+
+    color: #69dc99;
+}
+
+/* =====================================================
+   LOCATION
+   ===================================================== */
+
+.location-panel {
+    display: flex;
+
+    flex-direction: column;
+
+    overflow: visible;
+}
+
+.location-panel strong {
+    margin-top: 2px;
+
+    font-size: 15px;
+}
+
+.location-panel > span {
+    margin-top: 4px;
+
+    color: #727f77;
+
+    font-size: 10px;
+
+    line-height: 1.5;
+}
+
+/* =====================================================
+   LAST UPDATED
+   ===================================================== */
+
+.last-updated {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-top: 10px;
+
+    color: #5f6b64;
+
+    font-size: 9px;
+}
+
+.last-updated button {
+    width: 26px;
+    height: 26px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid rgba(255, 255, 255, 0.06);
+
+    border-radius: 7px;
+
+    background: rgba(255, 255, 255, 0.025);
+
+    color: #758078;
+
+    cursor: pointer;
+}
+
+.spin {
+    animation:
+        market-spin 0.8s linear infinite;
+}
+
+@keyframes market-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* =====================================================
+   RESPONSIVE — 1250
+   ===================================================== */
+
+@media (max-width: 1250px) {
+
+    .analytics-layout {
+        grid-template-columns:
+            170px
+            minmax(0, 1fr)
+            230px;
+
+        gap: 14px;
+    }
+}
+
+/* =====================================================
+   RESPONSIVE — 1050
+   ===================================================== */
+
+@media (max-width: 1050px) {
+
+    .analytics-layout {
+        grid-template-columns:
+            170px
+            minmax(0, 1fr);
+    }
+
+    .analytics-right {
+        grid-column: 1 / -1;
+
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 12px;
+    }
+}
+
+/* =====================================================
+   RESPONSIVE — 900
+   ===================================================== */
+
+@media (max-width: 900px) {
+
+    .live-chart {
+        height: 420px;
+        min-height: 420px;
+    }
+
+    .market-trading-chart,
+    .market-candlestick-wrapper {
+        min-height: 380px;
+    }
+}
+
+/* =====================================================
+   RESPONSIVE — 760
+   ===================================================== */
+
+@media (max-width: 760px) {
+
+    .analytics-page {
+        padding: 18px;
+    }
+
+    .analytics-header {
+        flex-direction: column;
+    }
+
+    .analytics-layout {
+        display: flex;
+
+        flex-direction: column;
+
+        width: 100%;
+    }
+
+    .analytics-watchlist {
+        width: 100%;
+    }
+
+    .analytics-main {
+        width: 100%;
+    }
+
+    .analytics-right {
+        width: 100%;
+
+        display: flex;
+        flex-direction: column;
+
+        grid-column: auto;
+    }
+
+    .market-metrics {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .demand-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =====================================================
+   RESPONSIVE — 600
+   ===================================================== */
+
+@media (max-width: 600px) {
+
+    .live-chart {
+        height: 360px;
+        min-height: 360px;
+    }
+
+    .market-trading-chart,
+    .market-candlestick-wrapper {
+        min-height: 320px;
+    }
+
+    .analytics-page {
+        padding: 14px;
+    }
+}
+
+/* =====================================================
+   RESPONSIVE — 500
+   ===================================================== */
+
+@media (max-width: 500px) {
+
+    .price-header {
+        flex-direction: column;
+
+        align-items: flex-start;
+    }
+
+    .chart-heading {
+        flex-direction: column;
+
+        align-items: flex-start;
+    }
+
+    .current-price strong {
+        font-size: 21px;
+    }
+
+    .analytics-search {
+        max-width: 100%;
+    }
+
+    .market-metrics {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .chart-info {
+        display: none;
+    }
+
+    .chart-instrument {
+        display: none;
+    }
+
+    .chart-ohlc {
+        font-size: 8px;
+
+        gap: 5px;
+
+        padding: 0 6px;
+    }
+
+    .chart-timeframes {
+        gap: 1px;
+    }
+
+    .chart-timeframes button {
+        min-width: 27px;
+
+        padding: 0 5px;
+    }
+}
+
+/* =====================================================
+   DARK INPUT SUPPORT
+   ===================================================== */
+
+.analytics-page input,
+.analytics-page select {
+    color-scheme: dark;
+}
+
+/* =====================================================
+   SAFETY — PREVENT GRID CHILD OVERFLOW
+   ===================================================== */
+
+.analytics-layout > *,
+.analytics-main > *,
+.analytics-right > * {
+    min-width: 0;
+}
+/* =====================================================
+   REDUCE GAP BELOW MARKET CHART
+===================================================== */
+
+.price-chart-card {
+    padding-bottom: 8px;
+}
+
+.live-chart {
+    height: 420px;
+    min-height: 420px;
+    margin-bottom: 0;
+}
+
+/* Remove unnecessary spacing before metrics */
+.market-metrics {
+    margin-top: 5px;
+}
+
+/* Keep chart container tight */
+.market-chart-shell {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Prevent extra bottom space inside chart */
+.market-trading-chart {
+    margin-bottom: 0;
+}
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 700px) {
+
+    .live-chart {
+        height: 360px;
+        min-height: 360px;
+    }
+
+    .market-metrics {
+        margin-top: 5px;
+    }
+}

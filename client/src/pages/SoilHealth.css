@@ -1,0 +1,1495 @@
+.soil-page {
+    width: 100%;
+    min-height: 100vh;
+    padding: 32px;
+    box-sizing: border-box;
+    color: #edf5ef;
+    background:
+        radial-gradient(
+            circle at 10% 0%,
+            rgba(91, 190, 125, 0.08),
+            transparent 30%
+        ),
+        #0b120e;
+}
+
+
+/* HEADER */
+
+.soil-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 28px;
+}
+
+.soil-eyebrow {
+    color: #7ee2a8;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+}
+
+.soil-header h1 {
+    margin: 0;
+    font-size: 34px;
+    letter-spacing: -0.8px;
+}
+
+.soil-header p {
+    margin: 9px 0 0;
+    color: #849189;
+    font-size: 14px;
+}
+
+.soil-live {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 13px;
+    border-radius: 999px;
+    border: 1px solid rgba(126, 226, 168, 0.15);
+    background: rgba(126, 226, 168, 0.05);
+    color: #8ce5ae;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.soil-live span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #72d99a;
+    box-shadow: 0 0 10px rgba(114, 217, 154, 0.8);
+}
+
+
+/* INPUT */
+
+.soil-input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 18px;
+}
+
+.soil-card,
+.soil-result-card,
+.soil-fingerprint,
+.action-card,
+.regeneration-card {
+    background: rgba(18, 27, 22, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.075);
+    border-radius: 20px;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.15);
+    box-sizing: border-box;
+}
+
+.soil-card {
+    padding: 23px;
+}
+
+.soil-card-header {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    margin-bottom: 20px;
+}
+
+.soil-card-icon {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+    background: rgba(126, 226, 168, 0.07);
+    font-size: 20px;
+}
+
+.soil-card-header h2 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.soil-card-header p {
+    margin: 4px 0 0;
+    color: #68756e;
+    font-size: 11px;
+}
+
+.soil-fields {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.soil-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.soil-field label {
+    color: #aab7b0;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.soil-field input,
+.soil-field select {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    box-sizing: border-box;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: #0d1511;
+    color: #eaf2ed;
+    outline: none;
+}
+
+.soil-field input:focus,
+.soil-field select:focus {
+    border-color: rgba(126, 226, 168, 0.5);
+}
+
+
+/* BUTTON */
+
+.soil-analyze {
+    width: 100%;
+    height: 50px;
+    margin-top: 18px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(
+        135deg,
+        #8ae8b0,
+        #67d995
+    );
+    color: #07130b;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 10px 28px rgba(86, 211, 137, 0.13);
+}
+
+.soil-analyze:hover {
+    filter: brightness(1.05);
+}
+
+.soil-analyze:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+
+/* RESULTS */
+
+.soil-results {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-top: 20px;
+}
+
+.section-label {
+    display: block;
+    color: #76d99c;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+}
+
+.soil-fingerprint {
+    padding: 25px;
+}
+
+.section-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.section-top h2,
+.soil-result-card h2,
+.action-card h2,
+.regeneration-card h2 {
+    margin: 0;
+    font-size: 19px;
+}
+
+.section-top p {
+    margin: 7px 0 0;
+    color: #748078;
+    font-size: 12px;
+}
+
+.soil-score {
+    text-align: right;
+}
+
+.soil-score strong {
+    font-size: 42px;
+    color: #7ee2a8;
+}
+
+.soil-score span {
+    color: #68756e;
+}
+
+.soil-score small {
+    display: block;
+    color: #7ee2a8;
+    font-size: 9px;
+    letter-spacing: 1px;
+}
+
+.fingerprint-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 22px;
+}
+
+.fingerprint-grid > div {
+    padding: 17px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.fingerprint-grid span {
+    display: block;
+    color: #748078;
+    font-size: 10px;
+}
+
+.fingerprint-grid strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 14px;
+}
+
+
+/* INTELLIGENCE */
+
+.intelligence-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+.soil-result-card {
+    padding: 24px;
+}
+
+.constraint {
+    display: flex;
+    gap: 14px;
+    padding: 16px 0;
+    border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.constraint.primary {
+    margin-top: 20px;
+}
+
+.constraint-number {
+    color: #5f6c65;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.constraint small {
+    display: block;
+    color: #69756f;
+    font-size: 9px;
+    letter-spacing: 1px;
+}
+
+.constraint strong {
+    display: block;
+    margin-top: 5px;
+    font-size: 14px;
+}
+
+.constraint p {
+    margin: 7px 0 0;
+    color: #88948d;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+
+/* CROP FIT */
+
+.fit-score {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 24px 0;
+}
+
+.fit-score strong {
+    font-size: 38px;
+    color: #7ee2a8;
+}
+
+.fit-score span {
+    color: #7b887f;
+}
+
+.fit-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 13px 0;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    font-size: 12px;
+}
+
+.fit-row span {
+    color: #8b968f;
+}
+
+
+/* NUTRIENTS */
+
+.nutrient-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-top: 23px;
+}
+
+.nutrient-item > div:first-child {
+    display: flex;
+    justify-content: space-between;
+}
+
+.nutrient-item span {
+    color: #68756e;
+    font-size: 9px;
+    letter-spacing: 1px;
+}
+
+.nutrient-item strong {
+    font-size: 11px;
+}
+
+.nutrient-bar {
+    height: 6px;
+    margin-top: 10px;
+    overflow: hidden;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.06);
+}
+
+.nutrient-bar i {
+    display: block;
+    height: 100%;
+    border-radius: 10px;
+    background: #70d99a;
+}
+
+
+/* RISK */
+
+.risk-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 22px;
+}
+
+.risk-grid > div {
+    padding: 16px;
+    border-radius: 13px;
+    background: rgba(255,255,255,0.025);
+}
+
+.risk-grid span {
+    display: block;
+    color: #89958e;
+    font-size: 11px;
+}
+
+.risk-grid strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+
+/* ACTION */
+
+.action-card {
+    padding: 25px;
+    border-color: rgba(126, 226, 168, 0.14);
+    background:
+        linear-gradient(
+            135deg,
+            rgba(126,226,168,0.055),
+            rgba(18,27,22,0.82)
+        );
+}
+
+.action-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 22px;
+}
+
+.action-list > div {
+    display: flex;
+    gap: 13px;
+    padding: 17px;
+    border-radius: 14px;
+    background: rgba(0,0,0,0.12);
+}
+
+.action-list b {
+    color: #6fdb99;
+    font-size: 12px;
+}
+
+.action-list p {
+    margin: 0;
+    color: #909b94;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.action-list strong {
+    display: block;
+    color: #e5ede8;
+    margin-bottom: 4px;
+}
+
+
+/* REGENERATION */
+
+.regeneration-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 26px;
+    border-color: rgba(126,226,168,0.15);
+}
+
+.regeneration-card p {
+    margin: 8px 0 0;
+    color: #7e8a83;
+    font-size: 12px;
+}
+
+.regeneration-score {
+    text-align: center;
+}
+
+.regeneration-score strong {
+    font-size: 42px;
+    color: #7ee2a8;
+}
+
+.regeneration-score span {
+    color: #69756f;
+}
+
+
+/* ================================
+   NATURAL STATUS HIGHLIGHTS
+   ================================ */
+
+.good {
+    color: #8fcf9f !important;
+    background: rgba(143, 207, 159, 0.08);
+    border: 1px solid rgba(143, 207, 159, 0.16);
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.warning {
+    color: #d8c98b !important;
+    background: rgba(216, 201, 139, 0.07);
+    border: 1px solid rgba(216, 201, 139, 0.14);
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.danger {
+    color: #d98f8f !important;
+    background: rgba(217, 143, 143, 0.07);
+    border: 1px solid rgba(217, 143, 143, 0.14);
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1000px) {
+
+    .soil-input-grid,
+    .intelligence-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .fingerprint-grid,
+    .risk-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .nutrient-grid,
+    .action-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+@media (max-width: 650px) {
+
+    .soil-page {
+        padding: 18px;
+    }
+
+    .soil-header {
+        display: block;
+    }
+
+    .soil-live {
+        display: inline-flex;
+        margin-top: 15px;
+    }
+
+    .soil-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .fingerprint-grid,
+    .risk-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .section-top {
+        align-items: flex-start;
+    }
+
+    .soil-score strong {
+        font-size: 30px;
+    }
+
+    .regeneration-card {
+        display: block;
+    }
+
+    .regeneration-score {
+        margin-top: 20px;
+        text-align: left;
+    }
+}
+
+/* =========================================
+   GROWELL SOIL INTELLIGENCE
+   TYPOGRAPHY SCALE
+   ========================================= */
+
+.soil-page {
+    font-size: 15px;
+}
+
+/* Main header */
+
+.soil-eyebrow {
+    font-size: 13px !important;
+    letter-spacing: 2px;
+}
+
+.soil-header h1 {
+    font-size: 40px !important;
+}
+
+.soil-header p {
+    font-size: 16px !important;
+}
+
+
+/* Status */
+
+.soil-status {
+    font-size: 14px !important;
+}
+
+
+/* Panel headings */
+
+.panel-heading h2 {
+    font-size: 20px !important;
+}
+
+.panel-heading p {
+    font-size: 13px !important;
+}
+
+
+/* Form labels */
+
+.field label {
+    font-size: 13px !important;
+    font-weight: 600;
+}
+
+
+/* Inputs */
+
+.field input,
+.field select {
+    font-size: 15px !important;
+}
+
+
+/* Buttons */
+
+.soil-analyze-button {
+    font-size: 15px !important;
+}
+
+
+/* Section labels */
+
+.card-label {
+    font-size: 12px !important;
+    letter-spacing: 1.5px;
+}
+
+
+/* Section headings */
+
+.section-heading h2,
+.intelligence-card h2,
+.nutrient-card h2,
+.risk-card h2,
+.action-card h2,
+.regeneration-card h2 {
+    font-size: 22px !important;
+}
+
+
+/* Soil fingerprint */
+
+.fingerprint-item span {
+    font-size: 13px !important;
+}
+
+.fingerprint-item strong {
+    font-size: 17px !important;
+}
+
+
+/* Score */
+
+.score strong {
+    font-size: 38px !important;
+}
+
+.score small {
+    font-size: 14px !important;
+}
+
+.score em {
+    font-size: 13px !important;
+}
+
+
+/* Diagnosis constraints */
+
+.constraint small {
+    font-size: 11px !important;
+}
+
+.constraint strong {
+    font-size: 17px !important;
+}
+
+.constraint p {
+    font-size: 14px !important;
+    line-height: 1.7;
+}
+
+
+/* Crop-soil fit */
+
+.fit-score strong {
+    font-size: 38px !important;
+}
+
+.fit-score span {
+    font-size: 14px !important;
+}
+
+.fit-row span {
+    font-size: 14px !important;
+}
+
+.fit-row b {
+    font-size: 13px !important;
+}
+
+
+/* Nutrient intelligence */
+
+.nutrient-grid span {
+    font-size: 12px !important;
+}
+
+.nutrient-grid strong {
+    font-size: 16px !important;
+}
+
+
+/* Risk radar */
+
+.risk-grid span {
+    font-size: 14px !important;
+}
+
+.risk-grid b {
+    font-size: 13px !important;
+}
+
+
+/* Action plan */
+
+.action-list p {
+    font-size: 14px !important;
+    line-height: 1.7;
+}
+
+.action-list strong {
+    font-size: 15px !important;
+}
+
+
+/* Regeneration */
+
+.regeneration-card p {
+    font-size: 14px !important;
+    line-height: 1.7;
+}
+
+.regeneration-score strong {
+    font-size: 42px !important;
+}
+
+.regeneration-score span {
+    font-size: 15px !important;
+}
+
+
+/* =========================================
+   SOIL HEALTH — DASHBOARD PAGE FIX
+   ========================================= */
+
+.soil-health-page {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding-bottom: 40px;
+}
+
+
+/* Prevent cards/content from forcing
+   the dashboard wider than the viewport */
+
+.soil-health-page * {
+    box-sizing: border-box;
+}
+
+
+/* Main soil health content */
+
+.soil-health-container {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+
+/* Responsive grid */
+
+.soil-health-grid {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+
+/* Images should never escape the page */
+
+.soil-health-page img {
+    max-width: 100%;
+    height: auto;
+}
+
+
+/* Tables should scroll inside themselves
+   instead of breaking the dashboard */
+
+.soil-health-page table {
+    max-width: 100%;
+}
+
+.soil-health-page .table-container {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+
+/* Mobile */
+
+@media (max-width: 768px) {
+
+    .soil-health-page {
+        padding-bottom: 24px;
+    }
+
+}
+
+/* =========================================
+   GROWell RECOMMENDATION
+   MATCHES EXISTING SOIL PAGE
+   ========================================= */
+
+.growell-recommendation {
+    margin-top: 24px;
+    padding: 28px;
+
+    border-radius: 20px;
+
+    background: rgba(255, 255, 255, 0.035);
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.12);
+}
+
+
+/* HEADER */
+
+.recommendation-header {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 16px;
+}
+
+
+.recommendation-mark {
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border-radius: 10px;
+
+    background: rgba(255, 255, 255, 0.045);
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    color: rgba(255, 255, 255, 0.7);
+
+    font-size: 17px;
+}
+
+
+/* TITLE */
+
+.recommendation-header h2 {
+    margin: 5px 0 7px;
+
+    font-size: 22px;
+
+    font-weight: 600;
+
+    letter-spacing: -0.3px;
+
+    color: inherit;
+}
+
+
+.recommendation-header p {
+    margin: 0;
+
+    color: rgba(255, 255, 255, 0.52);
+
+    font-size: 14px;
+
+    line-height: 1.6;
+}
+
+
+/* DIVIDER */
+
+.recommendation-line {
+    height: 1px;
+
+    margin: 24px 0 4px;
+
+    background: rgba(255, 255, 255, 0.07);
+}
+
+
+/* LIST */
+
+.recommendation-list {
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* ITEM */
+
+.recommendation-item {
+    display: grid;
+
+    grid-template-columns: 42px 1fr 24px;
+
+    align-items: center;
+
+    gap: 16px;
+
+    padding: 18px 4px;
+
+    border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+
+    transition: background 0.2s ease;
+}
+
+
+.recommendation-item:last-child {
+    border-bottom: none;
+}
+
+
+.recommendation-item:hover {
+    background: rgba(255, 255, 255, 0.018);
+}
+
+
+/* NUMBER */
+
+.recommendation-number {
+    width: 36px;
+    height: 36px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 9px;
+
+    background: rgba(255, 255, 255, 0.035);
+
+    border: 1px solid rgba(255, 255, 255, 0.07);
+
+    color: rgba(255, 255, 255, 0.48);
+
+    font-size: 11px;
+
+    font-weight: 600;
+}
+
+
+/* CONTENT */
+
+.recommendation-content span {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: rgba(255, 255, 255, 0.42);
+
+    font-size: 10px;
+
+    font-weight: 600;
+
+    letter-spacing: 1px;
+
+    text-transform: uppercase;
+}
+
+
+.recommendation-content p {
+    margin: 0;
+
+    color: rgba(255, 255, 255, 0.76);
+
+    font-size: 14px;
+
+    line-height: 1.6;
+}
+
+
+/* ARROW */
+
+.recommendation-arrow {
+    color: rgba(255, 255, 255, 0.25);
+
+    font-size: 18px;
+
+    transition: color 0.2s ease;
+}
+
+
+.recommendation-item:hover .recommendation-arrow {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+
+/* FOOTER */
+
+.recommendation-footer {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    margin-top: 17px;
+
+    padding-top: 16px;
+
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+
+    color: rgba(255, 255, 255, 0.36);
+
+    font-size: 11px;
+
+    line-height: 1.5;
+}
+
+
+.recommendation-dot {
+    width: 5px;
+    height: 5px;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.45);
+}
+
+
+/* MOBILE */
+
+@media (max-width: 700px) {
+
+    .growell-recommendation {
+        padding: 22px;
+    }
+
+    .recommendation-header h2 {
+        font-size: 20px;
+    }
+
+    .recommendation-item {
+        grid-template-columns: 36px 1fr;
+        gap: 13px;
+    }
+
+    .recommendation-arrow {
+        display: none;
+    }
+
+}
+/* =========================================
+   GROWell INTELLIGENCE SUMMARY
+   ========================================= */
+
+.growell-summary {
+    margin-top: 24px;
+}
+
+
+/* HEADER */
+
+.growell-summary-header {
+    margin-bottom: 16px;
+}
+
+
+.growell-summary-header h2 {
+    margin: 6px 0 5px;
+
+    font-size: 22px;
+
+    font-weight: 600;
+
+    letter-spacing: -0.3px;
+}
+
+
+.growell-summary-header p {
+    margin: 0;
+
+    color: rgba(255, 255, 255, 0.48);
+
+    font-size: 13px;
+
+    line-height: 1.6;
+}
+
+
+/* GRID */
+
+.growell-summary-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 14px;
+}
+
+
+/* CARD */
+
+.growell-info-card {
+    min-height: 105px;
+
+    padding: 20px;
+
+    border-radius: 16px;
+
+    background: rgba(255, 255, 255, 0.035);
+
+    border: 1px solid rgba(255, 255, 255, 0.075);
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+
+.growell-info-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+
+    border-color: rgba(255, 255, 255, 0.11);
+
+    transform: translateY(-1px);
+}
+
+
+/* LABEL */
+
+.growell-info-label {
+    display: block;
+
+    margin-bottom: 9px;
+
+    color: rgba(255, 255, 255, 0.40);
+
+    font-size: 10px;
+
+    font-weight: 600;
+
+    letter-spacing: 1px;
+
+    text-transform: uppercase;
+}
+
+
+/* MAIN VALUE */
+
+.growell-info-card strong {
+    color: rgba(255, 255, 255, 0.82);
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    line-height: 1.45;
+}
+
+
+/* WIDE CARDS */
+
+.growell-info-wide {
+    grid-column: span 2;
+
+    min-height: 125px;
+
+    flex-direction: row;
+
+    align-items: flex-start;
+
+    justify-content: flex-start;
+
+    gap: 15px;
+}
+
+
+/* ICON */
+
+.growell-info-icon {
+    width: 34px;
+    height: 34px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 9px;
+
+    background: rgba(255, 255, 255, 0.04);
+
+    border: 1px solid rgba(255, 255, 255, 0.07);
+
+    color: rgba(255, 255, 255, 0.60);
+
+    font-size: 14px;
+}
+
+
+/* DESCRIPTION */
+
+.growell-info-card p {
+    margin: 0;
+
+    color: rgba(255, 255, 255, 0.58);
+
+    font-size: 13px;
+
+    line-height: 1.65;
+}
+
+
+/* RESPONSIVE */
+
+@media (max-width: 1000px) {
+
+    .growell-summary-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .growell-info-wide {
+        grid-column: span 2;
+    }
+
+}
+
+
+@media (max-width: 650px) {
+
+    .growell-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .growell-info-wide {
+        grid-column: span 1;
+    }
+
+}
+/* =========================================================
+   GROWELL RECOMMENDATION
+   Matches the existing Soil Intelligence cards
+   ========================================================= */
+
+.growell-recommendation {
+    position: relative;
+    overflow: hidden;
+}
+
+.growell-recommendation .recommendation-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.growell-recommendation .recommendation-header h2 {
+    margin: 8px 0 8px;
+}
+
+.growell-recommendation .recommendation-header p {
+    margin: 0;
+    max-width: 720px;
+}
+
+
+/* TOP INFORMATION GRID */
+
+.growell-recommendation .recommendation-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 22px;
+    margin-bottom: 18px;
+}
+
+.growell-recommendation .recommendation-item {
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.growell-recommendation .recommendation-item span {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    opacity: 0.55;
+}
+
+.growell-recommendation .recommendation-item strong {
+    display: block;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+
+/* RECOMMENDATION BOXES */
+
+.recommendation-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+    margin-top: 12px;
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+
+    background: rgba(255, 255, 255, 0.025);
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        background 0.2s ease;
+}
+
+.recommendation-box:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.13);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.recommendation-box-icon {
+    flex: 0 0 34px;
+
+    width: 34px;
+    height: 34px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background: rgba(255, 255, 255, 0.06);
+
+    font-size: 15px;
+}
+
+.recommendation-box span {
+    display: block;
+
+    margin-bottom: 6px;
+
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+
+    opacity: 0.55;
+}
+
+.recommendation-box p {
+    margin: 0;
+
+    font-size: 14px;
+    line-height: 1.65;
+
+    opacity: 0.82;
+}
+
+
+/* FOOTER */
+
+.growell-recommendation .recommendation-footer {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    margin-top: 18px;
+    padding-top: 16px;
+
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+
+    font-size: 12px;
+    opacity: 0.55;
+}
+
+.recommendation-dot {
+    width: 6px;
+    height: 6px;
+
+    flex: 0 0 6px;
+
+    border-radius: 50%;
+
+    background: currentColor;
+}
+
+
+/* RESPONSIVE */
+
+@media (max-width: 900px) {
+
+    .growell-recommendation .recommendation-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+}
+
+
+@media (max-width: 600px) {
+
+    .growell-recommendation .recommendation-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .recommendation-box {
+        padding: 16px;
+    }
+
+}
+

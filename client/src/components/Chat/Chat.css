@@ -1,0 +1,245 @@
+/* =========================================================
+   GROWELL AI — CHAT MESSAGE BUBBLES
+   ========================================================= */
+
+/* Message row */
+.message-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+/* Bot row */
+.bot-row {
+    justify-content: flex-start;
+}
+
+/* User row */
+.user-row {
+    justify-content: flex-end;
+}
+
+
+/* =========================================================
+   BOT AVATAR
+   ========================================================= */
+
+.bot-row .avatar {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #18201b;
+    border: 1px solid #303833;
+    border-radius: 50%;
+
+    font-size: 18px;
+}
+
+
+/* =========================================================
+   BOT REPLY — GREYISH BLACK
+   ========================================================= */
+
+.message-row.bot-row > .bot-message {
+    display: block;
+
+    width: fit-content;
+    max-width: min(75%, 760px);
+
+    background: #252725 !important;
+
+    color: #eeeeec !important;
+
+    border: 1px solid #3a3d3a !important;
+
+    border-radius: 18px 18px 18px 5px !important;
+
+    padding: 15px 18px !important;
+
+    margin: 0 !important;
+
+    box-sizing: border-box;
+
+    box-shadow:
+        0 6px 20px rgba(0, 0, 0, 0.28) !important;
+
+    line-height: 1.65;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   BOT MARKDOWN TEXT
+   ========================================================= */
+
+.message-row.bot-row > .bot-message p {
+    margin: 0 0 10px !important;
+    color: #eeeeec !important;
+}
+
+.message-row.bot-row > .bot-message p:last-child {
+    margin-bottom: 0 !important;
+}
+
+.message-row.bot-row > .bot-message strong {
+    color: #ffffff !important;
+    font-weight: 700;
+}
+
+.message-row.bot-row > .bot-message h1,
+.message-row.bot-row > .bot-message h2,
+.message-row.bot-row > .bot-message h3 {
+    color: #ffffff !important;
+    margin: 14px 0 8px !important;
+}
+
+.message-row.bot-row > .bot-message ul,
+.message-row.bot-row > .bot-message ol {
+    margin: 8px 0 12px !important;
+    padding-left: 22px !important;
+}
+
+.message-row.bot-row > .bot-message li {
+    color: #eeeeec !important;
+    margin-bottom: 5px;
+}
+
+
+/* =========================================================
+   USER MESSAGE
+   ========================================================= */
+
+.message-row.user-row > .user-message {
+    display: block;
+
+    max-width: min(75%, 760px);
+
+    background: #183b29 !important;
+
+    color: #f4fff7 !important;
+
+    border: 1px solid #2d6044 !important;
+
+    border-radius: 18px 18px 5px 18px !important;
+
+    padding: 15px 18px !important;
+
+    margin: 0 !important;
+
+    box-sizing: border-box;
+
+    box-shadow:
+        0 6px 20px rgba(0, 0, 0, 0.22) !important;
+
+    line-height: 1.65;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   USER AVATAR
+   ========================================================= */
+
+.user-row .avatar {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #1d2b22;
+    border: 1px solid #34463a;
+    border-radius: 50%;
+
+    font-size: 18px;
+}
+
+
+/* =========================================================
+   TYPING BUBBLE
+   ========================================================= */
+
+.typing-message {
+    display: flex;
+    align-items: center;
+}
+
+.typing-bubble {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+
+    background: #252725 !important;
+
+    border: 1px solid #3a3d3a;
+
+    border-radius: 18px 18px 18px 5px;
+
+    padding: 13px 16px;
+}
+
+.typing-bubble span {
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+
+    background: #aeb5af;
+
+    animation: growellTyping 1.2s infinite ease-in-out;
+}
+
+.typing-bubble span:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.typing-bubble span:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+@keyframes growellTyping {
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.45;
+    }
+
+    30% {
+        transform: translateY(-4px);
+        opacity: 1;
+    }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+    .message-row.bot-row > .bot-message,
+    .message-row.user-row > .user-message {
+        max-width: 85%;
+    }
+
+    .message-row {
+        gap: 7px;
+    }
+
+    .message-row.bot-row > .bot-message,
+    .message-row.user-row > .user-message {
+        padding: 13px 15px !important;
+    }
+}
