@@ -1,0 +1,568 @@
+/* =========================================================
+   GROWELL AI — INFORMATION PAGES
+   ========================================================= */
+
+.info-page {
+    width: 100%;
+    min-height: 100%;
+    padding: 38px 42px 70px;
+
+    box-sizing: border-box;
+
+    color: #e5f0e7;
+
+    overflow-y: auto;
+}
+
+
+/* =========================================================
+   HERO
+   ========================================================= */
+
+.info-hero {
+    max-width: 850px;
+
+    margin-bottom: 45px;
+}
+
+.info-kicker {
+    display: block;
+
+    margin-bottom: 10px;
+
+    color: #8bc997;
+
+    font-size: 10px;
+    font-weight: 700;
+
+    letter-spacing: 2px;
+}
+
+.info-hero h1 {
+    margin: 0 0 16px;
+
+    color: #f0f8f1;
+
+    font-size: clamp(30px, 4vw, 48px);
+
+    line-height: 1.12;
+
+    letter-spacing: -1.5px;
+}
+
+.info-hero p {
+    max-width: 720px;
+
+    margin: 0;
+
+    color: rgba(215, 229, 218, 0.60);
+
+    font-size: 14px;
+
+    line-height: 1.8;
+}
+
+.policy-date {
+    display: inline-block;
+
+    margin-top: 18px;
+
+    color: rgba(201, 225, 206, 0.38);
+
+    font-size: 10px;
+}
+
+
+/* =========================================================
+   SECTIONS
+   ========================================================= */
+
+.info-section,
+.policy-section {
+    max-width: 900px;
+
+    margin-bottom: 38px;
+}
+
+.info-section h2,
+.policy-section h2 {
+    margin: 0 0 13px;
+
+    color: #dcecdf;
+
+    font-size: 20px;
+    font-weight: 650;
+
+    letter-spacing: -0.3px;
+}
+
+.info-section p,
+.policy-section p {
+    max-width: 850px;
+
+    margin: 0 0 13px;
+
+    color: rgba(211, 226, 215, 0.58);
+
+    font-size: 13px;
+
+    line-height: 1.8;
+}
+
+
+/* =========================================================
+   FEATURE GRID
+   ========================================================= */
+
+.info-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 12px;
+
+    margin-top: 20px;
+}
+
+.info-card {
+    padding: 20px;
+
+    border-radius: 16px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(202, 233, 208, 0.075),
+            rgba(255, 255, 255, 0.025)
+        );
+
+    border:
+        1px solid rgba(193, 226, 200, 0.10);
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.035);
+
+    transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        background 180ms ease;
+}
+
+.info-card:hover {
+    transform: translateY(-3px);
+
+    border-color:
+        rgba(155, 210, 165, 0.22);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(202, 233, 208, 0.11),
+            rgba(255, 255, 255, 0.035)
+        );
+}
+
+.info-card > span {
+    display: block;
+
+    margin-bottom: 13px;
+
+    font-size: 25px;
+}
+
+.info-card h3 {
+    margin: 0 0 7px;
+
+    color: #dcecdf;
+
+    font-size: 13px;
+}
+
+.info-card p {
+    margin: 0;
+
+    color: rgba(207, 224, 211, 0.48);
+
+    font-size: 11px;
+
+    line-height: 1.65;
+}
+
+
+/* =========================================================
+   FOUNDER
+   ========================================================= */
+
+.founder-section {
+    display: flex;
+
+    align-items: center;
+
+    gap: 20px;
+
+    padding: 25px;
+
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(112, 181, 124, 0.09),
+            rgba(255, 255, 255, 0.025)
+        );
+
+    border:
+        1px solid rgba(146, 205, 157, 0.12);
+}
+
+.founder-section h2 {
+    margin-bottom: 8px;
+}
+
+.founder-badge {
+    width: 58px;
+    height: 58px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 17px;
+
+    background:
+        rgba(107, 183, 121, 0.12);
+
+    border:
+        1px solid rgba(139, 204, 151, 0.18);
+
+    font-size: 27px;
+}
+
+
+/* =========================================================
+   QUOTE
+   ========================================================= */
+
+.info-quote {
+    max-width: 850px;
+
+    margin: 45px 0;
+
+    padding: 24px 28px;
+
+    border-left:
+        2px solid #70b97c;
+
+    background:
+        rgba(118, 184, 128, 0.045);
+
+    border-radius: 0 14px 14px 0;
+}
+
+.info-quote span {
+    color: rgba(224, 239, 226, 0.68);
+
+    font-size: 14px;
+
+    font-style: italic;
+
+    line-height: 1.7;
+}
+
+
+/* =========================================================
+   SUPPORT
+   ========================================================= */
+
+.support-list {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+
+    max-width: 760px;
+}
+
+.support-card {
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+    padding: 16px;
+
+    border-radius: 14px;
+
+    background:
+        rgba(202, 233, 208, 0.045);
+
+    border:
+        1px solid rgba(193, 226, 200, 0.075);
+
+    transition:
+        background 180ms ease,
+        transform 180ms ease;
+}
+
+.support-card:hover {
+    background:
+        rgba(202, 233, 208, 0.075);
+
+    transform: translateX(3px);
+}
+
+.support-icon {
+    width: 42px;
+    height: 42px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 12px;
+
+    background:
+        rgba(110, 181, 123, 0.10);
+
+    font-size: 20px;
+}
+
+.support-card h3 {
+    margin: 0 0 5px;
+
+    color: #dcecdf;
+
+    font-size: 13px;
+}
+
+.support-card p {
+    margin: 0;
+
+    color: rgba(207, 224, 211, 0.48);
+
+    font-size: 11px;
+
+    line-height: 1.6;
+}
+
+
+/* =========================================================
+   FAQ
+   ========================================================= */
+
+.faq {
+    max-width: 760px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+.faq details {
+    padding: 14px 16px;
+
+    border-radius: 13px;
+
+    background:
+        rgba(202, 233, 208, 0.04);
+
+    border:
+        1px solid rgba(193, 226, 200, 0.07);
+}
+
+.faq summary {
+    color: #dcecdf;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.faq details p {
+    margin-top: 12px;
+
+    margin-bottom: 0;
+}
+
+
+/* =========================================================
+   CONTACT
+   ========================================================= */
+
+.contact-card {
+    max-width: 760px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 18px;
+
+    padding: 22px;
+
+    margin-top: 45px;
+
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(111, 181, 124, 0.10),
+            rgba(255, 255, 255, 0.025)
+        );
+
+    border:
+        1px solid rgba(146, 205, 157, 0.12);
+}
+
+.contact-icon {
+    width: 48px;
+    height: 48px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 14px;
+
+    background:
+        rgba(108, 184, 122, 0.12);
+
+    font-size: 20px;
+}
+
+.contact-card h2 {
+    margin: 5px 0 7px;
+
+    color: #e0eee2;
+
+    font-size: 18px;
+}
+
+.contact-card p {
+    margin: 0;
+
+    color: rgba(207, 224, 211, 0.48);
+
+    font-size: 11px;
+
+    line-height: 1.7;
+}
+
+
+/* =========================================================
+   POLICY LIST
+   ========================================================= */
+
+.policy-section ul {
+    max-width: 800px;
+
+    margin: 12px 0 0;
+    padding-left: 20px;
+}
+
+.policy-section li {
+    margin-bottom: 8px;
+
+    color: rgba(211, 226, 215, 0.55);
+
+    font-size: 12px;
+
+    line-height: 1.65;
+}
+
+.policy-section li::marker {
+    color: #78bd84;
+}
+
+
+/* =========================================================
+   POLICY NOTICE
+   ========================================================= */
+
+.policy-notice {
+    max-width: 850px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 7px;
+
+    margin-top: 35px;
+
+    padding: 18px 20px;
+
+    border-radius: 14px;
+
+    background:
+        rgba(190, 205, 193, 0.045);
+
+    border:
+        1px solid rgba(205, 225, 210, 0.08);
+}
+
+.policy-notice strong {
+    color: #b9dcbf;
+
+    font-size: 11px;
+}
+
+.policy-notice span {
+    color: rgba(211, 226, 215, 0.45);
+
+    font-size: 10px;
+
+    line-height: 1.7;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+    .info-page {
+        padding: 30px 25px 60px;
+    }
+
+    .info-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+}
+
+
+@media (max-width: 600px) {
+
+    .info-page {
+        padding: 25px 18px 50px;
+    }
+
+    .info-hero h1 {
+        font-size: 32px;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .founder-section,
+    .contact-card {
+        align-items: flex-start;
+    }
+}

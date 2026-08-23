@@ -11,18 +11,18 @@ import Library from "./Library";
 import Analytics from "./Analytics";
 import Settings from "./Settings";
 
+import About from "./About";
+import Terms from "./Terms";
+import Privacy from "./Privacy";
+import Support from "./Support";
+
 import "./Dashboard.css";
 
-
 function Dashboard({ user, onLogout }) {
-
     const [activePage, setActivePage] = useState("Chat");
 
-
     function renderPage() {
-
         switch (activePage) {
-
             case "Chat":
                 return <Chat user={user} />;
 
@@ -44,21 +44,38 @@ function Dashboard({ user, onLogout }) {
             case "Settings":
                 return <Settings />;
 
+            /* =========================================
+               INFORMATION PAGES
+            ========================================= */
+
+            case "About":
+                return <About />;
+
+            case "Terms":
+                return <Terms />;
+
+            case "Privacy":
+                return <Privacy />;
+
+            case "Support":
+                return <Support />;
+
+            /* =========================================
+               FALLBACK
+            ========================================= */
+
             default:
                 return <Chat user={user} />;
         }
     }
 
-
     return (
-
         <div className="dashboard-layout">
 
             <Sidebar
                 activePage={activePage}
                 setActivePage={setActivePage}
             />
-
 
             <div className="dashboard-main">
 
@@ -68,19 +85,14 @@ function Dashboard({ user, onLogout }) {
                     onLogout={onLogout}
                 />
 
-
                 <main className="page-container">
-
                     {renderPage()}
-
                 </main>
 
             </div>
 
         </div>
-
     );
 }
-
 
 export default Dashboard;
