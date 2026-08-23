@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 
 import Dashboard from "./pages/Dashboard";
@@ -7,186 +6,118 @@ import Signup from "./pages/Auth/Signup";
 import Intro from "./pages/Intro/Intro";
 
 function App() {
-
     // =====================================================
-    // INTRO STATE
+    // INTRO
     // =====================================================
 
     const [showIntro, setShowIntro] = useState(() => {
-
-        const introSeen =
-            localStorage.getItem("growell_intro_seen");
-
-        return introSeen !== "true";
+        return localStorage.getItem("growell_intro_seen") !== "true";
     });
 
-
     // =====================================================
-    // USER STATE
+    // USER
     // =====================================================
 
     const [user, setUser] = useState(() => {
+        const savedUser = localStorage.getItem("growell_user");
+        const savedToken = localStorage.getItem("growell_token");
 
-        const savedUser =
-            localStorage.getItem("growell_user");
-
-        const savedToken =
-            localStorage.getItem("growell_token");
-
-        if (savedUser && savedToken) {
-
-            try {
-
-                return JSON.parse(savedUser);
-
-            } catch (error) {
-
-                console.error(
-                    "Invalid saved user:",
-                    error
-                );
-
-                localStorage.removeItem(
-                    "growell_user"
-                );
-
-                localStorage.removeItem(
-                    "growell_token"
-                );
-
-                localStorage.removeItem(
-                    "growell_refresh_token"
-                );
-
-            }
-
+        if (!savedUser || !savedToken) {
+            return null;
         }
 
-        return null;
+        try {
+            return JSON.parse(savedUser);
+        } catch (error) {
+            console.error("Invalid saved user:", error);
+
+            localStorage.removeItem("growell_user");
+            localStorage.removeItem("growell_token");
+            localStorage.removeItem("growell_refresh_token");
+
+            return null;
+        }
     });
 
-
-    const [showSignup, setShowSignup] =
-        useState(false);
-
+    const [showSignup, setShowSignup] = useState(false);
 
     // =====================================================
     // INTRO FINISHED
     // =====================================================
 
     function handleIntroFinish() {
-
+        localStorage.setItem("growell_intro_seen", "true");
         setShowIntro(false);
-
     }
-
 
     // =====================================================
     // LOGIN
     // =====================================================
 
     function handleLogin(loggedInUser) {
+        console.log("🌱 GroWell login successful:", loggedInUser);
 
         setUser(loggedInUser);
-
         setShowSignup(false);
-
+        setShowIntro(false);
     }
-
 
     // =====================================================
     // LOGOUT
     // =====================================================
 
     function handleLogout() {
+        console.log("🌱 GroWell logout");
 
-        console.log(
-            "🌱 GroWell logout → showing intro"
-        );
+        localStorage.removeItem("growell_token");
+        localStorage.removeItem("growell_user");
+        localStorage.removeItem("growell_refresh_token");
 
-
-        // Remove authentication
-        localStorage.removeItem(
-            "growell_token"
-        );
-
-        localStorage.removeItem(
-            "growell_user"
-        );
-
-        localStorage.removeItem(
-            "growell_refresh_token"
-        );
-
-
-        // Remove current user
         setUser(null);
-
-
-        // Reset signup state
         setShowSignup(false);
 
-
-        // IMPORTANT:
-        // Show intro again after logout.
-        //
-        // We DO NOT remove growell_intro_seen.
-        // This means logout does not pretend
-        // that this is the user's first visit.
-        //
-        // We simply display the intro again.
-        setShowIntro(true);
-
+        // Do NOT show intro again.
+        // User should return directly to Login.
+        setShowIntro(false);
     }
-
 
     // =====================================================
     // SIGNUP
     // =====================================================
 
     function handleSignupSuccess() {
+        console.log("🌱 GroWell signup completed");
 
         setShowSignup(false);
-
     }
 
-
     // =====================================================
-    // INTRO
+    // FIRST VISIT → INTRO
     // =====================================================
 
     if (showIntro) {
-
         return (
             <Intro
                 onFinish={handleIntroFinish}
             />
         );
-
     }
 
-
     // =====================================================
-    // NOT LOGGED IN
+    // NOT LOGGED IN → LOGIN / SIGNUP
     // =====================================================
 
     if (!user) {
-
         if (showSignup) {
-
             return (
                 <Signup
-                    onSignup={
-                        handleSignupSuccess
-                    }
+                    onSignup={handleSignupSuccess}
                     onSwitchToLogin={() =>
                         setShowSignup(false)
                     }
                 />
             );
-
         }
-
 
         return (
             <Login
@@ -196,12 +127,10 @@ function App() {
                 }
             />
         );
-
     }
 
-
     // =====================================================
-    // LOGGED IN
+    // LOGGED IN → DASHBOARD
     // =====================================================
 
     return (
@@ -210,7 +139,6 @@ function App() {
             onLogout={handleLogout}
         />
     );
-
 }
 
 export default App;
