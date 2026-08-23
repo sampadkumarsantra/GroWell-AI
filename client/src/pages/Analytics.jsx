@@ -229,7 +229,7 @@ export default function Analytics() {
         try {
 
             const response = await fetch(
-                `http://localhost:3000/api/market/analytics?crop=${encodeURIComponent(crop)}`,
+                `${import.meta.env.VITE_API_URL}/api/market/analytics?crop=${encodeURIComponent(crop)}`,
                 {
                     method: "GET",
                     cache: "no-store"

@@ -52,7 +52,7 @@ function CropDiagnosis() {
             formData.append("image", file);
 
             const response = await fetch(
-                "http://localhost:3000/api/diagnose",
+                "${import.meta.env.VITE_API_URL}/api/diagnose",
                 {
                     method: "POST",
                     body: formData
