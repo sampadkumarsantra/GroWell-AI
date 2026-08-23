@@ -1329,3 +1329,36 @@
         margin-top: 5px;
     }
 }
+
+.market-empty-state {
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 25px;
+}
+
+.market-empty-state h2 {
+    margin: 15px 0 8px;
+}
+
+.market-empty-state p {
+    max-width: 520px;
+    margin: 5px 0;
+    opacity: 0.75;
+}
+
+.market-empty-state button {
+    margin-top: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+}
+
+.market-empty-state button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}

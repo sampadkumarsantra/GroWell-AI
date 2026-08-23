@@ -24,11 +24,11 @@ import MarketCandlestick
 
 
 // =====================================================
-// CROP CONFIGURATION
+// COMMODITIES
 // =====================================================
 
+const cropConfig = {
 
-   const cropConfig = {
     Rice: {
         demand: "High",
         supply: "Moderate"
@@ -67,12 +67,28 @@ import MarketCandlestick
     Mustard: {
         demand: "High",
         supply: "Moderate"
+    },
+
+    Soybean: {
+        demand: "High",
+        supply: "Moderate"
+    },
+
+    Chilli: {
+        demand: "High",
+        supply: "Moderate"
+    },
+
+    Cotton: {
+        demand: "High",
+        supply: "Moderate"
+    },
+
+    Turmeric: {
+        demand: "Moderate",
+        supply: "Moderate"
     }
 };
-
-   
-   
-      
 
 
 // =====================================================
@@ -80,9 +96,10 @@ import MarketCandlestick
 // =====================================================
 
 function formatPrice(value) {
+
     const number = Number(value);
 
-    if (!Number.isFinite(number)) {
+    if (!Number.isFinite(number) || number <= 0) {
         return "₹—";
     }
 
@@ -91,6 +108,7 @@ function formatPrice(value) {
 
 
 function formatPercent(value) {
+
     const number = Number(value);
 
     if (!Number.isFinite(number)) {
@@ -98,6 +116,75 @@ function formatPercent(value) {
     }
 
     return `${number >= 0 ? "+" : ""}${number.toFixed(2)}%`;
+}
+
+
+// =====================================================
+// EMPTY MARKET OBJECT
+// =====================================================
+
+function createUnavailableData(crop, message = "") {
+
+    return {
+
+        available: false,
+
+        price: null,
+
+        averagePrice: null,
+
+        highestPrice: null,
+
+        lowestPrice: null,
+
+        priceVsAverage: 0,
+
+        change: 0,
+
+        direction: "neutral",
+
+        open: null,
+
+        high: null,
+
+        low: null,
+
+        arrivals: 0,
+
+        demand:
+            cropConfig[crop]?.demand ||
+            "Unknown",
+
+        supply:
+            cropConfig[crop]?.supply ||
+            "Unknown",
+
+        signal: "Unavailable",
+
+        history: [],
+
+        market: "",
+
+        district: "",
+
+        state: "",
+
+        source: "data.gov.in",
+
+        updatedAt: null,
+
+        volatility: 0,
+
+        volatilityLevel: "Unavailable",
+
+        priceSpread: 0,
+
+        markets: [],
+
+        message:
+            message ||
+            `No current government mandi records were found for ${crop}.`
+    };
 }
 
 
@@ -120,11 +207,11 @@ export default function Analytics() {
     const [search, setSearch] =
         useState("");
 
-    const [timeRange, setTimeRange] =
-        useState("1W");
-
     const [loading, setLoading] =
         useState(true);
+
+    const [refreshing, setRefreshing] =
+        useState(false);
 
     const [marketData, setMarketData] =
         useState({});
@@ -133,313 +220,429 @@ export default function Analytics() {
         useState("");
 
 
-
     // =================================================
-    // FETCH GOVERNMENT MARKET DATA
+    // FETCH ONE COMMODITY
     // =================================================
 
     async function fetchCropMarket(crop) {
 
-        const response = await fetch(
-            `http://localhost:3000/api/market/analytics?crop=${encodeURIComponent(crop)}`
-        );
-
-        let result;
-
         try {
-            result = await response.json();
-        } catch {
-            throw new Error(
-                "Server returned an invalid response."
-            );
-        }
 
-
-        if (!response.ok || !result.success) {
-
-            throw new Error(
-                result?.message ||
-                `Unable to fetch ${crop} market data`
+            const response = await fetch(
+                `http://localhost:3000/api/market/analytics?crop=${encodeURIComponent(crop)}`,
+                {
+                    method: "GET",
+                    cache: "no-store"
+                }
             );
 
-        }
 
+            let result = null;
 
-        const summary =
-            result.summary || {};
 
-        const bestMarket =
-            result.bestMarket || {};
+            try {
 
+                result = await response.json();
 
-        // =================================================
-        // REAL GOVERNMENT VALUES
-        // =================================================
+            } catch {
 
-        const price =
-            Number(summary.price) || 0;
-
-        const averagePrice =
-            Number(summary.averagePrice) || price;
-
-        const highestPrice =
-            Number(summary.highestPrice) || price;
-
-        const lowestPrice =
-            Number(summary.lowestPrice) || price;
-
-
-        // =================================================
-        // PRICE VS GOVERNMENT AVERAGE
-        // =================================================
-
-        const priceVsAverage =
-            averagePrice > 0
-                ? (
-                    (
-                        price -
-                        averagePrice
-                    ) /
-                    averagePrice
-                ) * 100
-                : 0;
-
-
-        // =================================================
-        // MARKET SIGNAL
-        // =================================================
-
-        let signal = "Neutral";
-
-
-        if (priceVsAverage > 10) {
-
-            signal = "Strong Bullish";
-
-        } else if (priceVsAverage > 2) {
-
-            signal = "Bullish";
-
-        } else if (priceVsAverage < -10) {
-
-            signal = "Bearish";
-
-        } else if (priceVsAverage < -2) {
-
-            signal = "Weak";
-
-        }
-
-
-        // =================================================
-        // GOVERNMENT MARKET OBSERVATIONS
-        // =================================================
-
-        const history =
-            (result.markets || [])
-                .map(market =>
-                    Number(market.modalPrice)
-                )
-                .filter(value =>
-                    Number.isFinite(value) &&
-                    value > 0
-                );
-
-
-        const finalHistory =
-            history.length > 0
-                ? history.slice(-24)
-                : [price];
-
-
-        // =================================================
-        // RETURN NORMALIZED DATA
-        // =================================================
-
-        return {
-
-            price,
-
-            averagePrice,
-
-            highestPrice,
-
-            lowestPrice,
-
-            priceVsAverage,
-
-            change:
-                priceVsAverage,
-
-            direction:
-                priceVsAverage >= 0
-                    ? "up"
-                    : "down",
-
-            open:
-                averagePrice,
-
-            high:
-                highestPrice,
-
-            low:
-                lowestPrice,
-
-            arrivals:
-                Number(
-                    bestMarket?.arrivals
-                ) || 0,
-
-            demand:
-                cropConfig[crop]?.demand ||
-                "Unknown",
-
-            supply:
-                cropConfig[crop]?.supply ||
-                "Unknown",
-
-            signal,
-
-            history:
-                finalHistory,
-
-            market:
-                bestMarket?.market ||
-                "Government mandi data",
-
-            district:
-                bestMarket?.district ||
-                "",
-
-            state:
-                bestMarket?.state ||
-                "",
-
-            source:
-                result.source ||
-                "data.gov.in",
-
-            updatedAt:
-                result.updatedAt ||
-                null,
-
-            volatility:
-                Number(summary.volatility) || 0,
-
-            volatilityLevel:
-                summary.volatilityLevel ||
-                "Unknown",
-
-            priceSpread:
-                Number(summary.priceSpread) || 0,
-
-            markets:
-                result.markets || []
-
-        };
-
-    }
-
-
-
-    // =================================================
-    // INITIAL LOAD
-    // =================================================
-
-    useEffect(() => {
-
-        async function loadMarketData() {
-
-            setLoading(true);
-            setError("");
-
-
-            const entries =
-                await Promise.all(
-
-                    crops.map(
-                        async crop => {
-
-                            try {
-
-                                const data =
-                                    await fetchCropMarket(
-                                        crop
-                                    );
-
-                                return [
-                                    crop,
-                                    data
-                                ];
-
-                            } catch (err) {
-
-                                console.warn(
-                                    `Unable to load ${crop}:`,
-                                    err.message
-                                );
-
-                                return null;
-
-                            }
-
-                        }
-                    )
-
-                );
-
-
-            const updated = {};
-
-
-            entries
-                .filter(Boolean)
-                .forEach(
-                    ([crop, data]) => {
-
-                        updated[crop] =
-                            data;
-
-                    }
-                );
-
-
-            if (
-                Object.keys(updated).length === 0
-            ) {
-
-                setError(
-                    "Unable to load government market data. Make sure the GroWell backend is running."
+                throw new Error(
+                    "Server returned an invalid response."
                 );
 
             }
 
 
-            setMarketData(updated);
+            // =================================================
+            // IMPORTANT
+            //
+            // NO DATA IS NOT A FATAL ERROR
+            // =================================================
 
-            setLoading(false);
+            if (
+                result?.available === false ||
+                result?.success === false &&
+                result?.records?.length === 0
+            ) {
+
+                return createUnavailableData(
+                    crop,
+                    result?.message
+                );
+
+            }
+
+
+            // =================================================
+            // REAL SERVER ERROR
+            // =================================================
+
+            if (!response.ok || !result?.success) {
+
+                throw new Error(
+                    result?.message ||
+                    `Unable to fetch ${crop} market data`
+                );
+
+            }
+
+
+            // =================================================
+            // SERVER DATA
+            // =================================================
+
+            const summary =
+                result.summary || {};
+
+            const bestMarket =
+                result.bestMarket || {};
+
+
+            const price =
+                Number(summary.price) || 0;
+
+            const averagePrice =
+                Number(summary.averagePrice) ||
+                price;
+
+            const highestPrice =
+                Number(summary.highestPrice) ||
+                price;
+
+            const lowestPrice =
+                Number(summary.lowestPrice) ||
+                price;
+
+
+            // =================================================
+            // PRICE VS AVERAGE
+            // =================================================
+
+            const priceVsAverage =
+                averagePrice > 0
+                    ? (
+                        (
+                            price -
+                            averagePrice
+                        ) /
+                        averagePrice
+                    ) * 100
+                    : 0;
+
+
+            // =================================================
+            // SIGNAL
+            // =================================================
+
+            let signal = "Neutral";
+
+
+            if (priceVsAverage > 10) {
+
+                signal = "Strong Bullish";
+
+            } else if (priceVsAverage > 2) {
+
+                signal = "Bullish";
+
+            } else if (priceVsAverage < -10) {
+
+                signal = "Bearish";
+
+            } else if (priceVsAverage < -2) {
+
+                signal = "Weak";
+
+            }
+
+
+            // =================================================
+            // HISTORY
+            // =================================================
+
+            const history =
+                (result.markets || [])
+                    .map(item =>
+                        Number(item.modalPrice)
+                    )
+                    .filter(
+                        value =>
+                            Number.isFinite(value) &&
+                            value > 0
+                    );
+
+
+            const finalHistory =
+                history.length > 0
+                    ? history.slice(-30)
+                    : [price];
+
+
+            // =================================================
+            // NORMALIZED RESULT
+            // =================================================
+
+            return {
+
+                available: true,
+
+                price,
+
+                averagePrice,
+
+                highestPrice,
+
+                lowestPrice,
+
+                priceVsAverage,
+
+                change: priceVsAverage,
+
+                direction:
+                    priceVsAverage >= 0
+                        ? "up"
+                        : "down",
+
+                open:
+                    averagePrice,
+
+                high:
+                    highestPrice,
+
+                low:
+                    lowestPrice,
+
+                arrivals:
+                    Number(
+                        bestMarket?.arrivals
+                    ) || 0,
+
+                demand:
+                    cropConfig[crop]?.demand ||
+                    "Unknown",
+
+                supply:
+                    cropConfig[crop]?.supply ||
+                    "Unknown",
+
+                signal,
+
+                history: finalHistory,
+
+                market:
+                    bestMarket?.market ||
+                    "Government mandi data",
+
+                district:
+                    bestMarket?.district ||
+                    "",
+
+                state:
+                    bestMarket?.state ||
+                    "",
+
+                source:
+                    result.source ||
+                    "data.gov.in",
+
+                updatedAt:
+                    result.updatedAt ||
+                    null,
+
+                volatility:
+                    Number(
+                        summary.volatility
+                    ) || 0,
+
+                volatilityLevel:
+                    summary.volatilityLevel ||
+                    "Unknown",
+
+                priceSpread:
+                    Number(
+                        summary.priceSpread
+                    ) || 0,
+
+                markets:
+                    result.markets || [],
+
+                message: ""
+
+            };
+
+        } catch (error) {
+
+            console.warn(
+                `Market error for ${crop}:`,
+                error.message
+            );
+
+
+            // =================================================
+            // IMPORTANT
+            //
+            // ONE FAILED COMMODITY MUST NOT CRASH PAGE
+            // =================================================
+
+            return createUnavailableData(
+                crop,
+                error.message
+            );
+
+        }
+
+    }
+
+
+    // =====================================================
+    // LOAD ALL COMMODITIES
+    // =====================================================
+
+    async function loadMarketData() {
+
+        setError("");
+
+
+        const results =
+            await Promise.all(
+
+                crops.map(
+                    async crop => {
+
+                        const data =
+                            await fetchCropMarket(
+                                crop
+                            );
+
+                        return [
+                            crop,
+                            data
+                        ];
+
+                    }
+                )
+
+            );
+
+
+        const updated = {};
+
+
+        results.forEach(
+            ([crop, data]) => {
+
+                updated[crop] =
+                    data;
+
+            }
+        );
+
+
+        setMarketData(updated);
+
+
+        const availableCount =
+            Object.values(updated)
+                .filter(
+                    item =>
+                        item?.available
+                )
+                .length;
+
+
+        if (availableCount === 0) {
+
+            setError(
+                "No current government market records are available right now."
+            );
+
+        }
+
+    }
+
+
+    // =====================================================
+    // INITIAL LOAD
+    // =====================================================
+
+    useEffect(() => {
+
+        let mounted = true;
+
+
+        async function initialLoad() {
+
+            setLoading(true);
+
+
+            try {
+
+                if (mounted) {
+                    await loadMarketData();
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "MARKET LOAD ERROR:",
+                    error
+                );
+
+                if (mounted) {
+
+                    setError(
+                        "Unable to load market data. Please make sure the GroWell backend is running."
+                    );
+
+                }
+
+            } finally {
+
+                if (mounted) {
+
+                    setLoading(false);
+
+                }
+
+            }
 
         }
 
 
-        loadMarketData();
+        initialLoad();
+
+
+        return () => {
+
+            mounted = false;
+
+        };
 
     }, []);
 
 
-
-    // =================================================
-    // SELECTED CROP DATA
-    // =================================================
+    // =====================================================
+    // SELECTED CROP
+    // =====================================================
 
     const data =
-        marketData[selectedCrop] || null;
+        marketData[selectedCrop] ||
+        createUnavailableData(
+            selectedCrop
+        );
 
 
+    const dataAvailable =
+        data.available === true &&
+        Number.isFinite(
+            Number(data.price)
+        ) &&
+        Number(data.price) > 0;
 
-    // =================================================
+
+    // =====================================================
     // SEARCH
-    // =================================================
+    // =====================================================
 
     const filteredCrops =
         useMemo(() => {
@@ -449,132 +652,34 @@ export default function Analytics() {
                     crop
                         .toLowerCase()
                         .includes(
-                            search.toLowerCase()
+                            search
+                                .toLowerCase()
                         )
             );
 
         }, [search]);
 
 
-
-    // =================================================
-    // CHART POINTS
-    // =================================================
-
-    const chartPoints =
-        useMemo(() => {
-
-            const history =
-                data?.history || [];
-
-
-            if (
-                history.length === 0
-            ) {
-
-                return [];
-
-            }
-
-
-            const min =
-                Math.min(...history);
-
-            const max =
-                Math.max(...history);
-
-            const range =
-                max - min || 1;
-
-
-            return history.map(
-                value =>
-                    40 +
-                    (
-                        (value - min) /
-                        range
-                    ) * 190
-            );
-
-        }, [data]);
-
-
-
-    // =================================================
-    // MANUAL REFRESH
-    // =================================================
+    // =====================================================
+    // REFRESH
+    // =====================================================
 
     async function refreshMarket() {
 
-        setLoading(true);
+        setRefreshing(true);
+
         setError("");
 
 
         try {
 
-            const entries =
-                await Promise.all(
+            await loadMarketData();
 
-                    crops.map(
-                        async crop => {
-
-                            try {
-
-                                const data =
-                                    await fetchCropMarket(
-                                        crop
-                                    );
-
-                                return [
-                                    crop,
-                                    data
-                                ];
-
-                            } catch (err) {
-
-                                console.warn(
-                                    `Unable to refresh ${crop}:`,
-                                    err.message
-                                );
-
-                                return null;
-
-                            }
-
-                        }
-                    )
-
-                );
-
-
-            const updated = {};
-
-
-            entries
-                .filter(Boolean)
-                .forEach(
-                    ([crop, data]) => {
-
-                        updated[crop] =
-                            data;
-
-                    }
-                );
-
-
-            setMarketData(
-                previous => ({
-                    ...previous,
-                    ...updated
-                })
-            );
-
-
-        } catch (err) {
+        } catch (error) {
 
             console.error(
                 "MARKET REFRESH ERROR:",
-                err
+                error
             );
 
             setError(
@@ -583,17 +688,16 @@ export default function Analytics() {
 
         } finally {
 
-            setLoading(false);
+            setRefreshing(false);
 
         }
 
     }
 
 
-
-    // =================================================
-    // LOADING SCREEN
-    // =================================================
+    // =====================================================
+    // LOADING
+    // =====================================================
 
     if (
         loading &&
@@ -629,52 +733,9 @@ export default function Analytics() {
     }
 
 
-
-    // =================================================
-    // NO DATA SCREEN
-    // =================================================
-
-    if (!data) {
-
-        return (
-
-            <div className="analytics-page">
-
-                <div className="market-loading">
-
-                    <Activity size={25} />
-
-                    <h2>
-                        Market data unavailable
-                    </h2>
-
-                    <p>
-                        {error ||
-                            "No government market records are currently available."}
-                    </p>
-
-                    <button
-                        onClick={refreshMarket}
-                    >
-                        <RefreshCw size={15} />
-
-                        Retry
-
-                    </button>
-
-                </div>
-
-            </div>
-
-        );
-
-    }
-
-
-
-    // =================================================
+    // =====================================================
     // MAIN UI
-    // =================================================
+    // =====================================================
 
     return (
 
@@ -723,7 +784,6 @@ export default function Analytics() {
             </header>
 
 
-
             {/* =================================================
                 SEARCH
             ================================================= */}
@@ -739,15 +799,14 @@ export default function Analytics() {
                             event.target.value
                         )
                     }
-                    placeholder="Search crop..."
+                    placeholder="Search commodity..."
                 />
 
             </div>
 
 
-
             {/* =================================================
-                ERROR
+                GENERAL ERROR
             ================================================= */}
 
             {error && (
@@ -773,9 +832,8 @@ export default function Analytics() {
             )}
 
 
-
             {/* =================================================
-                MAIN LAYOUT
+                LAYOUT
             ================================================= */}
 
             <div className="analytics-layout">
@@ -803,6 +861,10 @@ export default function Analytics() {
                                 marketData[crop];
 
 
+                            const available =
+                                cropData?.available === true;
+
+
                             return (
 
                                 <button
@@ -826,22 +888,19 @@ export default function Analytics() {
                                     </span>
 
 
-                                    {cropData ? (
+                                    {available ? (
 
                                         <div
                                             style={{
-                                                display:
-                                                    "flex",
-                                                alignItems:
-                                                    "center",
+                                                display: "flex",
+                                                alignItems: "center",
                                                 gap: "5px"
                                             }}
                                         >
 
                                             <strong
                                                 style={{
-                                                    fontSize:
-                                                        "11px"
+                                                    fontSize: "11px"
                                                 }}
                                             >
 
@@ -871,8 +930,13 @@ export default function Analytics() {
 
                                     ) : (
 
-                                        <span>
-                                            —
+                                        <span
+                                            style={{
+                                                fontSize: "10px",
+                                                opacity: 0.65
+                                            }}
+                                        >
+                                            Unavailable
                                         </span>
 
                                     )}
@@ -887,9 +951,8 @@ export default function Analytics() {
                 </aside>
 
 
-
                 {/* =================================================
-                    MAIN MARKET
+                    MAIN
                 ================================================= */}
 
                 <main className="analytics-main">
@@ -918,353 +981,422 @@ export default function Analytics() {
                         </div>
 
 
-                        <div className="current-price">
+                        {dataAvailable && (
 
-                            <strong>
-
-                                {formatPrice(
-                                    data.price
-                                )}
-
-                            </strong>
-
-
-                            <span
-                                className={
-                                    data.direction === "up"
-                                        ? "positive"
-                                        : "negative"
-                                }
-                            >
-
-                                {data.direction ===
-                                "up" ? (
-
-                                    <ArrowUpRight
-                                        size={16}
-                                    />
-
-                                ) : (
-
-                                    <ArrowDownRight
-                                        size={16}
-                                    />
-
-                                )}
-
-
-                                {formatPercent(
-                                    data.priceVsAverage
-                                )}
-
-                            </span>
-
-                        </div>
-
-                    </section>
-
-
-
-                    {/* =================================================
-                        DATA SOURCE NOTICE
-                    ================================================= */}
-
-                    <div className="market-warning">
-
-                        <Activity size={17} />
-
-                        <div>
-
-                            <strong>
-                                GOVERNMENT MARKET DATA
-                            </strong>
-
-                            <span>
-
-                                Prices are sourced from
-                                government mandi market
-                                records through
-                                data.gov.in. Values may
-                                differ between mandis,
-                                varieties, grades and
-                                reporting dates.
-
-                            </span>
-
-                        </div>
-
-                    </div>
-
-
-
-                    {/* =================================================
-                        CHART
-                    ================================================= */}
-
-                    <section className="price-chart-card">
-
-                        <div className="chart-heading">
-
-                            <div>
-
-                                <span>
-                                    PRICE MOVEMENT
-                                </span>
-
-                                <h3>
-
-                                    {selectedCrop}
-                                    {" "}Market Observations
-
-                                </h3>
-
-                            </div>
-
-
-                            
-                           
-
-                        </div>
-
-
-                        <div className="live-chart">
-
-                            <MarketCandlestick
-                                data={data}
-                                selectedCrop={
-                                    selectedCrop
-                                }
-                            />
-
-                        </div>
-
-                    </section>
-
-
-
-                    {/* =================================================
-                        MARKET METRICS
-                    ================================================= */}
-
-                    <section className="market-metrics">
-
-
-                        <div>
-
-                            <span>
-                                GOVERNMENT AVERAGE
-                            </span>
-
-                            <strong>
-
-                                {formatPrice(
-                                    data.averagePrice
-                                )}
-
-                            </strong>
-
-                        </div>
-
-
-                        <div>
-
-                            <span>
-                                HIGHEST
-                            </span>
-
-                            <strong>
-
-                                {formatPrice(
-                                    data.highestPrice
-                                )}
-
-                            </strong>
-
-                        </div>
-
-
-                        <div>
-
-                            <span>
-                                LOWEST
-                            </span>
-
-                            <strong>
-
-                                {formatPrice(
-                                    data.lowestPrice
-                                )}
-
-                            </strong>
-
-                        </div>
-
-
-                        <div>
-
-                            <span>
-                                PRICE SPREAD
-                            </span>
-
-                            <strong>
-
-                                {formatPrice(
-                                    data.priceSpread
-                                )}
-
-                            </strong>
-
-                        </div>
-
-                    </section>
-
-
-
-                    {/* =================================================
-                        DEMAND SUPPLY
-                    ================================================= */}
-
-                    <section className="demand-panel">
-
-                        <div className="analytics-panel-title">
-
-                            <span>
-                                DEMAND & SUPPLY
-                            </span>
-
-                            <Package size={15} />
-
-                        </div>
-
-
-                        <div className="demand-grid">
-
-
-                            <div>
-
-                                <span>
-                                    DEMAND
-                                </span>
-
-                                <strong className="positive">
-                                    {data.demand}
-                                </strong>
-
-                            </div>
-
-
-                            <div>
-
-                                <span>
-                                    SUPPLY
-                                </span>
+                            <div className="current-price">
 
                                 <strong>
-                                    {data.supply}
+
+                                    {formatPrice(
+                                        data.price
+                                    )}
+
                                 </strong>
 
-                            </div>
 
-
-                            <div>
-
-                                <span>
-                                    MARKET SIGNAL
-                                </span>
-
-                                <strong
+                                <span
                                     className={
                                         data.direction === "up"
                                             ? "positive"
                                             : "negative"
                                     }
                                 >
-                                    {data.signal}
-                                </strong>
+
+                                    {data.direction ===
+                                    "up" ? (
+
+                                        <ArrowUpRight
+                                            size={16}
+                                        />
+
+                                    ) : (
+
+                                        <ArrowDownRight
+                                            size={16}
+                                        />
+
+                                    )}
+
+
+                                    {formatPercent(
+                                        data.priceVsAverage
+                                    )}
+
+                                </span>
 
                             </div>
 
-                        </div>
+                        )}
 
                     </section>
-
 
 
                     {/* =================================================
-                        AI INTELLIGENCE
+                        AVAILABLE DATA
                     ================================================= */}
 
-                    <section className="ai-market-card">
+                    {dataAvailable ? (
 
-                        <div className="ai-icon">
+                        <>
 
-                            <Brain size={21} />
+                            {/* GOVERNMENT NOTICE */}
 
-                        </div>
+                            <div className="market-warning">
+
+                                <Activity size={17} />
+
+                                <div>
+
+                                    <strong>
+                                        GOVERNMENT MARKET DATA
+                                    </strong>
+
+                                    <span>
+
+                                        Prices are sourced from
+                                        government mandi market
+                                        records through
+                                        data.gov.in.
+
+                                    </span>
+
+                                </div>
+
+                            </div>
 
 
-                        <div>
+                            {/* =================================================
+                                CHART
+                            ================================================= */}
 
-                            <span>
-                                GROWELL AI MARKET INTELLIGENCE
-                            </span>
+                            <section className="price-chart-card">
+
+                                <div className="chart-heading">
+
+                                    <div>
+
+                                        <span>
+                                            PRICE MOVEMENT
+                                        </span>
+
+                                        <h3>
+                                            {selectedCrop}
+                                            {" "}Market Observations
+                                        </h3>
+
+                                    </div>
+
+                                </div>
 
 
-                            <h3>
+                                <div className="live-chart">
 
-                                {data.direction === "up"
+                                    <MarketCandlestick
+                                        data={data}
+                                        selectedCrop={
+                                            selectedCrop
+                                        }
+                                    />
 
-                                    ? `${selectedCrop} is trading above the reported government average`
+                                </div>
 
-                                    : `${selectedCrop} is trading below the reported government average`
-
-                                }
-
-                            </h3>
+                            </section>
 
 
-                            <p>
+                            {/* =================================================
+                                METRICS
+                            ================================================= */}
 
-                                Current government-reported
-                                market price:
+                            <section className="market-metrics">
 
-                                {" "}
+                                <div>
 
-                                <strong>
-                                    {formatPrice(
-                                        data.price
-                                    )}
-                                </strong>
+                                    <span>
+                                        GOVERNMENT AVERAGE
+                                    </span>
 
-                                {" "}per quintal.
+                                    <strong>
 
-                                {" "}
+                                        {formatPrice(
+                                            data.averagePrice
+                                        )}
 
-                                Government-reported
-                                average:
+                                    </strong>
 
-                                {" "}
+                                </div>
 
-                                <strong>
-                                    {formatPrice(
-                                        data.averagePrice
-                                    )}
-                                </strong>
 
-                                {" "}per quintal.
+                                <div>
 
-                                Farmers should compare
-                                multiple nearby mandi
-                                prices, variety, grade and
-                                market date before making
-                                a selling decision.
+                                    <span>
+                                        HIGHEST
+                                    </span>
 
-                            </p>
+                                    <strong>
 
-                        </div>
+                                        {formatPrice(
+                                            data.highestPrice
+                                        )}
 
-                    </section>
+                                    </strong>
 
+                                </div>
+
+
+                                <div>
+
+                                    <span>
+                                        LOWEST
+                                    </span>
+
+                                    <strong>
+
+                                        {formatPrice(
+                                            data.lowestPrice
+                                        )}
+
+                                    </strong>
+
+                                </div>
+
+
+                                <div>
+
+                                    <span>
+                                        PRICE SPREAD
+                                    </span>
+
+                                    <strong>
+
+                                        {formatPrice(
+                                            data.priceSpread
+                                        )}
+
+                                    </strong>
+
+                                </div>
+
+                            </section>
+
+
+                            {/* =================================================
+                                DEMAND SUPPLY
+                            ================================================= */}
+
+                            <section className="demand-panel">
+
+                                <div className="analytics-panel-title">
+
+                                    <span>
+                                        DEMAND & SUPPLY
+                                    </span>
+
+                                    <Package size={15} />
+
+                                </div>
+
+
+                                <div className="demand-grid">
+
+                                    <div>
+
+                                        <span>
+                                            DEMAND
+                                        </span>
+
+                                        <strong className="positive">
+
+                                            {data.demand}
+
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div>
+
+                                        <span>
+                                            SUPPLY
+                                        </span>
+
+                                        <strong>
+
+                                            {data.supply}
+
+                                        </strong>
+
+                                    </div>
+
+
+                                    <div>
+
+                                        <span>
+                                            MARKET SIGNAL
+                                        </span>
+
+                                        <strong
+                                            className={
+                                                data.direction === "up"
+                                                    ? "positive"
+                                                    : "negative"
+                                            }
+                                        >
+
+                                            {data.signal}
+
+                                        </strong>
+
+                                    </div>
+
+                                </div>
+
+                            </section>
+
+
+                            {/* =================================================
+                                AI
+                            ================================================= */}
+
+                            <section className="ai-market-card">
+
+                                <div className="ai-icon">
+
+                                    <Brain size={21} />
+
+                                </div>
+
+
+                                <div>
+
+                                    <span>
+                                        GROWELL AI MARKET INTELLIGENCE
+                                    </span>
+
+
+                                    <h3>
+
+                                        {data.direction === "up"
+
+                                            ? `${selectedCrop} is trading above the reported government average`
+
+                                            : `${selectedCrop} is trading below the reported government average`
+
+                                        }
+
+                                    </h3>
+
+
+                                    <p>
+
+                                        Current government-reported
+                                        market price:
+
+                                        {" "}
+
+                                        <strong>
+                                            {formatPrice(
+                                                data.price
+                                            )}
+                                        </strong>
+
+                                        {" "}per quintal.
+
+                                        {" "}
+
+                                        Government-reported
+                                        average:
+
+                                        {" "}
+
+                                        <strong>
+                                            {formatPrice(
+                                                data.averagePrice
+                                            )}
+                                        </strong>
+
+                                        {" "}per quintal.
+
+                                    </p>
+
+                                </div>
+
+                            </section>
+
+                        </>
+
+                    ) : (
+
+                        /* =================================================
+                            UNAVAILABLE STATE
+                        ================================================= */
+
+                        <section className="price-chart-card">
+
+                            <div className="market-empty-state">
+
+                                <Activity
+                                    size={35}
+                                />
+
+
+                                <h2>
+
+                                    Price currently unavailable
+
+                                </h2>
+
+
+                                <p>
+
+                                    No current government
+                                    mandi record was returned
+                                    for{" "}
+
+                                    <strong>
+                                        {selectedCrop}
+                                    </strong>.
+
+                                </p>
+
+
+                                <p>
+
+                                    GroWell AI will not substitute
+                                    another commodity's price.
+
+                                </p>
+
+
+                                <button
+                                    onClick={
+                                        refreshMarket
+                                    }
+                                    disabled={
+                                        refreshing
+                                    }
+                                >
+
+                                    <RefreshCw
+                                        size={15}
+                                        className={
+                                            refreshing
+                                                ? "spin"
+                                                : ""
+                                        }
+                                    />
+
+                                    {refreshing
+                                        ? "Checking..."
+                                        : "Check again"
+                                    }
+
+                                </button>
+
+                            </div>
+
+                        </section>
+
+                    )}
 
 
                     {/* =================================================
@@ -1283,12 +1415,15 @@ export default function Analytics() {
                             Last updated:{" "}
 
                             {data.updatedAt
+
                                 ? new Date(
                                     data.updatedAt
                                 ).toLocaleString(
                                     "en-IN"
                                 )
+
                                 : "Unavailable"
+
                             }
 
                         </span>
@@ -1299,12 +1434,15 @@ export default function Analytics() {
                                 refreshMarket
                             }
                             title="Refresh government market data"
+                            disabled={
+                                refreshing
+                            }
                         >
 
                             <RefreshCw
                                 size={13}
                                 className={
-                                    loading
+                                    refreshing
                                         ? "spin"
                                         : ""
                                 }
@@ -1315,7 +1453,6 @@ export default function Analytics() {
                     </div>
 
                 </main>
-
 
 
                 {/* =================================================
@@ -1349,7 +1486,10 @@ export default function Analytics() {
                             </span>
 
                             <strong>
-                                {data.market}
+                                {dataAvailable
+                                    ? data.market
+                                    : "Unavailable"
+                                }
                             </strong>
 
                         </div>
@@ -1362,7 +1502,10 @@ export default function Analytics() {
                             </span>
 
                             <strong>
-                                {data.district || "—"}
+                                {dataAvailable
+                                    ? data.district || "—"
+                                    : "—"
+                                }
                             </strong>
 
                         </div>
@@ -1375,7 +1518,10 @@ export default function Analytics() {
                             </span>
 
                             <strong>
-                                {data.state || "—"}
+                                {dataAvailable
+                                    ? data.state || "—"
+                                    : "—"
+                                }
                             </strong>
 
                         </div>
@@ -1388,9 +1534,14 @@ export default function Analytics() {
                             </span>
 
                             <strong>
-                                {formatPrice(
-                                    data.price
-                                )}
+
+                                {dataAvailable
+                                    ? formatPrice(
+                                        data.price
+                                    )
+                                    : "Unavailable"
+                                }
+
                             </strong>
 
                         </div>
@@ -1403,9 +1554,14 @@ export default function Analytics() {
                             </span>
 
                             <strong>
-                                {formatPrice(
-                                    data.averagePrice
-                                )}
+
+                                {dataAvailable
+                                    ? formatPrice(
+                                        data.averagePrice
+                                    )
+                                    : "—"
+                                }
+
                             </strong>
 
                         </div>
@@ -1417,14 +1573,13 @@ export default function Analytics() {
                                 SIGNAL
                             </span>
 
-                            <strong
-                                className={
-                                    data.direction === "up"
-                                        ? "positive"
-                                        : "negative"
+                            <strong>
+
+                                {dataAvailable
+                                    ? data.signal
+                                    : "Unavailable"
                                 }
-                            >
-                                {data.signal}
+
                             </strong>
 
                         </div>
@@ -1432,9 +1587,8 @@ export default function Analytics() {
                     </section>
 
 
-
                     {/* =================================================
-                        MARKET NEWS
+                        MARKET INFORMATION
                     ================================================= */}
 
                     <section className="news-panel">
@@ -1458,61 +1612,75 @@ export default function Analytics() {
 
                             <h3>
 
-                                Latest mandi
-                                observations are being
-                                retrieved from government
-                                market records.
+                                {dataAvailable
+
+                                    ? "Latest mandi observations are being retrieved from government market records."
+
+                                    : `No current government mandi observation is available for ${selectedCrop}.`
+
+                                }
 
                             </h3>
 
                         </article>
 
 
-                        <article>
+                        {dataAvailable && (
 
-                            <small>
-                                PRICE RANGE
-                            </small>
+                            <>
 
-                            <h3>
+                                <article>
 
-                                Current reported range:
-                                {" "}
-                                {formatPrice(
-                                    data.lowestPrice
-                                )}
-                                {" "}–
-                                {" "}
-                                {formatPrice(
-                                    data.highestPrice
-                                )}
+                                    <small>
+                                        PRICE RANGE
+                                    </small>
 
-                            </h3>
+                                    <h3>
 
-                        </article>
+                                        Current reported range:
+
+                                        {" "}
+
+                                        {formatPrice(
+                                            data.lowestPrice
+                                        )}
+
+                                        {" "}–{" "}
+
+                                        {formatPrice(
+                                            data.highestPrice
+                                        )}
+
+                                    </h3>
+
+                                </article>
 
 
-                        <article>
+                                <article>
 
-                            <small>
-                                FARMER ALERT
-                            </small>
+                                    <small>
+                                        FARMER ALERT
+                                    </small>
 
-                            <h3>
+                                    <h3>
 
-                                Compare multiple mandi
-                                prices before selling.
+                                        Compare multiple
+                                        mandi prices before
+                                        selling.
 
-                            </h3>
+                                    </h3>
 
-                        </article>
+                                </article>
+
+                            </>
+
+                        )}
 
                     </section>
 
 
-
                     {/* =================================================
-                        EVENTS
+                        MARKET ACTIVITY
                     ================================================= */}
 
                     <section className="events-panel">
@@ -1558,9 +1726,8 @@ export default function Analytics() {
                     </section>
 
 
-
                     {/* =================================================
-                        LOCATION
+                        BEST MARKET
                     ================================================= */}
 
                     <section className="location-panel">
@@ -1578,22 +1745,27 @@ export default function Analytics() {
 
                         <strong>
 
-                            {data.market}
+                            {dataAvailable
+                                ? data.market
+                                : "Unavailable"
+                            }
 
                         </strong>
 
 
                         <span>
 
-                            {data.district
+                            {dataAvailable && data.district
+
                                 ? `${data.district}, ${data.state}`
-                                : "Government mandi data"
+
+                                : "No current government record"
+
                             }
 
                         </span>
 
                     </section>
-
 
 
                     {/* =================================================
