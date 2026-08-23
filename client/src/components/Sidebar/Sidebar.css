@@ -356,52 +356,13 @@ aside::before {
 }
 
 
-/* =========================================================
-   FOOTER
-   ========================================================= */
-
-.sidebar-footer {
-    display: flex;
-
-    align-items: center;
-
-    gap: 9px;
-
-    margin: 14px 4px 2px;
-
-    padding: 13px 12px;
-
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-
-    color: rgba(210, 225, 216, 0.45);
-
-    font-size: 11px;
-
-    letter-spacing: 0.5px;
-
-    position: relative;
-
-    z-index: 2;
-}
 
 
-/* =========================================================
-   STATUS DOT
-   ========================================================= */
 
-.status-dot {
-    width: 7px;
 
-    height: 7px;
 
-    border-radius: 50%;
 
-    background: #69b979;
 
-    box-shadow:
-        0 0 0 3px rgba(105, 185, 121, 0.08),
-        0 0 12px rgba(105, 185, 121, 0.45);
-}
 
 
 /* =========================================================
@@ -464,15 +425,7 @@ aside::before {
         left: 0;
     }
 
-    .sidebar-footer {
-        justify-content: center;
-
-        padding: 12px 0;
-    }
-
-    .sidebar-footer span {
-        display: none;
-    }
+   
 }
 
 /* FINAL BRAND SPACING FIX */

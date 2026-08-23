@@ -10,6 +10,8 @@ import {
 
 import "./Sidebar.css";
 import logo from "../../assets/logo.svg";
+import GrowthJourney from "../GrowthJourney/GrowthJourney";
+
 const menu = [
     { icon: MessageSquare, label: "Chat" },
     { icon: ScanLine, label: "Crop Diagnosis" },
@@ -28,42 +30,61 @@ function Sidebar({ activePage, setActivePage }) {
     return (
         <aside className="sidebar">
 
+            {/* =========================
+                GROWell BRAND
+            ========================= */}
             <div className="gw-logo">
 
-    <div className="logo-circle">
-        <img src={logo} alt="GroWell AI" />
-    </div>
+                <div className="logo-circle">
+                    <img
+                        src={logo}
+                        alt="GroWell AI"
+                    />
+                </div>
 
-    <div className="brand-text">
-        <h2>GroWell AI</h2>
-        <p>Cultivating Intelligence</p>
-    </div>
+                <div className="brand-text">
+                    <h2>GroWell AI</h2>
+                    <p>Cultivating Intelligence</p>
+                </div>
 
-</div>
+            </div>
 
+            {/* =========================
+                NAVIGATION
+            ========================= */}
             <nav className="gw-nav">
+
                 {menu.map((item) => {
                     const Icon = item.icon;
 
                     return (
                         <button
                             key={item.label}
+                            type="button"
                             className={
-                                activePage === item.label ? "active" : ""
+                                activePage === item.label
+                                    ? "active"
+                                    : ""
                             }
-                            onClick={() => handleMenuClick(item.label)}
+                            onClick={() =>
+                                handleMenuClick(item.label)
+                            }
                         >
                             <Icon size={20} />
-                            <span>{item.label}</span>
+
+                            <span>
+                                {item.label}
+                            </span>
                         </button>
                     );
                 })}
+
             </nav>
 
-            <div className="sidebar-footer">
-                <div className="status-dot"></div>
-                <span>AI Online</span>
-            </div>
+            {/* =========================
+                GROWTH JOURNEY
+            ========================= */}
+            <GrowthJourney />
 
         </aside>
     );
