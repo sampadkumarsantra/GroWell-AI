@@ -2,8 +2,12 @@
    GROWELL — CHAT MESSAGES (light editorial)
    ===================================================== */
 
-/* ---- Chat shell: sidebar + workspace ---- */
-.chat-container {
+/* ---- Chat shell: sidebar + workspace ----
+   NOTE: specificity lifted (.chat-container.chat-container) because
+   styles/global.css is emitted LAST in the production bundle and its
+   equal-specificity `.chat-container { flex-direction: column }`
+   would otherwise win. */
+.chat-container.chat-container {
     display: flex;
     flex-direction: row;
 }
@@ -23,6 +27,7 @@
 
 .chat-sidebar {
     width: 268px;
+    height: 100%;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
@@ -362,58 +367,60 @@
     margin: 0;
 }
 
-/* Bot markdown — compact, tidy spacing */
-.bot-message p {
+/* Bot markdown — compact, tidy spacing
+   (Specificity raised so it beats the later-emitted global.css)
+   */
+.chat-workspace .bot-message p {
     margin: 0 0 8px;
 }
 
-.bot-message p:last-child {
+.chat-workspace .bot-message p:last-child {
     margin-bottom: 0;
 }
 
-.bot-message ul,
-.bot-message ol {
+.chat-workspace .bot-message ul,
+.chat-workspace .bot-message ol {
     margin: 4px 0 8px;
     padding-left: 22px;
 }
 
-.bot-message li {
+.chat-workspace .bot-message li {
     margin-bottom: 6px;
     line-height: 1.55;
 }
 
-.bot-message li:last-child {
+.chat-workspace .bot-message li:last-child {
     margin-bottom: 0;
 }
 
-.bot-message h1,
-.bot-message h2,
-.bot-message h3,
-.bot-message h4 {
+.chat-workspace .bot-message h1,
+.chat-workspace .bot-message h2,
+.chat-workspace .bot-message h3,
+.chat-workspace .bot-message h4 {
     margin: 10px 0 6px;
     font-family: var(--gw-font-heading);
     color: var(--gw-ink);
 }
 
-.bot-message h1 {
+.chat-workspace .bot-message h1 {
     font-size: 18px;
 }
 
-.bot-message h2 {
+.chat-workspace .bot-message h2 {
     font-size: 16px;
 }
 
-.bot-message h3,
-.bot-message h4 {
+.chat-workspace .bot-message h3,
+.chat-workspace .bot-message h4 {
     font-size: 14px;
 }
 
-.bot-message strong {
+.chat-workspace .bot-message strong {
     color: var(--gw-ink);
     font-weight: 600;
 }
 
-.bot-message ul li::marker {
+.chat-workspace .bot-message ul li::marker {
     color: var(--gw-brass);
 }
 
