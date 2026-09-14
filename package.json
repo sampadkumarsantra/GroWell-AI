@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "cd client && npm install && npm run build"
+    "build": "cd client && npm install && npm run build",
+    "postinstall": "node -e \"if(process.platform!=='linux')process.exit(0);require('child_process').execSync('npm rebuild sqlite3 --build-from-source',{stdio:'inherit'})\""
   },
   "dependencies": {
     "@google/genai": "^2.15.0",
