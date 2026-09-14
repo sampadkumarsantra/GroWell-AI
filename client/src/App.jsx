@@ -72,13 +72,13 @@ function App() {
         localStorage.removeItem("growell_token");
         localStorage.removeItem("growell_user");
         localStorage.removeItem("growell_refresh_token");
+        localStorage.removeItem("growell_intro_seen");
 
         setUser(null);
         setShowSignup(false);
 
-        // Do NOT show intro again.
-        // User should return directly to Login.
-        setShowIntro(false);
+        // Replay the intro, then ask the user to sign back in.
+        setShowIntro(true);
     }
 
     // =====================================================
