@@ -1,13 +1,17 @@
-.glass{
+/* Refined "glass" surface — warm frosted paper for the light editorial theme */
 
-    background:var(--bg-glass);
+.glass {
+    background: var(--bg-glass);
+    backdrop-filter: blur(18px) saturate(120%);
+    -webkit-backdrop-filter: blur(18px) saturate(120%);
+    border: 1px solid rgba(228, 220, 201, 0.9);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+}
 
-    backdrop-filter:blur(22px);
-
-    border:1px solid var(--border-glass);
-
-    border-radius:var(--radius-xl);
-
-    box-shadow:var(--shadow-medium);
-
+.glass-card {
+    background: var(--gw-paper);
+    border: 1px solid var(--gw-line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
 }

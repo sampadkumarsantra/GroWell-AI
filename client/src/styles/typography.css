@@ -1,15 +1,35 @@
-h1,h2,h3{
-
-    font-family:var(--font-heading);
-
-    font-weight:700;
-
+h1, h2, h3 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--gw-ink);
 }
 
-p,
-button,
-input{
+h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    color: var(--gw-ink);
+}
 
-    font-family:var(--font-body);
+p, a, button, input, select, textarea, li, span, small, strong, label {
+    font-family: var(--font-body);
+}
 
+body {
+    font-family: var(--font-body);
+    color: var(--gw-ink-soft);
+}
+
+a {
+    color: var(--gw-forest);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--gw-forest-2);
+}
+
+::selection {
+    background: rgba(176, 141, 87, 0.22);
+    color: var(--gw-ink);
 }

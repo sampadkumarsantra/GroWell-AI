@@ -1,63 +1,29 @@
-const Groq = require("groq-sdk");
-
-const client = new Groq({
-    apiKey: process.env.GROQ_API_KEY
-});
+const API_BASE =
+    import.meta.env.VITE_API_URL || "";
 
 async function analyzeCropImage(file) {
 
-    const base64 = file.buffer.toString("base64");
+    const formData = new FormData();
 
-    const completion = await client.chat.completions.create({
+    formData.append("image", file);
 
-        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+    const response = await fetch(
+        `${API_BASE}/api/diagnose`,
+        {
+            method: "POST",
+            body: formData
+        }
+    );
 
-        messages: [
+    const data = await response.json();
 
-            {
-                role: "system",
-                content:
-`You are GroWell Vision.
+    if (!response.ok) {
+        throw new Error(
+            data.message || "Crop diagnosis failed"
+        );
+    }
 
-You are an expert agricultural scientist.
-
-Analyze the uploaded crop image.
-
-Return ONLY this JSON:
-
-{
-"crop":"",
-"disease":"",
-"confidence":"",
-"symptoms":[],
-"recommendation":[]
-}`
-            },
-
-            {
-                role: "user",
-                content: [
-
-                    {
-                        type: "text",
-                        text: "Analyze this crop."
-                    },
-
-                    {
-                        type: "image_url",
-                        image_url: {
-                            url: `data:${file.mimetype};base64,${base64}`
-                        }
-                    }
-
-                ]
-            }
-
-        ]
-
-    });
-
-    return completion.choices[0].message.content;
+    return data;
 }
 
-module.exports = analyzeCropImage;
+export default analyzeCropImage;

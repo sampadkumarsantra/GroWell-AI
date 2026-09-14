@@ -1,25 +1,43 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#1E513B"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Deep forest mark -->
+  <rect width="512" height="512" rx="120" fill="#1E513B"/>
 
+  <!-- Fine brass ring -->
+  <rect x="30" y="30" width="452" height="452" rx="100" stroke="#C9A872" stroke-width="10" opacity="0.5"/>
+
+  <!-- Dew point -->
+  <circle cx="256" cy="140" r="15" fill="#C9A872"/>
+
+  <!-- Sprout stem -->
   <path
-    d="M395 202 A153 153 0 1 0 360 365"
-    fill="none"
+    d="M256 396 C256 322 258 300 250 262"
     stroke="#F5EBDD"
-    stroke-width="40"
+    stroke-width="26"
     stroke-linecap="round"/>
 
+  <!-- Left leaf -->
   <path
-    d="M170 211 L210 310 L256 211 L302 310 L344 211"
-    fill="none"
-    stroke="#F5EBDD"
-    stroke-width="38"
+    d="M250 262 C212 236 196 210 198 180 C226 182 248 214 250 262 Z"
+    fill="#F5EBDD"/>
+
+  <!-- Right leaf -->
+  <path
+    d="M250 262 C288 236 304 210 302 180 C274 182 252 214 250 262 Z"
+    fill="#F5EBDD"/>
+
+  <!-- Basal leaves -->
+  <path
+    d="M256 372 C238 352 226 342 214 338 C226 330 244 336 256 352 Z"
+    fill="#C9A872"/>
+  <path
+    d="M256 372 C274 352 286 342 298 338 C286 330 268 336 256 352 Z"
+    fill="#C9A872"/>
+
+  <!-- Thin brass underline -->
+  <path
+    d="M176 428 C216 446 296 446 336 428"
+    stroke="#C9A872"
+    stroke-width="10"
     stroke-linecap="round"
-    stroke-linejoin="round"/>
-
-  <path
-    d="M359 284 L401 297"
-    fill="none"
-    stroke="#F5EBDD"
-    stroke-width="38"
-    stroke-linecap="round"/>
+    opacity="0.85"/>
 </svg>

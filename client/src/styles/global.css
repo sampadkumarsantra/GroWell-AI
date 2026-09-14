@@ -1,794 +1,350 @@
+/* =====================================================
+   GROWELL — GLOBAL BASE & SHARED COMPONENT STYLES
+   Light editorial foundation
+   ===================================================== */
+
 @import "./variables.css";
 @import "./typography.css";
 @import "./glass.css";
-/* @import "./animations.css"; */
 
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 html,
 body,
-#root{
-    width:100%;
-    height:100%;
+#root {
+    width: 100%;
+    height: 100%;
 }
 
 body {
-
     overflow: hidden;
-
     font-family: var(--font-body);
-
-    color: var(--text-primary);
-
+    color: var(--gw-ink-soft);
     background:
-        radial-gradient(circle at top left, rgba(34,197,94,0.08), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(16,185,129,0.06), transparent 35%),
-        linear-gradient(
-            135deg,
-            #05070d 0%,
-            #0b1220 45%,
-            #111827 100%
-        );
-
+        radial-gradient(circle at 12% -8%, rgba(176, 141, 87, 0.10), transparent 30%),
+        radial-gradient(circle at 88% 12%, rgba(62, 120, 86, 0.08), transparent 28%),
+        radial-gradient(circle at 50% 110%, rgba(62, 120, 86, 0.06), transparent 34%),
+        var(--gw-cream);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }
 
-/* GroWell AI Welcome Card */
-
-.welcome-card {
-    width: 100%;
-    max-width: 700px;
-    margin: 40px auto;
-    padding: 35px;
-
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(18px);
-
-    border-radius: 24px;
-
-    text-align: center;
-
-    border: 1px solid rgba(255,255,255,0.15);
+button {
+    font-family: inherit;
 }
 
-
-.welcome-card h2 {
-    font-size: 32px;
-    margin-bottom: 12px;
+input,
+select,
+textarea {
+    font-family: inherit;
 }
 
-
-.welcome-card p {
-    opacity: 0.75;
-    margin-bottom: 30px;
+:focus-visible {
+    outline: 2px solid rgba(30, 81, 59, 0.45);
+    outline-offset: 2px;
 }
 
+/* =====================================================
+   CHAT SCAFFOLD  (Chat.jsx / MessageList.jsx)
+   ===================================================== */
 
-.suggestion-grid {
-
-    display: grid;
-
-    grid-template-columns: repeat(2, 1fr);
-
-    gap: 20px;
-
-}
-
-
-.suggestion-btn {
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-
-    justify-content: center;
-
-    gap: 12px;
-
-    padding: 25px;
-
-    border-radius: 18px;
-
-    background: rgba(255,255,255,0.1);
-
-    border: 1px solid rgba(255,255,255,0.15);
-
-    cursor: pointer;
-
-    transition: 0.3s;
-
-}
-
-
-.suggestion-btn:hover {
-
-    transform: translateY(-5px);
-
-}
-
-
-.suggestion-icon {
-
-    width: 45px;
-
-    height: 45px;
-
-}
-
-.welcome-card {
-    width: 100%;
-    max-width: 760px;
-    margin: 40px auto;
-    padding: 34px;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 24px;
-    text-align: center;
-}
-
-.welcome-card h2 {
-    font-size: 30px;
-    margin-bottom: 10px;
-}
-
-.welcome-card p {
-    opacity: 0.75;
-    margin-bottom: 26px;
-    font-size: 15px;
-}
-
-.suggestion-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-}
-
-.suggestion-btn {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 18px;
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    cursor: pointer;
-    transition: transform 0.2s ease, background 0.2s ease;
-    text-align: left;
-}
-
-.suggestion-btn:hover {
-    transform: translateY(-3px);
-    background: rgba(255, 255, 255, 0.12);
-}
-
-.suggestion-icon {
-    width: 40px;
-    height: 40px;
-    flex-shrink: 0;
-}
-
-.suggestion-text {
+.chat-container {
+    height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    position: relative;
+    background: var(--gw-cream);
 }
 
-.suggestion-title {
-    font-size: 16px;
-    font-weight: 600;
+.messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 34px clamp(22px, 4vw, 48px) 24px;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(30, 81, 59, 0.22) transparent;
 }
 
-.suggestion-desc {
-    font-size: 13px;
-    opacity: 0.72;
-}
-/* Force GroWell Welcome Card Visibility */
-
-.welcome-card {
-    color: white;
+.messages::-webkit-scrollbar {
+    width: 6px;
 }
 
-.welcome-card h2 {
-    color: white !important;
+.messages::-webkit-scrollbar-thumb {
+    background: rgba(30, 81, 59, 0.22);
+    border-radius: 20px;
 }
 
-.welcome-card p {
-    color: rgba(255,255,255,0.8) !important;
+.messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(30, 81, 59, 0.35);
 }
 
-.suggestion-btn {
-    color: white !important;
-}
-
-.suggestion-title {
-    color: white !important;
-    font-size: 18px;
-    font-weight: 700;
-}
-
-.suggestion-desc {
-    color: rgba(255,255,255,0.85) !important;
-    font-size: 14px;
-}
-
-/* ===========================
-   Markdown Styling
-=========================== */
+/* =====================================================
+   BOT MARKDOWN / RICH CONTENT (rendered by Chat.jsx)
+   ===================================================== */
 
 .bot-message h1,
 .bot-message h2,
+.bot-message h3,
+.bot-message h4 {
+    margin: 18px 0 9px;
+    color: var(--gw-ink);
+    line-height: 1.3;
+}
+
+.bot-message h1 {
+    font-size: 22px;
+}
+
+.bot-message h2 {
+    font-size: 19px;
+}
+
 .bot-message h3 {
-    margin: 18px 0 10px;
-    color: #ffffff;
-    font-weight: 700;
+    font-size: 16px;
 }
 
 .bot-message p {
     margin: 10px 0;
-    line-height: 1.7;
-    color: rgba(255,255,255,0.92);
+    line-height: 1.75;
+    font-size: 14px;
 }
 
 .bot-message ul,
 .bot-message ol {
     margin: 12px 0 12px 22px;
-    line-height: 1.8;
+    line-height: 1.75;
 }
 
 .bot-message li {
-    margin-bottom: 8px;
+    margin-bottom: 7px;
+    font-size: 14px;
 }
 
 .bot-message strong {
-    color: #ffffff;
-    font-weight: 700;
+    font-weight: 600;
+    color: var(--gw-ink);
+}
+
+.bot-message em {
+    font-style: italic;
+}
+
+.bot-message a {
+    color: var(--gw-forest);
+    text-decoration: underline;
+    text-underline-offset: 2px;
 }
 
 .bot-message table {
     width: 100%;
     border-collapse: collapse;
     margin: 16px 0;
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 13px;
 }
 
 .bot-message th,
 .bot-message td {
-    border: 1px solid rgba(255,255,255,0.15);
-    padding: 10px;
+    border: 1px solid var(--gw-line);
+    padding: 9px 11px;
     text-align: left;
 }
 
+.bot-message th {
+    background: var(--gw-cream-2);
+    color: var(--gw-ink);
+    font-weight: 600;
+}
+
 .bot-message code {
-    background: rgba(255,255,255,0.08);
+    background: rgba(30, 81, 59, 0.07);
+    color: var(--gw-forest);
     padding: 2px 6px;
     border-radius: 6px;
+    font-family: var(--font-code);
+    font-size: 12.5px;
 }
 
-/* ===========================
-   Crop Diagnosis
-=========================== */
-
-.crop-page{
-    width:100%;
-    height:100%;
-    display:flex;
-    justify-content:center;
-    align-items:center;
+.bot-message blockquote {
+    margin: 12px 0;
+    padding: 2px 0 2px 16px;
+    border-left: 3px solid var(--gw-brass);
+    color: var(--gw-muted);
+    font-style: italic;
 }
 
-.crop-card{
-
-    width:700px;
-
-    padding:40px;
-
-    border-radius:24px;
-
-    background:rgba(255,255,255,0.08);
-
-    backdrop-filter:blur(20px);
-
-    border:1px solid rgba(255,255,255,.12);
-
-    text-align:center;
-
+.bot-message hr {
+    border: 0;
+    height: 1px;
+    margin: 18px 0;
+    background: var(--gw-line);
 }
 
-.crop-card h1{
+/* =====================================================
+   DIAGNOSIS CARD  (DiagnosisCard.jsx — rendered in chat)
+   ===================================================== */
 
-    margin-bottom:10px;
-
+.bot-row .diagnosis-card {
+    background: var(--gw-paper);
+    border: 1px solid var(--gw-line);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin: 12px 0;
+    box-shadow: var(--shadow-soft);
 }
 
-.crop-card p{
-
-    opacity:.8;
-
-    margin-bottom:30px;
-
+.diagnosis-card {
+    background: var(--gw-paper);
+    border: 1px solid var(--gw-line);
+    border-radius: 16px;
+    padding: 16px 18px;
 }
 
-.preview{
-
-    margin-top:25px;
-
+.diagnosis-title {
+    font-family: var(--font-heading);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--gw-ink);
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--gw-line);
 }
 
-.preview img{
-
-    width:100%;
-
-    max-height:400px;
-
-    object-fit:cover;
-
-    border-radius:18px;
-
-}
-
-.analyze-btn{
-
-    margin-top:30px;
-
-    width:100%;
-
-    padding:16px;
-
-    border:none;
-
-    border-radius:16px;
-
-    cursor:pointer;
-
-    font-size:18px;
-
-    font-weight:600;
-
-    background:#3fb950;
-
-    color:white;
-
-    transition:.3s;
-
-}
-
-.analyze-btn:hover{
-
-    transform:translateY(-3px);
-
-}
-
-/* ====================================
-   Crop Image Preview
-==================================== */
-
-.chat-image-preview{
-
-    width:100%;
-
-    display:flex;
-
-    flex-direction:column;
-
-    align-items:center;
-
-    margin-bottom:25px;
-
-}
-
-.chat-image-preview img{
-
-    width:320px;
-
-    max-width:90%;
-
-    border-radius:18px;
-
-    border:1px solid rgba(255,255,255,.15);
-
-    box-shadow:0 15px 40px rgba(0,0,0,.35);
-
-}
-
-.analyze-image-btn{
-
-    margin-top:18px;
-
-    padding:14px 30px;
-
-    border:none;
-
-    border-radius:14px;
-
-    background:#38b000;
-
-    color:white;
-
-    font-size:16px;
-
-    font-weight:600;
-
-    cursor:pointer;
-
-    transition:.25s;
-
-}
-
-.analyze-image-btn:hover{
-
-    transform:translateY(-3px);
-
-    background:#2d9300;
-
-}
-/* Chat Input Icons */
-
-.chat-input {
+.diagnosis-item {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 18px;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 8px 0;
+    font-size: 13.5px;
+    border-bottom: 1px dashed var(--gw-line);
 }
 
-.chat-input button {
-    width: 46px;
-    height: 46px;
-    border: none;
+.diagnosis-item:last-child {
+    border-bottom: none;
+}
+
+.diagnosis-item span:first-child {
+    color: var(--gw-muted);
+}
+
+.diagnosis-item span:last-child {
+    color: var(--gw-ink);
+    font-weight: 500;
+    text-align: right;
+}
+
+/* =====================================================
+   CROP / CHAT IMAGE PREVIEW  (ImagePreview / CropPreview)
+   ===================================================== */
+
+.chat-image-preview {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px auto;
+    max-width: 420px;
+    text-align: center;
+}
+
+.chat-image-preview img {
+    width: 100%;
     border-radius: 14px;
+    border: 1px solid var(--gw-line);
+    box-shadow: var(--shadow-soft);
+    object-fit: cover;
+}
 
+.crop-image-container {
+    width: 100%;
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--gw-paper-2);
+}
+
+.crop-image-container img {
+    display: block;
+    width: 100%;
+    max-height: 420px;
+    object-fit: cover;
+}
+
+.crop-preview-actions {
     display: flex;
+    gap: 12px;
     justify-content: center;
+    margin-top: 14px;
+}
+
+.analyze-image-btn {
+    display: inline-flex;
     align-items: center;
-
-    background: rgba(255,255,255,0.08);
-    color: white;
+    gap: 8px;
+    background: var(--gw-forest);
+    color: var(--gw-paper);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
     cursor: pointer;
-
-    transition: all 0.25s ease;
+    font-weight: 600;
+    font-size: 13px;
+    box-shadow: 0 6px 16px rgba(30, 81, 59, 0.22);
+    transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.chat-input button:hover {
-    background: rgba(255,255,255,0.15);
-    transform: translateY(-2px);
+.analyze-image-btn:hover {
+    background: var(--gw-forest-2);
+    transform: translateY(-1px);
 }
 
-.chat-input button svg {
-    width: 22px;
-    height: 22px;
-    color: white;
-    stroke-width: 2;
+.remove-image-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--gw-paper);
+    border: 1px solid var(--gw-line);
+    color: var(--gw-muted);
+    padding: 10px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 13px;
+    transition: border-color 0.2s ease, color 0.2s ease;
 }
 
-
-
-
-
-/* ===========================
-   GROWell AI CHAT DESIGN
-=========================== */
-
-.chat-container {
-
-    height:100%;
-
-    display:flex;
-
-    flex-direction:column;
-
-    position:relative;
-
+.remove-image-btn:hover {
+    border-color: var(--gw-line-2);
+    color: var(--gw-ink);
 }
 
+/* =====================================================
+   SHARED SCROLLBARS
+   ===================================================== */
 
-/* Messages Area */
-
-.messages {
-
-    flex:1;
-
-    overflow-y:auto;
-
-    padding:30px 40px;
-
-    scroll-behavior:smooth;
-
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(30, 81, 59, 0.2) transparent;
 }
 
-
-/* Scrollbar */
-
-.messages::-webkit-scrollbar{
-
-    width:6px;
-
+*::-webkit-scrollbar {
+    width: 7px;
 }
 
-.messages::-webkit-scrollbar-thumb{
-
-    background:rgba(255,255,255,.15);
-
-    border-radius:20px;
-
+*::-webkit-scrollbar-track {
+    background: transparent;
 }
 
-
-/* Message Row */
-
-.message-row{
-
-    display:flex;
-
-    gap:12px;
-
-    margin-bottom:24px;
-
-    align-items:flex-start;
-
+*::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    background: rgba(30, 81, 59, 0.18);
 }
 
-
-.bot-row{
-
-    justify-content:flex-start;
-
-}
-
-
-.user-row{
-
-    justify-content:flex-end;
-
-    flex-direction:row-reverse;
-
-}
-
-
-/* Avatar */
-
-.avatar{
-
-    width:38px;
-
-    height:38px;
-
-    border-radius:14px;
-
-    display:flex;
-
-    justify-content:center;
-
-    align-items:center;
-
-    background:rgba(255,255,255,.08);
-
-    backdrop-filter:blur(10px);
-
-    font-size:20px;
-
-}
-
-
-/* Bot Message */
-
-.bot-message{
-
-    max-width:720px;
-
-    padding:18px 22px;
-
-    border-radius:22px;
-
-    background:
-
-    linear-gradient(
-        135deg,
-        rgba(34,197,94,.12),
-        rgba(255,255,255,.06)
-    );
-
-
-    border:1px solid rgba(255,255,255,.1);
-
-    color:#f8fafc;
-
-    line-height:1.7;
-
-}
-
-
-/* User Message */
-
-.user-message{
-
-    max-width:600px;
-
-    padding:16px 20px;
-
-    border-radius:22px;
-
-    background:
-
-    linear-gradient(
-        135deg,
-        #22c55e,
-        #16a34a
-    );
-
-
-    color:white;
-
-    line-height:1.6;
-
-}
-
-
-/* Markdown */
-
-.bot-message h1,
-.bot-message h2,
-.bot-message h3{
-
-    margin:15px 0 8px;
-
-    color:white;
-
-}
-
-
-.bot-message ul,
-.bot-message ol{
-
-    padding-left:25px;
-
-}
-
-
-.bot-message li{
-
-    margin-bottom:8px;
-
-}
-
-
-.bot-message strong{
-
-    color:#4ade80;
-
-}
-
-
-/* Typing Animation */
-
-.typing-message{
-
-    padding:16px 22px;
-
-    border-radius:20px;
-
-    background:rgba(255,255,255,.08);
-
-}
-
-
-.typing-bubble{
-
-    display:flex;
-
-    gap:6px;
-
-}
-
-
-.typing-bubble span{
-
-    width:8px;
-
-    height:8px;
-
-    border-radius:50%;
-
-    background:white;
-
-    animation:bounce 1.4s infinite;
-
-}
-
-
-.typing-bubble span:nth-child(2){
-
-    animation-delay:.2s;
-
-}
-
-
-.typing-bubble span:nth-child(3){
-
-    animation-delay:.4s;
-
-}
-
-
-@keyframes bounce{
-
-    0%,80%,100%{
-
-        transform:translateY(0);
-
-    }
-
-
-    40%{
-
-        transform:translateY(-7px);
-
-    }
-
-}
-
-
-
-.chat-container{
-
-    height:100%;
-
-}
-
-
-.messages{
-
-    min-height:0;
-
-}
-
-.chat-image-preview{
-    margin:20px auto;
-    max-width:420px;
-    text-align:center;
-}
-
-.chat-image-preview img{
-    width:100%;
-    border-radius:16px;
-    border:1px solid #d8e5d0;
-    object-fit:cover;
-}
-
-.crop-preview-actions{
-    display:flex;
-    gap:12px;
-    justify-content:center;
-    margin-top:14px;
-}
-
-.analyze-image-btn{
-    background:#2e7d32;
-    color:#fff;
-    border:none;
-    padding:10px 18px;
-    border-radius:10px;
-    cursor:pointer;
-    font-weight:600;
-}
-
-.analyze-image-btn:hover{
-    background:#256728;
-}
-
-.remove-image-btn{
-    background:#f5f5f5;
-    border:1px solid #ddd;
-    padding:10px 18px;
-    border-radius:10px;
-    cursor:pointer;
-}
-
-.remove-image-btn:hover{
-    background:#ececec;
+*::-webkit-scrollbar-thumb:hover {
+    background: rgba(30, 81, 59, 0.3);
 }

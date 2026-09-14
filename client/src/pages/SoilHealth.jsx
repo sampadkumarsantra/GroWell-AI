@@ -86,7 +86,7 @@ function SoilHealth() {
 
         try {
             const response = await fetch(
-                "${import.meta.env.VITE_API_URL}/api/soil/analyze",
+                `${import.meta.env.VITE_API_URL}/api/soil/analyze`,
                 {
                     method: "POST",
                     headers: {

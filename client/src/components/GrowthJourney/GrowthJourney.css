@@ -1,33 +1,19 @@
-/* =========================================================
-   GROWELL AI — GROWTH JOURNEY
-   ========================================================= */
+/* =====================================================
+   GROWELL — GROWTH JOURNEY (light editorial)
+   ===================================================== */
 
 .growth-journey {
-    margin: 12px 4px 4px;
-    padding: 14px 12px;
+    margin: 14px 4px 4px;
+    padding: 14px 13px;
     border-radius: 16px;
-
     background:
-        linear-gradient(
-            145deg,
-            rgba(67, 126, 82, 0.16),
-            rgba(255, 255, 255, 0.025)
-        );
-
-    border: 1px solid rgba(118, 177, 127, 0.12);
-
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.035),
-        0 10px 25px rgba(0, 0, 0, 0.14);
-
+        linear-gradient(160deg, rgba(30, 81, 59, 0.06), rgba(176, 141, 87, 0.05));
+    border: 1px solid var(--gw-line);
+    box-shadow: var(--shadow-soft);
     overflow: hidden;
 }
 
-
-/* =========================================================
-   HEADER
-   ========================================================= */
-
+/* ---- Header ---- */
 .growth-header {
     display: flex;
     align-items: center;
@@ -36,187 +22,101 @@
 
 .growth-kicker {
     display: block;
-
-    font-size: 7px;
-    letter-spacing: 1.4px;
-
-    color: rgba(166, 203, 173, 0.55);
-
-    margin-bottom: 3px;
+    font-size: 7.5px;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--gw-faint);
+    margin-bottom: 4px;
 }
 
 .growth-header h3 {
     margin: 0;
-
-    color: #dcefe1;
-
-    font-size: 12px;
+    color: var(--gw-forest);
+    font-size: 12.5px;
     font-weight: 600;
 }
 
-
-/* =========================================================
-   POINTS
-   ========================================================= */
-
+/* ---- Points pill ---- */
 .growth-points {
-    min-width: 25px;
-    height: 25px;
-
+    min-width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
-
     border-radius: 50%;
-
-    background: rgba(102, 170, 119, 0.14);
-
-    border: 1px solid rgba(114, 180, 125, 0.18);
-
-    color: #9dd6a6;
-
+    background: var(--gw-paper);
+    border: 1px solid var(--gw-brass);
+    color: var(--gw-brass);
     font-size: 9px;
     font-weight: 700;
-
-    box-shadow:
-        0 0 12px rgba(114, 180, 125, 0.08);
+    box-shadow: 0 4px 10px rgba(176, 141, 87, 0.16);
 }
 
-
-/* =========================================================
-   MOTIVATIONAL GROWTH LINE
-   ========================================================= */
-
+/* ---- Motivational growth line ---- */
 .growth-line {
     position: relative;
     z-index: 4;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     min-height: 26px;
-
     margin: 5px auto 3px;
     padding: 3px 7px;
-
     max-width: 220px;
-
-    color: rgba(213, 232, 217, 0.78);
-
+    color: var(--gw-muted);
     font-size: 9px;
     line-height: 1.45;
-
     font-style: italic;
-    font-weight: 400;
-
-    letter-spacing: 0.15px;
-
     text-align: center;
-
-    text-shadow:
-        0 1px 7px rgba(0, 0, 0, 0.4);
-
     animation: growthLineIn 500ms ease;
 }
 
-
-/* Small green dot */
-
 .growth-line::before {
     content: "•";
-
     flex-shrink: 0;
-
     margin-right: 7px;
-
-    color: #82c98c;
-
+    color: var(--gw-brass);
     font-size: 13px;
     font-style: normal;
     font-weight: 700;
-
-    text-shadow:
-        0 0 8px rgba(130, 201, 140, 0.55);
 }
 
-
-/* =========================================================
-   PLANT AREA
-   ========================================================= */
-
+/* ---- Plant area ---- */
 .plant-stage {
     position: relative;
-
     height: 92px;
-
     margin: 3px 0 8px;
-
     display: flex;
     align-items: flex-end;
     justify-content: center;
-
     border-radius: 12px;
-
     background:
-        radial-gradient(
-            circle at 50% 70%,
-            rgba(91, 158, 103, 0.16),
-            transparent 55%
-        );
+        radial-gradient(circle at 50% 72%, rgba(30, 81, 59, 0.10), transparent 58%);
 }
-
-
-/* Soft glow underneath plant */
 
 .plant-glow {
     position: absolute;
-
     width: 55px;
     height: 22px;
-
     bottom: 8px;
-
     border-radius: 50%;
-
-    background: rgba(91, 158, 103, 0.18);
-
+    background: rgba(176, 141, 87, 0.22);
     filter: blur(10px);
-
-    box-shadow:
-        0 0 18px rgba(91, 158, 103, 0.12);
 }
 
-
-/* =========================================================
-   PLANT
-   ========================================================= */
-
+/* ---- Plant ---- */
 .plant-visual {
     position: relative;
     z-index: 2;
-
     font-size: 48px;
     line-height: 1;
-
     transform-origin: bottom center;
-
     animation:
         plantGrow 900ms cubic-bezier(0.22, 1, 0.36, 1),
         plantSway 4s ease-in-out 900ms infinite;
-
-    filter:
-        drop-shadow(0 8px 10px rgba(0, 0, 0, 0.25));
-
-    transition:
-        font-size 500ms ease,
-        filter 500ms ease;
+    filter: drop-shadow(0 6px 8px rgba(30, 81, 59, 0.22));
+    transition: font-size 500ms ease, filter 500ms ease;
 }
-
-
-/* =========================================================
-   STAGE SIZES
-   ========================================================= */
 
 .stage-0 {
     font-size: 30px;
@@ -251,180 +151,96 @@
     font-size: 58px;
 }
 
-
-/* =========================================================
-   CURRENT GROWTH STAGE
-   ========================================================= */
-
+/* ---- Info strip ---- */
 .growth-info {
     display: flex;
     align-items: center;
     justify-content: space-between;
-
     margin-top: 2px;
     margin-bottom: 8px;
-
-    padding: 5px 7px;
-
+    padding: 6px 8px;
     border-radius: 8px;
-
-    background: rgba(111, 170, 119, 0.07);
-
-    border: 1px solid rgba(118, 177, 127, 0.08);
+    background: rgba(30, 81, 59, 0.05);
+    border: 1px solid rgba(228, 220, 201, 0.8);
 }
-
-
-/* Current stage name */
 
 .growth-info strong {
-    color: #e1f2e4;
-
+    color: var(--gw-forest);
     font-size: 11px;
     font-weight: 700;
-
     letter-spacing: 0.15px;
-
-    text-shadow:
-        0 0 8px rgba(126, 197, 139, 0.18);
 }
-
-
-/* Actions remaining */
 
 .growth-info span {
-    color: rgba(204, 221, 209, 0.58);
-
-    font-size: 8px;
+    color: var(--gw-faint);
+    font-size: 8.5px;
 }
 
-
-/* =========================================================
-   PROGRESS BAR
-   ========================================================= */
-
+/* ---- Progress ---- */
 .growth-progress {
     height: 4px;
-
     overflow: hidden;
-
     border-radius: 10px;
-
-    background: rgba(255, 255, 255, 0.055);
+    background: rgba(30, 81, 59, 0.12);
 }
 
 .growth-progress-fill {
     height: 100%;
-
     border-radius: inherit;
-
-    background:
-        linear-gradient(
-            90deg,
-            #477d52,
-            #7fc58b
-        );
-
-    box-shadow:
-        0 0 8px rgba(114, 180, 125, 0.35);
-
-    transition:
-        width 700ms cubic-bezier(0.22, 1, 0.36, 1);
+    background: linear-gradient(90deg, var(--gw-forest-2), var(--gw-brass));
+    transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-
-/* =========================================================
-   FOOTER
-   ========================================================= */
-
+/* ---- Footer ---- */
 .growth-footer {
     display: flex;
     justify-content: space-between;
-
     margin-top: 6px;
-
-    color: rgba(204, 221, 209, 0.35);
-
-    font-size: 7px;
+    color: var(--gw-faint);
+    font-size: 7.5px;
+    letter-spacing: 0.3px;
 }
 
-
-/* =========================================================
-   PLANT GROW ANIMATION
-   ========================================================= */
-
+/* ---- Animations ---- */
 @keyframes plantGrow {
-
     0% {
         opacity: 0;
-
-        transform:
-            scale(0.2)
-            translateY(15px);
+        transform: scale(0.2) translateY(15px);
     }
-
     60% {
         opacity: 1;
-
-        transform:
-            scale(1.08)
-            translateY(-2px);
+        transform: scale(1.08) translateY(-2px);
     }
-
     100% {
         opacity: 1;
-
-        transform:
-            scale(1)
-            translateY(0);
+        transform: scale(1) translateY(0);
     }
 }
 
-
-/* =========================================================
-   GENTLE PLANT SWAY
-   ========================================================= */
-
 @keyframes plantSway {
-
-    0%,
-    100% {
+    0%, 100% {
         transform: rotate(0deg);
     }
-
     25% {
         transform: rotate(-1.5deg);
     }
-
     75% {
         transform: rotate(1.5deg);
     }
 }
 
-
-/* =========================================================
-   MOTIVATIONAL LINE ANIMATION
-   ========================================================= */
-
 @keyframes growthLineIn {
-
     0% {
         opacity: 0;
         transform: translateY(4px);
     }
-
     100% {
         opacity: 1;
         transform: translateY(0);
     }
 }
 
-
-/* =========================================================
-   MOBILE
-   ========================================================= */
-
 @media (max-width: 700px) {
-
     .growth-journey {
         display: none;
     }

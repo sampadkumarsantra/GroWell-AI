@@ -15,6 +15,7 @@ const marketRoutes = require("./routes/market");
 const soilRoutes = require("./routes/soil");
 const decisionRoutes = require("./routes/decision");
 const authRoute = require("./routes/auth");
+const translateRoute = require("./routes/translate");
 
 
 // =========================
@@ -63,6 +64,9 @@ app.use("/api/decision", decisionRoutes);
 
 // 🔐 AUTHENTICATION
 app.use("/api/auth", authRoute);
+
+// 🌐 TRANSLATION
+app.use("/api/translate", translateRoute);
 
 
 // =========================
