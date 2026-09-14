@@ -290,7 +290,7 @@
     box-shadow: none;
 }
 
-/* ---- Air report content ---- */
+/* ---- AI report content ---- */
 .ai-report-content {
     margin-top: 16px;
     padding: 16px 18px;
@@ -299,8 +299,72 @@
     background: var(--gw-paper-2);
     color: var(--gw-ink-soft);
     font-size: 13px;
-    line-height: 1.7;
-    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+.ai-report-content p {
+    margin: 0 0 8px;
+}
+
+.ai-report-content p:last-child {
+    margin-bottom: 0;
+}
+
+.ai-report-content ul,
+.ai-report-content ol {
+    margin: 4px 0 8px;
+    padding-left: 20px;
+}
+
+.ai-report-content li {
+    margin-bottom: 6px;
+    line-height: 1.55;
+}
+
+.ai-report-content li:last-child {
+    margin-bottom: 0;
+}
+
+.ai-report-content li > ul,
+.ai-report-content li > ol {
+    margin: 4px 0 0;
+}
+
+.ai-report-content h1,
+.ai-report-content h2,
+.ai-report-content h3,
+.ai-report-content h4 {
+    margin: 10px 0 6px;
+    font-family: var(--gw-font-heading);
+    color: var(--gw-ink);
+    line-height: 1.3;
+}
+
+.ai-report-content h1 {
+    font-size: 17px;
+}
+
+.ai-report-content h2 {
+    font-size: 15px;
+}
+
+.ai-report-content h3,
+.ai-report-content h4 {
+    font-size: 13.5px;
+}
+
+.ai-report-content strong {
+    color: var(--gw-ink);
+    font-weight: 600;
+}
+
+.ai-report-content ul li::marker {
+    color: var(--gw-brass);
+}
+
+.ai-report-content ol li::marker {
+    color: var(--gw-brass);
+    font-weight: 600;
 }
 
 /* ---- Forecast ---- */

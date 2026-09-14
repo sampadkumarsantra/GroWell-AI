@@ -81,6 +81,61 @@
     margin: 0;
 }
 
+/* Bot markdown — compact, tidy spacing */
+.bot-message p {
+    margin: 0 0 8px;
+}
+
+.bot-message p:last-child {
+    margin-bottom: 0;
+}
+
+.bot-message ul,
+.bot-message ol {
+    margin: 4px 0 8px;
+    padding-left: 22px;
+}
+
+.bot-message li {
+    margin-bottom: 6px;
+    line-height: 1.55;
+}
+
+.bot-message li:last-child {
+    margin-bottom: 0;
+}
+
+.bot-message h1,
+.bot-message h2,
+.bot-message h3,
+.bot-message h4 {
+    margin: 10px 0 6px;
+    font-family: var(--gw-font-heading);
+    color: var(--gw-ink);
+}
+
+.bot-message h1 {
+    font-size: 18px;
+}
+
+.bot-message h2 {
+    font-size: 16px;
+}
+
+.bot-message h3,
+.bot-message h4 {
+    font-size: 14px;
+}
+
+.bot-message strong {
+    color: var(--gw-ink);
+    font-weight: 600;
+}
+
+.bot-message ul li::marker {
+    color: var(--gw-brass);
+}
+
 /* ---- Typing indicator ---- */
 .typing-message {
     display: flex;
