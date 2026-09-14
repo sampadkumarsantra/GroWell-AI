@@ -3,7 +3,7 @@ services:
     name: growell-ai-2
     runtime: node
     rootDir: .
-    buildCommand: npm install && cd client && npm install && npm run build
+    buildCommand: npm install && npm rebuild sqlite3 --build-from-source && cd client && npm install && npm run build
     startCommand: node server.js
     envVars:
       - key: NODE_VERSION
