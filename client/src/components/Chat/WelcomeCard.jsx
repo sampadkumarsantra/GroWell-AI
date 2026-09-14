@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 
 import "./WelcomeCard.css";
+import logo from "../../assets/logo.svg";
 
 
 function WelcomeCard({ onSuggestionClick = () => {} }) {
@@ -53,7 +54,10 @@ function WelcomeCard({ onSuggestionClick = () => {} }) {
 
 
                 <div className="welcome-logo">
-                    🌿
+                    <img
+                        src={logo}
+                        alt="GroWell AI"
+                    />
                 </div>
 
 
