@@ -276,15 +276,26 @@ ${
                 error
             );
 
+            const detail =
+                error?.message || "";
+
+            const hiddenDetail =
+                !detail ||
+                detail === "Failed to fetch" ||
+                detail.includes("Unexpected token");
+
             setMessages((previous) => [
                 ...previous,
                 {
                     sender: "bot",
                     text:
-                        "❌ Unable to analyze the crop image. Please check that the GroWell backend is running."
+                        "❌ Unable to analyze the crop image." +
+                        (hiddenDetail
+                            ? ""
+                            : `\n\n${detail}`) +
+                        "\n\nPlease check that the GroWell backend is reachable and the Gemini API key is configured."
                 }
             ]);
-
         } finally {
             setIsAnalyzing(false);
         }
