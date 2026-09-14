@@ -1,12 +1,25 @@
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import { History } from "lucide-react";
 
 import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
 import CropPreview from "./CropPreview";
+import ConversationSidebar
+    from "./ConversationSidebar";
+
+import "./Chat.css";
+import "./ChatInput.css";
 
 import { registerGrowthAction } from "../../services/growthTracker";
 import { apiRequest } from "../../services/api";
+import {
+    loadConversations,
+    saveConversations,
+    createConversation,
+    buildTitle
+} from "../../services/conversationStore";
 
 const LANGUAGE_CODES = {
     English: "en-IN",
@@ -27,7 +40,7 @@ const LANGUAGE_CODES = {
 
 /* =====================================================
    GROWELL SETTINGS
-===================================================== */
+   ===================================================== */
 
 function getGrowellSettings() {
     const defaults = {
@@ -71,7 +84,7 @@ function getGrowellSettings() {
 
 /* =====================================================
    GROWTH EVENT
-===================================================== */
+   ===================================================== */
 
 function notifyGrowthUpdated() {
     window.dispatchEvent(
@@ -81,24 +94,98 @@ function notifyGrowthUpdated() {
 
 /* =====================================================
    CHAT
-===================================================== */
+   ===================================================== */
 
 function Chat({ user }) {
+
+    /* -------------------------------------------------
+       CONVERSATION STATE
+    ------------------------------------------------- */
+
+    const [conversations, setConversations] =
+        useState([]);
+
+    const [
+        activeConversationId,
+        setActiveConversationId
+    ] = useState(null);
+
+    const [sidebarOpen, setSidebarOpen] =
+        useState(false);
+
+    /* -------------------------------------------------
+       UI STATE
+    ------------------------------------------------- */
+
     const [message, setMessage] = useState("");
-    const [messages, setMessages] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
-    const [selectedImage, setSelectedImage] = useState(null);
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [isListening, setIsListening] = useState(false);
+    const [selectedImage, setSelectedImage] =
+        useState(null);
+    const [selectedFile, setSelectedFile] =
+        useState(null);
+    const [isAnalyzing, setIsAnalyzing] =
+        useState(false);
+    const [isListening, setIsListening] =
+        useState(false);
 
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const recognitionRef = useRef(null);
 
-    /* =====================================================
+    /* -------------------------------------------------
+       DERIVED: ACTIVE CONVERSATION + MESSAGES
+    ------------------------------------------------- */
+
+    const activeConversation = useMemo(
+        () =>
+            conversations.find(
+                (conversation) =>
+                    conversation.id ===
+                    activeConversationId
+            ) ||
+            conversations[0] ||
+            null,
+        [conversations, activeConversationId]
+    );
+
+    const messages = useMemo(
+        () => activeConversation?.messages || [],
+        [activeConversation]
+    );
+
+    /* -------------------------------------------------
+       LOAD ON MOUNT
+    ------------------------------------------------- */
+
+    useEffect(() => {
+        const stored = loadConversations();
+
+        if (stored.length === 0) {
+            const first = createConversation();
+            setConversations([first]);
+            setActiveConversationId(first.id);
+        } else {
+            setConversations(stored);
+            setActiveConversationId(
+                (current) =>
+                    current ?? stored[0].id
+            );
+        }
+    }, []);
+
+    /* -------------------------------------------------
+       PERSIST ON CHANGE
+    ------------------------------------------------- */
+
+    useEffect(() => {
+        if (conversations.length > 0) {
+            saveConversations(conversations);
+        }
+    }, [conversations]);
+
+    /* -------------------------------------------------
        AUTO SCROLL
-    ===================================================== */
+    ------------------------------------------------- */
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({
@@ -106,17 +193,17 @@ function Chat({ user }) {
         });
     }, [messages, isTyping]);
 
-    /* =====================================================
+    /* -------------------------------------------------
        SUGGESTIONS
-    ===================================================== */
+    ------------------------------------------------- */
 
     function handleSuggestionClick(prompt) {
         setMessage(prompt);
     }
 
-    /* =====================================================
+    /* -------------------------------------------------
        ENTER KEY
-    ===================================================== */
+    ------------------------------------------------- */
 
     function handleKeyDown(event) {
         if (
@@ -128,20 +215,21 @@ function Chat({ user }) {
         }
     }
 
-    /* =====================================================
+    /* -------------------------------------------------
        IMAGE PICKER
-    ===================================================== */
+    ------------------------------------------------- */
 
     function openImagePicker() {
         fileInputRef.current?.click();
     }
 
-    /* =====================================================
+    /* -------------------------------------------------
        IMAGE UPLOAD
-    ===================================================== */
+    ------------------------------------------------- */
 
     function handleImageUpload(event) {
-        const file = event.target.files?.[0];
+        const file =
+            event.target.files?.[0];
 
         if (!file) {
             return;
@@ -154,9 +242,9 @@ function Chat({ user }) {
         );
     }
 
-    /* =====================================================
+    /* -------------------------------------------------
        REMOVE IMAGE
-    ===================================================== */
+    ------------------------------------------------- */
 
     function removeImage() {
         if (selectedImage) {
@@ -171,9 +259,95 @@ function Chat({ user }) {
         }
     }
 
-    /* =====================================================
+    /* -------------------------------------------------
+       CONVERSATION HELPERS
+    ------------------------------------------------- */
+
+    function appendMessage(
+        entry,
+        { title } = {}
+    ) {
+        const id = activeConversationId;
+
+        setConversations((previous) =>
+            previous.map((conversation) => {
+                if (conversation.id !== id) {
+                    return conversation;
+                }
+
+                const next = {
+                    ...conversation,
+                    messages: [
+                        ...conversation.messages,
+                        entry
+                    ],
+                    updatedAt:
+                        new Date().toISOString()
+                };
+
+                if (
+                    title &&
+                    next.title === "New chat"
+                ) {
+                    next.title = title;
+                }
+
+                return next;
+            })
+        );
+    }
+
+    function handleNewChat() {
+        const conversation =
+            createConversation();
+
+        setConversations((previous) => [
+            conversation,
+            ...previous
+        ]);
+
+        setActiveConversationId(conversation.id);
+        setMessage("");
+        removeImage();
+        setSidebarOpen(false);
+    }
+
+    function handleSelectConversation(id) {
+        setActiveConversationId(id);
+        setMessage("");
+        removeImage();
+        setSidebarOpen(false);
+    }
+
+    function handleDeleteConversation(id) {
+        const current = conversations;
+
+        const next = current.filter(
+            (conversation) =>
+                conversation.id !== id
+        );
+
+        if (id === activeConversationId) {
+            if (next.length === 0) {
+                const fresh =
+                    createConversation();
+
+                setConversations([fresh]);
+                setActiveConversationId(fresh.id);
+            } else {
+                setConversations(next);
+                setActiveConversationId(
+                    next[0].id
+                );
+            }
+        } else {
+            setConversations(next);
+        }
+    }
+
+    /* -------------------------------------------------
        CROP DIAGNOSIS
-    ===================================================== */
+    ------------------------------------------------- */
 
     async function analyzeCrop() {
         if (!selectedFile) {
@@ -198,7 +372,8 @@ function Chat({ user }) {
                 }
             );
 
-            const data = await response.json();
+            const data =
+                await response.json();
 
             if (!response.ok) {
                 throw new Error(
@@ -253,17 +428,10 @@ ${
 }
             `.trim();
 
-            setMessages((previous) => [
-                ...previous,
-                {
-                    sender: "bot",
-                    text: diagnosisMessage
-                }
-            ]);
-
-            /* =================================================
-               SUCCESSFUL CROP DIAGNOSIS = GROWTH ACTION
-            ================================================= */
+            appendMessage({
+                sender: "bot",
+                text: diagnosisMessage
+            });
 
             registerGrowthAction(
                 "crop disease diagnosis"
@@ -283,28 +451,27 @@ ${
             const hiddenDetail =
                 !detail ||
                 detail === "Failed to fetch" ||
-                detail.includes("Unexpected token");
+                detail.includes(
+                    "Unexpected token"
+                );
 
-            setMessages((previous) => [
-                ...previous,
-                {
-                    sender: "bot",
-                    text:
-                        "❌ Unable to analyze the crop image." +
-                        (hiddenDetail
-                            ? ""
-                            : `\n\n${detail}`) +
-                        "\n\nPlease check that the GroWell backend is reachable and the Gemini API key is configured."
-                }
-            ]);
+            appendMessage({
+                sender: "bot",
+                text:
+                    "❌ Unable to analyze the crop image." +
+                    (hiddenDetail
+                        ? ""
+                        : `\n\n${detail}`) +
+                    "\n\nPlease check that the GroWell backend is reachable and the Gemini API key is configured."
+            });
         } finally {
             setIsAnalyzing(false);
         }
     }
 
-    /* =====================================================
+    /* -------------------------------------------------
        VOICE INPUT
-    ===================================================== */
+    ------------------------------------------------- */
 
     function startVoiceInput() {
         const SpeechRecognition =
@@ -375,11 +542,13 @@ ${
         recognition.start();
     }
 
-    /* =====================================================
+    /* -------------------------------------------------
        SEND MESSAGE
-    ===================================================== */
+    ------------------------------------------------- */
 
-    async function sendMessage(customMessage = null) {
+    async function sendMessage(
+        customMessage = null
+    ) {
         const userMessage =
             customMessage ?? message;
 
@@ -396,15 +565,16 @@ ${
         const settings =
             getGrowellSettings();
 
-        /* USER MESSAGE */
-
-        setMessages((previous) => [
-            ...previous,
+        appendMessage(
             {
                 sender: "user",
                 text: cleanMessage
+            },
+            {
+                title:
+                    buildTitle(cleanMessage)
             }
-        ]);
+        );
 
         setMessage("");
         setIsTyping(true);
@@ -452,45 +622,14 @@ ${
                 data.reply ||
                 "GroWell AI did not return a response.";
 
-            setMessages((previous) => [
-                ...previous,
-                {
-                    sender: "bot",
-                    text: aiReply
-                }
-            ]);
-
-            /* =================================================
-               GROWTH SYSTEM
-
-               registerGrowthAction() decides whether the
-               question is meaningful/agricultural.
-
-               Therefore:
-
-               "Hi"              → no growth
-               "Hello"           → no growth
-               "Thanks"           → no growth
-
-               "How much fertilizer
-                does rice need?" → +1
-
-               "Why are my wheat
-                leaves yellow?"  → +1
-
-               Failed API request → no growth
-            ================================================= */
+            appendMessage({
+                sender: "bot",
+                text: aiReply
+            });
 
             registerGrowthAction(
                 cleanMessage
             );
-
-            /*
-               IMPORTANT:
-               Tell GrowthJourney to refresh immediately.
-               This removes the need to paste anything
-               into the browser console.
-            */
 
             notifyGrowthUpdated();
 
@@ -500,71 +639,91 @@ ${
                 error
             );
 
-            /*
-               Failed requests DO NOT increase growth.
-            */
-
-            setMessages((previous) => [
-                ...previous,
-                {
-                    sender: "bot",
-                    text:
-                        "❌ Unable to reach the GroWell AI server. Start the backend from the project root with `npm start`, then try again."
-                }
-            ]);
+            appendMessage({
+                sender: "bot",
+                text:
+                    "❌ Unable to reach the GroWell AI server. Start the backend from the project root with `npm start`, then try again."
+            });
 
         } finally {
             setIsTyping(false);
         }
     }
 
-    /* =====================================================
+    /* -------------------------------------------------
        RENDER
-    ===================================================== */
+    ------------------------------------------------- */
 
     return (
         <div className="chat-container">
 
-            <CropPreview
-                image={selectedImage}
-                onAnalyze={analyzeCrop}
-                onRemove={removeImage}
-                isAnalyzing={isAnalyzing}
+            <ConversationSidebar
+                conversations={conversations}
+                activeId={activeConversationId}
+                onNewChat={handleNewChat}
+                onSelect={
+                    handleSelectConversation
+                }
+                onDelete={
+                    handleDeleteConversation
+                }
+                open={sidebarOpen}
+                onClose={() =>
+                    setSidebarOpen(false)
+                }
+                userName={user?.name}
             />
 
-            <MessageList
-                messages={messages}
-                isTyping={isTyping}
-                selectedImage={selectedImage}
-                onSuggestionClick={
-                    handleSuggestionClick
-                }
-                messagesEndRef={
-                    messagesEndRef
-                }
-                user={user}
-            />
+            <div className="chat-workspace">
 
-            <ChatInput
-                message={message}
-                setMessage={setMessage}
-                handleKeyDown={handleKeyDown}
-                sendMessage={sendMessage}
-                startVoiceInput={
-                    startVoiceInput
-                }
-                isListening={isListening}
-                openImagePicker={
-                    openImagePicker
-                }
-                handleImageUpload={
-                    handleImageUpload
-                }
-                fileInputRef={
-                    fileInputRef
-                }
-            />
+                <button
+                    type="button"
+                    className="chat-history-toggle"
+                    onClick={() =>
+                        setSidebarOpen(true)
+                    }
+                    aria-label="Open chat history"
+                >
+                    <History size={18} />
+                </button>
 
+                <CropPreview
+                    image={selectedImage}
+                    onAnalyze={analyzeCrop}
+                    onRemove={removeImage}
+                    isAnalyzing={isAnalyzing}
+                />
+
+                <MessageList
+                    messages={messages}
+                    isTyping={isTyping}
+                    onSuggestionClick={
+                        handleSuggestionClick
+                    }
+                    messagesEndRef={
+                        messagesEndRef
+                    }
+                />
+
+                <ChatInput
+                    message={message}
+                    setMessage={setMessage}
+                    handleKeyDown={handleKeyDown}
+                    sendMessage={sendMessage}
+                    startVoiceInput={
+                        startVoiceInput
+                    }
+                    isListening={isListening}
+                    openImagePicker={
+                        openImagePicker
+                    }
+                    handleImageUpload={
+                        handleImageUpload
+                    }
+                    fileInputRef={fileInputRef}
+                />
+
+            </div>
         </div>
     );
 }

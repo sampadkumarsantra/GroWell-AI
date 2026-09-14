@@ -17,6 +17,8 @@ function ChatInput({
 }) {
     return (
 
+        <div className="input-wrapper">
+
         <div className="chat-input">
 
             <input
@@ -64,6 +66,8 @@ function ChatInput({
             >
                 <SendHorizontal size={20} />
             </button>
+
+        </div>
 
         </div>
 

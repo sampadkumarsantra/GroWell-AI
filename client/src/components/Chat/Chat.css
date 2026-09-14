@@ -2,6 +2,292 @@
    GROWELL — CHAT MESSAGES (light editorial)
    ===================================================== */
 
+/* ---- Chat shell: sidebar + workspace ---- */
+.chat-container {
+    display: flex;
+    flex-direction: row;
+}
+
+.chat-workspace {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+/* =====================================================
+   CONVERSATION SIDEBAR
+   ===================================================== */
+
+.chat-sidebar {
+    width: 268px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--gw-paper);
+    border-right: 1px solid var(--gw-line);
+}
+
+/* ---- Header ---- */
+
+.chat-sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 18px 16px 12px;
+    border-bottom: 1px solid var(--gw-line);
+}
+
+.new-chat-btn {
+    flex: 1;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 14px;
+    background: var(--gw-forest);
+    color: var(--gw-paper);
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 13.5px;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(30, 81, 59, 0.24);
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.new-chat-btn:hover {
+    background: var(--gw-forest-2);
+    transform: translateY(-1px);
+}
+
+.new-chat-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.sidebar-close-btn {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1px solid var(--gw-line);
+    background: transparent;
+    color: var(--gw-muted);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-close-btn:hover {
+    background: var(--gw-cream-2);
+    color: var(--gw-forest);
+}
+
+/* ---- Label ---- */
+
+.chat-sidebar-label {
+    padding: 16px 18px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    color: var(--gw-brass);
+}
+
+/* ---- List ---- */
+
+.chat-conversation-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 4px 12px 12px;
+}
+
+.chat-conv-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-bottom: 4px;
+    border-radius: 12px;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid transparent;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.chat-conv-item:hover {
+    background: var(--gw-cream-2);
+}
+
+.chat-conv-item.active {
+    background: var(--gw-forest);
+    border-color: var(--gw-forest);
+}
+
+.chat-conv-icon {
+    flex-shrink: 0;
+    color: var(--gw-muted);
+}
+
+.chat-conv-item.active .chat-conv-icon {
+    color: var(--gw-brass-2);
+}
+
+.chat-conv-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-conv-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gw-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-conv-item.active .chat-conv-title {
+    color: var(--gw-paper);
+}
+
+.chat-conv-meta {
+    font-size: 11px;
+    color: var(--gw-faint);
+    margin-top: 2px;
+}
+
+.chat-conv-item.active .chat-conv-meta {
+    color: rgba(255, 253, 247, 0.72);
+}
+
+.chat-conv-delete {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--gw-muted);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease, background 0.2s ease,
+        color 0.2s ease;
+}
+
+.chat-conv-item:hover .chat-conv-delete,
+.chat-conv-item.active .chat-conv-delete {
+    opacity: 1;
+}
+
+.chat-conv-delete:hover {
+    background: rgba(179, 74, 63, 0.12);
+    color: var(--gw-danger);
+}
+
+.chat-conv-item.active .chat-conv-delete {
+    color: rgba(255, 253, 247, 0.8);
+}
+
+.chat-conv-item.active .chat-conv-delete:hover {
+    background: rgba(179, 74, 63, 0.28);
+    color: var(--gw-paper);
+}
+
+/* ---- Footer ---- */
+
+.chat-sidebar-footer {
+    padding: 14px 18px;
+    border-top: 1px solid var(--gw-line);
+    font-size: 11.5px;
+    color: var(--gw-faint);
+    line-height: 1.6;
+}
+
+.chat-sidebar-user {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--gw-ink);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ---- History toggle (mobile only) ---- */
+
+.chat-history-toggle {
+    display: none;
+}
+
+/* =====================================================
+   MESSAGE COLUMN — centered editorial column
+   ===================================================== */
+
+.chat-workspace .messages {
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-workspace .messages > * {
+    width: 100%;
+    max-width: 880px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* =====================================================
+   RESPONSIVE — sidebar becomes an overlay
+   ===================================================== */
+
+@media (max-width: 900px) {
+    .chat-sidebar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 40;
+        transform: translateX(-100%);
+        transition: transform 0.3s var(--ease-out);
+        box-shadow: var(--shadow-medium);
+    }
+
+    .chat-sidebar.open {
+        transform: translateX(0);
+    }
+
+    .chat-history-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        z-index: 10;
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        border: 1px solid var(--gw-line-2);
+        background: var(--gw-paper);
+        color: var(--gw-forest);
+        cursor: pointer;
+        box-shadow: var(--shadow-soft);
+    }
+
+    .chat-history-toggle:hover {
+        background: var(--gw-cream-2);
+    }
+}
+
 .message-row {
     display: flex;
     width: 100%;
