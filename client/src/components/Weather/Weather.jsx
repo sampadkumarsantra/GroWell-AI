@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Search } from "lucide-react";
 
 import "./Weather.css";
 
@@ -53,7 +54,9 @@ function Weather() {
     ];
 
     async function analyzeFarm() {
-        if (!city.trim()) {
+        const location = city.trim();
+
+        if (!location) {
             setError("Enter a farm location.");
             return;
         }
@@ -64,41 +67,102 @@ function Weather() {
             setAiReport("");
             setAiError("");
 
-            const geoResponse = await fetch(
-                `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`
-            );
+            let geoData = null;
 
-            if (!geoResponse.ok) {
-                throw new Error("Location request failed");
+            try {
+                const geoResponse = await fetch(
+                    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1`
+                );
+
+                if (geoResponse.ok) {
+                    geoData = await geoResponse.json();
+                }
+            } catch {
+                geoData = null;
             }
 
-            const geoData = await geoResponse.json();
+            if (geoData?.results?.length) {
+                const selectedLocation = geoData.results[0];
 
-            if (!geoData.results?.length) {
-                setError("Location not found.");
+                const weatherResponse = await fetch(
+                    `https://api.open-meteo.com/v1/forecast?latitude=${selectedLocation.latitude}&longitude=${selectedLocation.longitude}&current=temperature_2m,relative_humidity_2m,rain,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`
+                );
+
+                if (!weatherResponse.ok) {
+                    throw new Error("Weather request failed");
+                }
+
+                const data = await weatherResponse.json();
+
+                setWeather({
+                    location: selectedLocation.name,
+                    current: data.current,
+                    daily: data.daily
+                });
+
                 return;
             }
 
-            const selectedLocation = geoData.results[0];
-
-            const weatherResponse = await fetch(
-                `https://api.open-meteo.com/v1/forecast?latitude=${selectedLocation.latitude}&longitude=${selectedLocation.longitude}&current=temperature_2m,relative_humidity_2m,rain,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`
+            const backendResponse = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/weather/${encodeURIComponent(location)}`
             );
 
-            if (!weatherResponse.ok) {
-                throw new Error("Weather request failed");
+            if (!backendResponse.ok) {
+                throw new Error("Location not found.");
             }
 
-            const data = await weatherResponse.json();
+            const backendData = await backendResponse.json();
+
+            if (!backendData.success) {
+                throw new Error(
+                    backendData.message ||
+                    "Location not found."
+                );
+            }
+
+            const days =
+                backendData.forecast ||
+                backendData.rainfall?.next7Days ||
+                [];
+
+            const current =
+                backendData.current || {};
 
             setWeather({
-                location: selectedLocation.name,
-                current: data.current,
-                daily: data.daily
+                location: backendData.location,
+                current: {
+                    temperature_2m:
+                        current.temperature,
+                    relative_humidity_2m:
+                        current.humidity,
+                    rain:
+                        current.rainfall ??
+                        backendData.rainfall?.today ??
+                        0,
+                    wind_speed_10m:
+                        current.windSpeed
+                },
+                daily: {
+                    time: days.map((day) => day.date),
+                    temperature_2m_max: days.map(
+                        (day) => day.maxTemp
+                    ),
+                    temperature_2m_min: days.map(
+                        (day) => day.minTemp
+                    ),
+                    precipitation_probability_max:
+                        days.map(
+                            (day) =>
+                                day.rainProbability
+                        )
+                }
             });
         } catch (err) {
             console.error("WEATHER ERROR:", err);
-            setError("Weather service error. Please try again.");
+            setError(
+                err.message ||
+                "Weather service error. Please try again."
+            );
         } finally {
             setLoading(false);
         }
@@ -303,13 +367,20 @@ Do not claim access to real-time data beyond the values provided above.
                 <h1>🌱 GroWell Farm Intelligence</h1>
 
                 <div className="weather-search">
+                    <Search size={17} className="weather-search-icon" />
+
                     <input
                         type="text"
-                        placeholder="Farm location"
+                        placeholder="Enter farm location"
                         value={city}
                         onChange={(event) =>
                             setCity(event.target.value)
                         }
+                        onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                                analyzeFarm();
+                            }
+                        }}
                     />
 
                     <select
@@ -468,18 +539,7 @@ Do not claim access to real-time data beyond the values provided above.
                             type="button"
                             onClick={generateAIReport}
                             disabled={aiLoading}
-                            style={{
-                                marginTop: "25px",
-                                padding: "13px 22px",
-                                border: "none",
-                                borderRadius: "12px",
-                                background: "#22c55e",
-                                color: "white",
-                                fontWeight: "700",
-                                cursor: aiLoading
-                                    ? "wait"
-                                    : "pointer"
-                            }}
+                            className="ai-report-btn"
                         >
                             {aiLoading
                                 ? "🤖 GroWell AI is thinking..."

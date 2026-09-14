@@ -10,6 +10,7 @@ function ChatInput({
     handleKeyDown,
     sendMessage,
     startVoiceInput,
+    isListening,
     openImagePicker,
     handleImageUpload,
     fileInputRef
@@ -27,7 +28,16 @@ function ChatInput({
             />
 
             <button
-                title="Voice Input"
+                title={
+                    isListening
+                        ? "Stop Voice Input"
+                        : "Voice Input"
+                }
+                className={
+                    isListening
+                        ? "mic-active"
+                        : ""
+                }
                 onClick={startVoiceInput}
             >
                 <Mic size={20} />

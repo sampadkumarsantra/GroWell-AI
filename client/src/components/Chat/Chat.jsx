@@ -89,9 +89,11 @@ function Chat({ user }) {
     const [selectedImage, setSelectedImage] = useState(null);
     const [selectedFile, setSelectedFile] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [isListening, setIsListening] = useState(false);
 
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
+    const recognitionRef = useRef(null);
 
     /* =====================================================
        AUTO SCROLL
@@ -305,8 +307,16 @@ ${
             return;
         }
 
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+
+            return;
+        }
+
         const recognition =
             new SpeechRecognition();
+
+        recognitionRef.current = recognition;
 
         const settings =
             getGrowellSettings();
@@ -318,6 +328,10 @@ ${
 
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+            setIsListening(true);
+        };
 
         recognition.onresult = (event) => {
             const transcript =
@@ -336,6 +350,14 @@ ${
                 "VOICE ERROR:",
                 event.error
             );
+
+            setIsListening(false);
+            recognitionRef.current = null;
+        };
+
+        recognition.onend = () => {
+            setIsListening(false);
+            recognitionRef.current = null;
         };
 
         recognition.start();
@@ -519,6 +541,7 @@ ${
                 startVoiceInput={
                     startVoiceInput
                 }
+                isListening={isListening}
                 openImagePicker={
                     openImagePicker
                 }
