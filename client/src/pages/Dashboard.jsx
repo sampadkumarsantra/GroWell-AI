@@ -85,7 +85,14 @@ function Dashboard({ user, onLogout }) {
                     onLogout={onLogout}
                 />
 
-                <main className="page-container">
+                <main
+                    className={
+                        "page-container" +
+                        (activePage === "Chat"
+                            ? " chat-page"
+                            : "")
+                    }
+                >
                     {renderPage()}
                 </main>
 

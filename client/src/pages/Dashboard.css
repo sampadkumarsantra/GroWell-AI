@@ -31,6 +31,14 @@
     padding: 28px;
 }
 
+/* Chat fills the whole content area exactly,
+   so only the message list scrolls internally.
+   WelcomeCard + input bar stay pinned. */
+.page-container.chat-page {
+    overflow: hidden;
+    padding: 0;
+}
+
 .page-container::-webkit-scrollbar {
     width: 8px;
 }
