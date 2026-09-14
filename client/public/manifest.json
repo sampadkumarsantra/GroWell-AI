@@ -1,0 +1,27 @@
+{
+    "name": "GroWell AI",
+    "short_name": "GroWell",
+    "description": "AI agricultural companion for smarter crops, soil and weather decisions.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#F6F2E8",
+    "theme_color": "#1E513B",
+    "icons": [
+        {
+            "src": "/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "/favicon-180.png",
+            "sizes": "180x180",
+            "type": "image/png"
+        },
+        {
+            "src": "/apple-touch-icon.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

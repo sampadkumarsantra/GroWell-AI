@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./Intro.css";
+import logo from "../../assets/logo.svg";
 
 const slides = [
     {
@@ -270,7 +271,15 @@ function MarketIcon() {
 }
 
 function SlideIcon({ type }) {
-    if (type === "brand") return <BrandIcon />;
+    if (type === "brand") {
+        return (
+            <img
+                className="intro-icon"
+                src={logo}
+                alt="GroWell AI"
+            />
+        );
+    }
     if (type === "crop") return <CropIcon />;
     if (type === "weather") return <WeatherIcon />;
     if (type === "yield") return <YieldIcon />;

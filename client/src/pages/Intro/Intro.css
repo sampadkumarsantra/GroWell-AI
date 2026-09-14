@@ -231,6 +231,11 @@
     height: 100px;
 }
 
+.intro-icon-wrap img.intro-icon {
+    object-fit: contain;
+    border-radius: 18px;
+}
+
 .ring-track {
     stroke: rgba(30, 81, 59, 0.14);
     stroke-width: 9;
