@@ -1,5 +1,4 @@
-const API_BASE =
-    import.meta.env.VITE_API_URL || "";
+import { apiRequest } from "./api";
 
 async function analyzeCropImage(file) {
 
@@ -7,8 +6,8 @@ async function analyzeCropImage(file) {
 
     formData.append("image", file);
 
-    const response = await fetch(
-        `${API_BASE}/api/diagnose`,
+    const response = await apiRequest(
+        "/api/diagnose",
         {
             method: "POST",
             body: formData

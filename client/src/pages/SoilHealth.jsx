@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "./SoilHealth.css";
 import { useFarm } from "../context/FarmContext";
+import { apiRequest } from "../services/api";
 
 function SoilHealth() {
     const {
@@ -85,8 +86,8 @@ function SoilHealth() {
         setResult(null);
 
         try {
-            const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/soil/analyze`,
+            const response = await apiRequest(
+                "/api/soil/analyze",
                 {
                     method: "POST",
                     headers: {

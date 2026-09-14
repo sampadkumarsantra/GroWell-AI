@@ -8,6 +8,7 @@ import {
 
 import "./Login.css";
 import logo from "../../assets/logo.svg";
+import { apiRequest } from "../../services/api";
 
 
 function Signup({ onSignup, onSwitchToLogin }) {
@@ -65,8 +66,8 @@ function Signup({ onSignup, onSwitchToLogin }) {
             setLoading(true);
 
 
-            const response = await fetch(
-                "${import.meta.env.VITE_API_URL}/api/auth/register",
+            const response = await apiRequest(
+                "/api/auth/register",
                 {
                     method: "POST",
 

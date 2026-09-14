@@ -17,6 +17,7 @@ import {
 
 import "./Weather.css";
 import { useFarm } from "../../context/FarmContext";
+import { apiRequest } from "../../services/api";
 
 export default function Weather() {
     const {
@@ -41,8 +42,8 @@ export default function Weather() {
             setLoading(true);
             setError("");
 
-            const response = await fetch(
-                `http://localhost:5000/api/weather/${encodeURIComponent(location)}`
+            const response = await apiRequest(
+                `/api/weather/${encodeURIComponent(location)}`
             );
 
             if (!response.ok) {

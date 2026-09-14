@@ -12,6 +12,8 @@ import { GoogleLogin } from "@react-oauth/google";
 
 import "./Login.css";
 
+import { apiRequest } from "../../services/api";
+
 import logo from "../../assets/logo.svg";
 
 
@@ -50,8 +52,8 @@ function Login({ onLogin, onSwitchToSignup }) {
             }
 
 
-             const response = await fetch(
-    "https://growell-ai-2.onrender.com/api/auth/google",
+             const response = await apiRequest(
+    "/api/auth/google",
                 {
                     method: "POST",
 
@@ -201,8 +203,8 @@ function Login({ onLogin, onSwitchToSignup }) {
             setLoading(true);
 
 
-           const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/auth/login`,
+           const response = await apiRequest(
+    "/api/auth/login",
                 {
                     method: "POST",
 

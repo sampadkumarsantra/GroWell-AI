@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import { Search } from "lucide-react";
 
 import "./Weather.css";
+import { apiRequest } from "../../services/api";
 
 function getGrowellSettings() {
     try {
@@ -103,8 +104,8 @@ function Weather() {
                 return;
             }
 
-            const backendResponse = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/weather/${encodeURIComponent(location)}`
+            const backendResponse = await apiRequest(
+                `/api/weather/${encodeURIComponent(location)}`
             );
 
             if (!backendResponse.ok) {
@@ -204,8 +205,8 @@ Include:
 Do not claim access to real-time data beyond the values provided above.
             `.trim();
 
-            const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/chat`,
+            const response = await apiRequest(
+                "/api/chat",
                 {
                     method: "POST",
                     headers: {

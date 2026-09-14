@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { apiRequest } from "../services/api";
 
 function Chat() {
 
@@ -43,7 +44,7 @@ function Chat() {
 
         try {
 
-            const response = await fetch("http://localhost:5000/api/chat", {
+            const response = await apiRequest("/api/chat", {
 
                 method: "POST",
 

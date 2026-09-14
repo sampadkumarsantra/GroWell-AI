@@ -1,5 +1,5 @@
 
-const API_BASE = `${import.meta.env.VITE_API_URL}`;
+import { apiRequest } from "./api";
 
 export async function translateText(text, targetLanguage) {
 
@@ -9,8 +9,8 @@ export async function translateText(text, targetLanguage) {
 
     try {
 
-        const response = await fetch(
-            `${API_BASE}/api/translate`,
+        const response = await apiRequest(
+            "/api/translate",
             {
                 method: "POST",
 

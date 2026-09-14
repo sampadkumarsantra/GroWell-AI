@@ -22,6 +22,9 @@ import "./Analytics.css";
 import MarketCandlestick
     from "../components/MarketCandlestick";
 
+import { apiRequest }
+    from "../services/api";
+
 
 // =====================================================
 // COMMODITIES
@@ -228,8 +231,8 @@ export default function Analytics() {
 
         try {
 
-            const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/market/analytics?crop=${encodeURIComponent(crop)}`,
+            const response = await apiRequest(
+                `/api/market/analytics?crop=${encodeURIComponent(crop)}`,
                 {
                     method: "GET",
                     cache: "no-store"

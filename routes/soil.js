@@ -12,9 +12,11 @@ router.post("/analyze", (req, res) => {
     } catch (error) {
         console.error("Soil analysis error:", error);
 
-        res.status(500).json({
+        res.status(400).json({
             success: false,
-            message: "Unable to analyze soil."
+            message:
+                error?.message ||
+                "Unable to analyze soil. Please check the entered values."
         });
     }
 });

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import "./CropDiagnosis.css";
 import { useFarm } from "../context/FarmContext";
+import { apiRequest } from "../services/api";
 
 function CropDiagnosis() {
     const {
@@ -51,8 +52,8 @@ function CropDiagnosis() {
 
             formData.append("image", file);
 
-            const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/diagnose`,
+            const response = await apiRequest(
+                "/api/diagnose",
                 {
                     method: "POST",
                     body: formData

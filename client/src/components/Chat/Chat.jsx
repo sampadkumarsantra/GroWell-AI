@@ -6,6 +6,7 @@ import ChatInput from "./ChatInput";
 import CropPreview from "./CropPreview";
 
 import { registerGrowthAction } from "../../services/growthTracker";
+import { apiRequest } from "../../services/api";
 
 const LANGUAGE_CODES = {
     English: "en-IN",
@@ -189,8 +190,8 @@ function Chat({ user }) {
         );
 
         try {
-            const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/diagnose`,
+            const response = await apiRequest(
+                "/api/diagnose",
                 {
                     method: "POST",
                     body: formData
@@ -409,8 +410,8 @@ ${
         setIsTyping(true);
 
         try {
-            const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/chat`,
+            const response = await apiRequest(
+                "/api/chat",
                 {
                     method: "POST",
 
@@ -508,7 +509,7 @@ ${
                 {
                     sender: "bot",
                     text:
-                        "❌ Unable to contact GroWell AI. Please make sure the backend is running on port 3000."
+                        "❌ Unable to reach the GroWell AI server. Start the backend from the project root with `npm start`, then try again."
                 }
             ]);
 
