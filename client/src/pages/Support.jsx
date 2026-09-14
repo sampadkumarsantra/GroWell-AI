@@ -117,10 +117,18 @@ function Support() {
                         <p>
                             Need more help? Reach us directly at{" "}
                             <a
-                                href="mailto:sampadfromindia06@gmail.com"
+                                href="mailto:sampadkrsantra06@gmail.com"
                                 className="support-email"
                             >
-                                sampadfromindia06@gmail.com
+                                sampadkrsantra06@gmail.com
+                            </a>
+                            , or connect on{" "}
+                            <a
+                                href="https://www.linkedin.com/in/sampadkrsantra"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                LinkedIn
                             </a>
                             .
                         </p>

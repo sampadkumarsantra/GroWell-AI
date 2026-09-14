@@ -214,33 +214,62 @@
 
 /* ---- Support cards ---- */
 .support-card {
+    position: relative;
     display: flex;
     align-items: flex-start;
-    gap: 16px;
+    gap: 18px;
     margin: 18px 0;
-    padding: 20px;
+    padding: 24px 26px;
     border: 1px solid var(--gw-line);
-    border-radius: 16px;
+    border-radius: 18px;
     background: var(--gw-paper);
     box-shadow: var(--shadow-soft);
+    overflow: hidden;
+    transition: transform 0.25s var(--ease-out),
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.support-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(
+        90deg,
+        var(--gw-brass),
+        var(--gw-forest)
+    );
+}
+
+.support-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--gw-brass);
+    box-shadow: var(--shadow-medium);
 }
 
 .support-icon {
     flex-shrink: 0;
-    width: 42px;
-    height: 42px;
+    width: 46px;
+    height: 46px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
-    background: rgba(176, 141, 87, 0.13);
+    border-radius: 14px;
+    background: linear-gradient(
+        135deg,
+        rgba(176, 141, 87, 0.14),
+        rgba(30, 81, 59, 0.10)
+    );
     color: var(--gw-brass);
+    font-size: 20px;
 }
 
-.support-card strong {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 14px;
+.support-card h3 {
+    margin: 0 0 6px;
+    font-size: 15px;
     font-weight: 600;
     color: var(--gw-ink);
 }
@@ -249,7 +278,34 @@
     margin: 0;
     color: var(--gw-muted);
     font-size: 13px;
-    line-height: 1.65;
+    line-height: 1.7;
+}
+
+.support-card a {
+    color: var(--gw-forest);
+    font-weight: 500;
+    text-decoration: none;
+    border-bottom: 1px solid var(--gw-brass);
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.support-card a:hover {
+    color: var(--gw-brass);
+    border-color: currentColor;
+}
+
+@media (max-width: 650px) {
+    .support-card {
+        padding: 20px;
+        gap: 14px;
+        border-radius: 14px;
+    }
+
+    .support-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+    }
 }
 
 /* ---- Footer ---- */
