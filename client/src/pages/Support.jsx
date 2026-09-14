@@ -115,9 +115,14 @@ function Support() {
                         </h3>
 
                         <p>
-                            Support contact information will be
-                            published as GroWell AI moves toward
-                            public release.
+                            Need more help? Reach us directly at{" "}
+                            <a
+                                href="mailto:sampadfromindia06@gmail.com"
+                                className="support-email"
+                            >
+                                sampadfromindia06@gmail.com
+                            </a>
+                            .
                         </p>
 
                     </div>
