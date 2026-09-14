@@ -84,7 +84,7 @@ function BrandIcon() {
             <path
                 className="sprout-stem"
                 data-draw
-                stroke="var(--green)"
+                stroke="var(--gw-forest)"
                 strokeWidth="3"
                 d="M100 164 C 97 138, 104 112, 100 86"
             />
@@ -92,7 +92,7 @@ function BrandIcon() {
             <path
                 className="sprout-leaf"
                 data-draw
-                stroke="var(--gold-soft)"
+                stroke="var(--gw-brass)"
                 strokeWidth="2.6"
                 d="M100 118 C 78 114, 60 100, 54 78 C 76 81, 93 96, 100 116"
             />
@@ -100,7 +100,7 @@ function BrandIcon() {
             <path
                 className="sprout-leaf"
                 data-draw
-                stroke="var(--gold-soft)"
+                stroke="var(--gw-brass)"
                 strokeWidth="2.6"
                 d="M100 106 C 122 101, 138 88, 144 66 C 122 69, 106 83, 100 102"
             />
@@ -114,7 +114,7 @@ function CropIcon() {
             <path
                 data-draw
                 fill="none"
-                stroke="var(--green)"
+                stroke="var(--gw-forest)"
                 strokeWidth="2.4"
                 strokeLinejoin="round"
                 d="M80 132 C 40 129, 21 96, 26 59 C 63 63, 97 90, 101 128 C 95 131, 87 132, 80 132 Z"
@@ -123,7 +123,7 @@ function CropIcon() {
             <path
                 data-draw
                 fill="none"
-                stroke="var(--gold-soft)"
+                stroke="var(--gw-brass)"
                 strokeWidth="1.8"
                 strokeLinecap="round"
                 d="M39 69 C 55 85, 76 106, 96 123"
@@ -135,7 +135,7 @@ function CropIcon() {
                 y1="52"
                 x2="112"
                 y2="52"
-                stroke="var(--teal)"
+                stroke="var(--gw-info)"
                 strokeWidth="1.8"
                 strokeLinecap="round"
             />
@@ -149,7 +149,7 @@ function WeatherIcon() {
             <path
                 data-draw
                 fill="none"
-                stroke="var(--parchment)"
+                stroke="var(--gw-muted)"
                 strokeWidth="2.2"
                 strokeLinejoin="round"
                 d="M40 96 C 26 96, 16 86, 16 74 C 16 62, 26 54, 37 54 C 40 40, 54 30, 70 30 C 88 30, 102 42, 104 58 C 118 60, 128 70, 128 84 C 128 96, 118 106, 104 106 L 46 106 C 42 106, 40 101, 40 96 Z"
@@ -158,7 +158,7 @@ function WeatherIcon() {
             <path
                 data-draw
                 fill="none"
-                stroke="var(--teal)"
+                stroke="var(--gw-info)"
                 strokeWidth="2.4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -176,7 +176,7 @@ function YieldIcon() {
                 y1="130"
                 x2="140"
                 y2="130"
-                stroke="rgba(255,255,255,0.18)"
+                stroke="var(--gw-line-2)"
                 strokeWidth="1.6"
             />
 
@@ -187,7 +187,7 @@ function YieldIcon() {
                 width="16"
                 height="40"
                 rx="3"
-                fill="var(--green)"
+                fill="var(--gw-forest)"
             />
 
             <rect
@@ -197,7 +197,7 @@ function YieldIcon() {
                 width="16"
                 height="60"
                 rx="3"
-                fill="var(--gold)"
+                fill="var(--gw-brass)"
             />
 
             <rect
@@ -207,7 +207,7 @@ function YieldIcon() {
                 width="16"
                 height="80"
                 rx="3"
-                fill="var(--green)"
+                fill="var(--gw-forest)"
             />
 
             <rect
@@ -217,7 +217,7 @@ function YieldIcon() {
                 width="16"
                 height="96"
                 rx="3"
-                fill="var(--gold-soft)"
+                fill="var(--gw-brass-2)"
             />
         </svg>
     );
@@ -229,7 +229,7 @@ function MarketIcon() {
             <path
                 data-draw
                 fill="none"
-                stroke="var(--gold-soft)"
+                stroke="var(--gw-brass)"
                 strokeWidth="2.4"
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -242,14 +242,14 @@ function MarketIcon() {
                 cy="48"
                 r="7"
                 fill="none"
-                stroke="var(--gold-soft)"
+                stroke="var(--gw-brass)"
                 strokeWidth="2"
             />
 
             <path
                 data-draw
                 fill="none"
-                stroke="var(--green)"
+                stroke="var(--gw-forest)"
                 strokeWidth="2.4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -259,7 +259,7 @@ function MarketIcon() {
             <path
                 data-draw
                 fill="none"
-                stroke="var(--green)"
+                stroke="var(--gw-forest)"
                 strokeWidth="2.4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
