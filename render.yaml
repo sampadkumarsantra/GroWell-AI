@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: growell-ai-2
+    runtime: node
+    rootDir: .
+    buildCommand: npm install && cd client && npm install && npm run build
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.0

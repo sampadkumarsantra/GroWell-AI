@@ -1,4 +1,6 @@
 require("dotenv").config();
+const path = require("path");
+const fs = require("fs");
 console.log("🔎 GOOGLE CLIENT ID:", process.env.GOOGLE_CLIENT_ID);
 console.log("🔎 JWT SECRET LOADED:", !!process.env.JWT_SECRET);
 const express = require("express");
@@ -45,11 +47,9 @@ app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
 
-app.use(express.static("public"));
-
 
 // =========================
-// API ROUTES
+// API ROUTES (must come before static)
 // =========================
 
 app.use("/api/weather", weatherRoute);
@@ -88,7 +88,29 @@ app.get("/api/status", (req, res) => {
 
 
 // =========================
-// 404
+// SERVE REACT APP (client/dist)
+// =========================
+
+const clientDist = path.join(__dirname, "client", "dist");
+
+if (fs.existsSync(clientDist)) {
+    app.use(express.static(clientDist));
+
+    // SPA fallback — serve index.html for any non-API path
+    app.use((req, res, next) => {
+        if (req.path.startsWith("/api")) {
+            return next();
+        }
+
+        res.sendFile(path.join(clientDist, "index.html"));
+    });
+} else {
+    app.use(express.static("public"));
+}
+
+
+// =========================
+// 404 (API only)
 // =========================
 
 app.use((req, res) => {
