@@ -233,11 +233,6 @@
    MESSAGE COLUMN — centered editorial column
    ===================================================== */
 
-.chat-workspace .messages {
-    display: flex;
-    flex-direction: column;
-}
-
 .chat-workspace .messages > * {
     width: 100%;
     max-width: 880px;
