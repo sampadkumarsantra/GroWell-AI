@@ -14,7 +14,7 @@ GroWell AI is being built with a long-term vision of bringing these dimensions t
 
 ---
 
-# 🌍 A Bigger Vision
+#  A Bigger Vision
 
 Human civilization depends on agriculture.
 
