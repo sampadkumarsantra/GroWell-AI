@@ -56,7 +56,7 @@ The vision is to develop an **intelligent agricultural companion** capable of un
 
 ---
 
-# 🚜 The Problem
+#  The Problem
 
 Modern agriculture generates enormous amounts of information.
 
@@ -96,51 +96,51 @@ GroWell AI aims to address this gap.
 
 ---
 
-# 💡 The GroWell AI Approach
+#  The GroWell AI Approach
 
 GroWell AI brings different agricultural intelligence systems together in one platform.
 
-### 🌱 Crop
+###  Crop
 
 Understanding crop requirements, health and growth stages.
 
-### 🧪 Soil
+###  Soil
 
 Understanding soil characteristics and nutrient conditions.
 
-### 🌦️ Weather
+###  Weather
 
 Understanding environmental conditions and their agricultural implications.
 
-### 🦠 Disease
+###  Disease
 
 Identifying potential crop diseases through image-based AI analysis.
 
-### 💧 Water
+###  Water
 
 Supporting irrigation-related decisions using environmental information.
 
-### 📊 Markets
+###  Markets
 
 Understanding agricultural price and market conditions.
 
-### 📚 Knowledge
+###  Knowledge
 
 Making agricultural knowledge easier to access.
 
-### 🗣️ Language
+###  Language
 
 Reducing language barriers between farmers and technology.
 
-### 🤖 Artificial Intelligence
+###  Artificial Intelligence
 
 Connecting these signals to produce useful agricultural insights.
 
 ---
 
-# ✨ Core Features
+#  Core Features
 
-## 🤖 AI Agricultural Assistant
+## AI Agricultural Assistant
 
 GroWell AI provides an agriculture-focused conversational assistant.
 
@@ -162,7 +162,7 @@ The goal is to make complex agricultural concepts easier to understand and act u
 
 ---
 
-# 🌿 AI Crop Disease Diagnosis
+# AI Crop Disease Diagnosis
 
 GroWell AI allows users to upload crop or plant images for AI-assisted analysis.
 
