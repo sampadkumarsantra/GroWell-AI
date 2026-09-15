@@ -183,7 +183,7 @@ AI-based diagnosis is intended as **decision-support information** and should no
 
 ---
 
-# 🌦️ Weather Intelligence
+#  Weather Intelligence
 
 Weather is more useful to agriculture when it is connected to decisions.
 
@@ -212,7 +212,7 @@ to:
 
 ---
 
-# 🧪 Soil Intelligence
+#  Soil Intelligence
 
 Soil is the foundation of agriculture.
 
@@ -234,7 +234,7 @@ The long-term objective is to create increasingly personalized soil intelligence
 
 ---
 
-# 📊 Agricultural Market Analytics
+# Agricultural Market Analytics
 
 Agricultural markets can change rapidly.
 
@@ -251,7 +251,7 @@ Future versions aim to introduce more real-time, location-aware and crop-specifi
 
 ---
 
-# 📚 Agricultural Knowledge Library
+#  Agricultural Knowledge Library
 
 Not every agricultural question requires an AI conversation.
 
@@ -267,7 +267,7 @@ The goal is to provide farmers with quick access to useful agricultural knowledg
 
 ---
 
-# 🌍 Multilingual Agriculture
+#  Multilingual Agriculture
 
 Agricultural technology should not be limited by language.
 
@@ -298,7 +298,7 @@ A farmer should not need to learn the language of technology.
 
 ---
 
-# 🎙️ Voice Interaction
+#  Voice Interaction
 
 GroWell AI includes browser-based voice interaction where supported.
 
@@ -308,7 +308,7 @@ The long-term vision is to create a natural conversational agricultural interfac
 
 ---
 
-# 🔐 Authentication
+#  Authentication
 
 GroWell AI includes a user authentication foundation for:
 
@@ -321,7 +321,7 @@ This provides the foundation for future personalized farm intelligence.
 
 ---
 
-# 🏗️ System Architecture
+#  System Architecture
 
 GroWell AI follows a client-server architecture.
 
@@ -371,18 +371,18 @@ GroWell AI follows a client-server architecture.
 
 ---
 
-# 🧩 Core Modules
+#  Core Modules
 
 | Module | Purpose |
 |---|---|
-| 🤖 AI Chat | Conversational agricultural assistance |
-| 🌿 Crop Diagnosis | AI-assisted crop image analysis |
-| 🌦️ Weather | Weather and agricultural weather intelligence |
-| 🧪 Soil Health | Soil and nutrient analysis |
-| 📊 Analytics | Agricultural market analytics |
-| 📚 Library | Agricultural knowledge repository |
-| ⚙️ Settings | Language and user preferences |
-| 🔐 Authentication | User registration and login |
+| AI Chat | Conversational agricultural assistance |
+|  Crop Diagnosis | AI-assisted crop image analysis |
+| Weather | Weather and agricultural weather intelligence |
+|  Soil Health | Soil and nutrient analysis |
+| Analytics | Agricultural market analytics |
+| Library | Agricultural knowledge repository |
+| Settings | Language and user preferences |
+| Authentication | User registration and login |
 
 ---
 
