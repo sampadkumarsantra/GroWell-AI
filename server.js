@@ -94,13 +94,37 @@ app.get("/api/status", (req, res) => {
 const clientDist = path.join(__dirname, "client", "dist");
 
 if (fs.existsSync(clientDist)) {
-    app.use(express.static(clientDist));
+    app.use(
+        express.static(clientDist, {
+            setHeaders(res, filePath) {
+                // Hashed assets (assets/*) are immutable — cache hard.
+                if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+                    res.setHeader(
+                        "Cache-Control",
+                        "public, max-age=31536000, immutable"
+                    );
+                } else {
+                    // index.html and other HTML must always be revalidated
+                    // so browsers never hang on to a stale bundle.
+                    res.setHeader(
+                        "Cache-Control",
+                        "no-cache, must-revalidate"
+                    );
+                }
+            }
+        })
+    );
 
     // SPA fallback — serve index.html for any non-API path
     app.use((req, res, next) => {
         if (req.path.startsWith("/api")) {
             return next();
         }
+
+        res.setHeader(
+            "Cache-Control",
+            "no-cache, must-revalidate"
+        );
 
         res.sendFile(path.join(clientDist, "index.html"));
     });
