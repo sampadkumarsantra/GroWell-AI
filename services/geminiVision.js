@@ -9,9 +9,9 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // You can change this later from .env
 // Example:
-// GEMINI_VISION_MODEL=gemini-2.5-flash
+// GEMINI_VISION_MODEL=gemini-3.8-flash
 const GEMINI_VISION_MODEL =
-    process.env.GEMINI_VISION_MODEL || "gemini-3.6-flash";
+    process.env.GEMINI_VISION_MODEL || "gemini-3.8-flash";
 
 if (!GEMINI_API_KEY) {
     console.error("❌ GEMINI_API_KEY is missing from .env");
@@ -29,7 +29,7 @@ const ai = new GoogleGenAI({
 
 
 // =====================================================
-// RATE LIMIT DETECTION
+// RATE LIMIT / AVAILABILITY DETECTION
 // =====================================================
 
 function isRateLimitError(error) {
@@ -53,6 +53,60 @@ function isRateLimitError(error) {
         message.includes("too many requests") ||
         message.includes("limit reached")
     );
+
+}
+
+function isAvailabilityError(error) {
+
+    if (
+        error?.status === 503 ||
+        error?.statusCode === 503
+    ) {
+
+        return true;
+
+    }
+
+    const message =
+        String(error?.message || "").toLowerCase();
+
+    return (
+        message.includes("503") ||
+        message.includes("unavailable") ||
+        message.includes("high demand") ||
+        message.includes("overloaded") ||
+        message.includes("try again later")
+    );
+
+}
+
+
+// =====================================================
+// MODEL FALLBACK CHAIN
+// =====================================================
+
+const FALLBACK_MODELS = [
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.7-flash"
+];
+
+function buildModelChain() {
+
+    const chain = [GEMINI_VISION_MODEL];
+
+    for (const model of FALLBACK_MODELS) {
+
+        if (!chain.includes(model)) {
+
+            chain.push(model);
+
+        }
+
+    }
+
+    return chain;
 
 }
 
@@ -404,57 +458,171 @@ Keep the recommendations practical and understandable.
 
 
         // =================================================
-        // GEMINI REQUEST
+        // GEMINI REQUEST (WITH MODEL FALLBACK + RETRY)
         // =================================================
 
-        const response =
-            await ai.models.generateContent({
+        const modelChain = buildModelChain();
 
-                model:
-                    GEMINI_VISION_MODEL,
+        let response;
+        let lastError = null;
 
-                contents: [
+        for (const model of modelChain) {
 
-                    {
+            console.log(
+                `📡 Trying Gemini model: ${model}`
+            );
 
-                        role: "user",
+            for (let attempt = 1; attempt <= 2; attempt++) {
 
-                        parts: [
+                try {
 
-                            {
-                                text: prompt
-                            },
+                    response =
+                        await ai.models.generateContent({
 
-                            {
+                            model,
 
-                                inlineData: {
+                            contents: [
 
-                                    mimeType:
-                                        file.mimetype,
+                                {
 
-                                    data:
-                                        imageBase64
+                                    role: "user",
+
+                                    parts: [
+
+                                        {
+                                            text: prompt
+                                        },
+
+                                        {
+
+                                            inlineData: {
+
+                                                mimeType:
+                                                    file.mimetype,
+
+                                                data:
+                                                    imageBase64
+
+                                            }
+
+                                        }
+
+                                    ]
 
                                 }
 
+                            ],
+
+                            config: {
+
+                                responseMimeType:
+                                    "application/json",
+
+                                temperature: 0.2
+
                             }
 
-                        ]
+                        });
 
-                    }
+                    lastError = null;
 
-                ],
+                    console.log(
+                        `✅ Gemini model ${model} succeeded`
+                    );
 
-                config: {
-
-                    responseMimeType:
-                        "application/json",
-
-                    temperature: 0.2
+                    break;
 
                 }
 
-            });
+                catch (requestError) {
+
+                    lastError = requestError;
+
+                    const temporary =
+                        isRateLimitError(requestError) ||
+                        isAvailabilityError(requestError);
+
+                    console.warn(
+                        `⚠️ Gemini model ${model} attempt ${attempt} failed:`,
+                        requestError?.message
+                    );
+
+                    // Temporary overload/rate limit:
+                    // wait briefly and retry the same model,
+                    // then move to the next model.
+                    if (
+                        attempt === 1 &&
+                        temporary
+                    ) {
+
+                        console.log(
+                            "⏳ Waiting 2 seconds before retrying..."
+                        );
+
+                        await new Promise(
+                            resolve => setTimeout(resolve, 2000)
+                        );
+
+                        continue;
+
+                    }
+
+                    console.log(
+                        `➡️ Moving to next Gemini model...`
+                    );
+
+                    break;
+
+                }
+
+            }
+
+            if (response) {
+
+                break;
+
+            }
+
+        }
+
+        if (!response) {
+
+            if (
+                lastError &&
+                isRateLimitError(lastError)
+            ) {
+
+                const rateError = new Error(
+                    "Crop diagnosis is temporarily busy. The AI service has reached its request limit (429). Please wait a minute and try again."
+                );
+
+                rateError.status = 429;
+
+                throw rateError;
+
+            }
+
+            if (
+                lastError &&
+                isAvailabilityError(lastError)
+            ) {
+
+                const unavailableError = new Error(
+                    "Crop diagnosis is temporarily unavailable. The AI model is experiencing high demand. Please wait a moment and try again."
+                );
+
+                unavailableError.status = 503;
+
+                throw unavailableError;
+
+            }
+
+            throw new Error(
+                lastError?.message ||
+                "All Gemini models failed to analyze the crop image."
+            );
+
+        }
 
 
         // =================================================

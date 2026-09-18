@@ -206,6 +206,25 @@ router.post(
             }
 
 
+            if (error?.status === 503) {
+
+                res.set("Retry-After", "30");
+
+                return res.status(503).json({
+
+                    success: false,
+
+                    code: "MODEL_UNAVAILABLE",
+
+                    message:
+                        error?.message ||
+                        "Crop diagnosis is temporarily unavailable. Please wait a moment and try again."
+
+                });
+
+            }
+
+
             return res.status(500).json({
 
                 success: false,

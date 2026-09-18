@@ -455,6 +455,14 @@ ${
                         "⚠️ The crop diagnosis service has reached its request limit and is temporarily busy.\n\nPlease wait about a minute, then try the analysis again."
                 });
 
+            } else if (error?.status === 503) {
+
+                appendMessage({
+                    sender: "bot",
+                    text:
+                        "⚠️ Crop diagnosis is temporarily unavailable because the AI model is experiencing high demand.\n\nPlease wait a moment, then try the analysis again."
+                });
+
             } else {
 
                 const detail =

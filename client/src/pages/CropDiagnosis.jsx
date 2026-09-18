@@ -126,8 +126,10 @@ function CropDiagnosis() {
             setError(
                 err?.status === 429
                     ? "Rate limit reached: the diagnosis service is busy right now. Please wait about a minute and then try again."
-                    : err.message ||
-                    "GroWell Vision could not analyze the image."
+                    : err?.status === 503
+                        ? "Crop diagnosis is temporarily unavailable: the AI model is experiencing high demand. Please wait a moment and try again."
+                        : err.message ||
+                        "GroWell Vision could not analyze the image."
             );
 
         } finally {
