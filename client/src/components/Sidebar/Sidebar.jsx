@@ -18,7 +18,7 @@ const menu = [
     { icon: ScanLine, label: "Crop Diagnosis" },
     { icon: CloudSun, label: "Weather" },
     { icon: Sprout, label: "Soil Health" },
-    { icon: Flower2, label: "Journey" },
+    { icon: Flower2, label: "Journey", hideOnMobile: true },
     { icon: BookOpen, label: "Library" },
     { icon: BarChart3, label: "Analytics" },
     { icon: Settings, label: "Settings" }
@@ -63,11 +63,14 @@ function Sidebar({ activePage, setActivePage }) {
                         <button
                             key={item.label}
                             type="button"
-                            className={
+                            className={[
                                 activePage === item.label
                                     ? "active"
+                                    : "",
+                                item.hideOnMobile
+                                    ? "gw-nav-hide-mobile"
                                     : ""
-                            }
+                            ].filter(Boolean).join(" ")}
                             onClick={() =>
                                 handleMenuClick(item.label)
                             }

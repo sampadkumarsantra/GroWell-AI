@@ -287,4 +287,10 @@ aside::before {
     aside .growth-journey {
         display: none;
     }
+
+    /* Journey lives on the chat input bar on mobile,
+       not in the bottom navigation. */
+    .gw-nav .gw-nav-hide-mobile {
+        display: none;
+    }
 }
