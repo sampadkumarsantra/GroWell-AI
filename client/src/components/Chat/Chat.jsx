@@ -96,7 +96,7 @@ function notifyGrowthUpdated() {
    CHAT
    ===================================================== */
 
-function Chat({ user }) {
+function Chat({ user, setActivePage }) {
 
     /* -------------------------------------------------
        CONVERSATION STATE
@@ -744,6 +744,11 @@ ${
                         handleImageUpload
                     }
                     fileInputRef={fileInputRef}
+                    onOpenJourney={() => {
+                        if (setActivePage) {
+                            setActivePage("Journey");
+                        }
+                    }}
                 />
 
             </div>

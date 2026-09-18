@@ -25,7 +25,7 @@ function Dashboard({ user, onLogout }) {
     function renderPage() {
         switch (activePage) {
             case "Chat":
-                return <Chat user={user} />;
+                return <Chat user={user} setActivePage={setActivePage} />;
 
             case "Crop Diagnosis":
                 return <CropDiagnosis />;
@@ -73,7 +73,12 @@ function Dashboard({ user, onLogout }) {
             ========================================= */
 
             default:
-                return <Chat user={user} />;
+                return (
+                    <Chat
+                        user={user}
+                        setActivePage={setActivePage}
+                    />
+                );
         }
     }
 

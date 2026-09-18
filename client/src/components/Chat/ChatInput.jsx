@@ -1,7 +1,8 @@
 import {
     Mic,
     Camera,
-    SendHorizontal
+    SendHorizontal,
+    Flower2
 } from "lucide-react";
 
 function ChatInput({
@@ -13,13 +14,24 @@ function ChatInput({
     isListening,
     openImagePicker,
     handleImageUpload,
-    fileInputRef
+    fileInputRef,
+    onOpenJourney
 }) {
     return (
 
         <div className="input-wrapper">
 
         <div className="chat-input">
+
+            <button
+                type="button"
+                className="journey-input-btn"
+                title="My Growth Journey"
+                aria-label="Open my growth journey"
+                onClick={onOpenJourney}
+            >
+                <Flower2 size={20} />
+            </button>
 
             <input
                 type="text"

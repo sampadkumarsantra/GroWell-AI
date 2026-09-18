@@ -40,6 +40,22 @@
     padding: 10px 8px;
 }
 
+/* ---- Journey button (left of the input bar) ---- */
+.chat-input .journey-input-btn {
+    color: var(--gw-forest);
+    background: rgba(30, 81, 59, 0.08);
+}
+
+.chat-input .journey-input-btn:hover {
+    background: rgba(30, 81, 59, 0.16);
+    color: var(--gw-forest);
+    border-color: var(--gw-line);
+}
+
+.chat-input .journey-input-btn:active {
+    transform: scale(0.94);
+}
+
 .chat-input input::placeholder {
     color: var(--gw-faint);
     font-weight: 400;
