@@ -29,6 +29,12 @@ export async function apiRequest(path, options = {}) {
         candidates.push(PRIMARY_BASE_URL);
     }
 
+    // In production the SPA and API are served from the same origin,
+    // so relative requests work on any device (no localhost needed).
+    if (import.meta.env.PROD && !PRIMARY_BASE_URL) {
+        candidates.push("");
+    }
+
     for (const base of FALLBACK_BASES) {
         if (!candidates.includes(base)) {
             candidates.push(base);
