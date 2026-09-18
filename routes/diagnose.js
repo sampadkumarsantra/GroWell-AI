@@ -187,6 +187,25 @@ router.post(
             );
 
 
+            if (error?.status === 429) {
+
+                return res.status(429)
+                    .set("Retry-After", "60")
+                    .json({
+
+                        success: false,
+
+                        code: "RATE_LIMIT",
+
+                        message:
+                            error?.message ||
+                            "Crop diagnosis is temporarily busy. Please wait a moment and try again."
+
+                    });
+
+            }
+
+
             return res.status(500).json({
 
                 success: false,

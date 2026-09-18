@@ -17,9 +17,11 @@ async function analyzeCropImage(file) {
     const data = await response.json();
 
     if (!response.ok) {
-        throw new Error(
+        const requestError = new Error(
             data.message || "Crop diagnosis failed"
         );
+        requestError.status = response.status;
+        throw requestError;
     }
 
     return data;

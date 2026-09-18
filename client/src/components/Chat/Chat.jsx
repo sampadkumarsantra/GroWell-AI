@@ -376,11 +376,13 @@ function Chat({ user }) {
                 await response.json();
 
             if (!response.ok) {
-                throw new Error(
+                const requestError = new Error(
                     data.message ||
                     data.error ||
                     "Crop diagnosis failed"
                 );
+                requestError.status = response.status;
+                throw requestError;
             }
 
             console.log(
@@ -445,25 +447,38 @@ ${
                 error
             );
 
-            const detail =
-                error?.message || "";
+            if (error?.status === 429) {
 
-            const hiddenDetail =
-                !detail ||
-                detail === "Failed to fetch" ||
-                detail.includes(
-                    "Unexpected token"
-                );
+                appendMessage({
+                    sender: "bot",
+                    text:
+                        "⚠️ The crop diagnosis service has reached its request limit and is temporarily busy.\n\nPlease wait about a minute, then try the analysis again."
+                });
 
-            appendMessage({
-                sender: "bot",
-                text:
-                    "❌ Unable to analyze the crop image." +
-                    (hiddenDetail
-                        ? ""
-                        : `\n\n${detail}`) +
-                    "\n\nPlease check that the GroWell backend is reachable and the Gemini API key is configured."
-            });
+            } else {
+
+                const detail =
+                    error?.message || "";
+
+                const hiddenDetail =
+                    !detail ||
+                    detail === "Failed to fetch" ||
+                    detail.includes(
+                        "Unexpected token"
+                    );
+
+                appendMessage({
+                    sender: "bot",
+                    text:
+                        "❌ Unable to analyze the crop image." +
+                        (hiddenDetail
+                            ? ""
+                            : `\n\n${detail}`) +
+                        "\n\nPlease check that the GroWell backend is reachable and the Gemini API key is configured."
+                });
+
+            }
+
         } finally {
             setIsAnalyzing(false);
         }

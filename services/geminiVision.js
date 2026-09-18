@@ -29,6 +29,35 @@ const ai = new GoogleGenAI({
 
 
 // =====================================================
+// RATE LIMIT DETECTION
+// =====================================================
+
+function isRateLimitError(error) {
+
+    if (
+        error?.status === 429 ||
+        error?.statusCode === 429
+    ) {
+
+        return true;
+
+    }
+
+    const message =
+        String(error?.message || "").toLowerCase();
+
+    return (
+        message.includes("429") ||
+        message.includes("quota") ||
+        message.includes("rate limit") ||
+        message.includes("too many requests") ||
+        message.includes("limit reached")
+    );
+
+}
+
+
+// =====================================================
 // CROP IMAGE DIAGNOSIS
 // =====================================================
 
@@ -588,6 +617,21 @@ Keep the recommendations practical and understandable.
 
 
         // Keep useful error message for diagnose route
+
+        if (
+            isRateLimitError(error)
+        ) {
+
+            const rateError = new Error(
+                "Crop diagnosis is temporarily busy. The AI service has reached its request limit (429). Please wait a minute and try again."
+            );
+
+            rateError.status = 429;
+
+            throw rateError;
+
+        }
+
 
         if (
             error?.message?.includes(

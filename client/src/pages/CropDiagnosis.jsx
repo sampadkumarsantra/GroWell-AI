@@ -63,9 +63,11 @@ function CropDiagnosis() {
             const data = await response.json();
 
             if (!response.ok || !data.success) {
-                throw new Error(
+                const requestError = new Error(
                     data.message || "Crop diagnosis failed."
                 );
+                requestError.status = response.status;
+                throw requestError;
             }
 
             console.log("🌿 GroWell Vision:", data);
@@ -122,8 +124,10 @@ function CropDiagnosis() {
             );
 
             setError(
-                err.message ||
-                "GroWell Vision could not analyze the image."
+                err?.status === 429
+                    ? "Rate limit reached: the diagnosis service is busy right now. Please wait about a minute and then try again."
+                    : err.message ||
+                    "GroWell Vision could not analyze the image."
             );
 
         } finally {
