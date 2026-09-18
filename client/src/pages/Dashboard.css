@@ -52,6 +52,17 @@
     border-radius: 10px;
 }
 
+/* GroWell Journey as a full page */
+.journey-page {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 8px 0 24px;
+}
+
+.journey-page .growth-journey {
+    margin: 0;
+}
+
 @media (max-width: 768px) {
     .page-container {
         padding: 18px;

@@ -5,7 +5,8 @@ import {
     Sprout,
     BarChart3,
     Settings,
-    BookOpen
+    BookOpen,
+    Flower2
 } from "lucide-react";
 
 import "./Sidebar.css";
@@ -17,6 +18,7 @@ const menu = [
     { icon: ScanLine, label: "Crop Diagnosis" },
     { icon: CloudSun, label: "Weather" },
     { icon: Sprout, label: "Soil Health" },
+    { icon: Flower2, label: "Journey" },
     { icon: BookOpen, label: "Library" },
     { icon: BarChart3, label: "Analytics" },
     { icon: Settings, label: "Settings" }

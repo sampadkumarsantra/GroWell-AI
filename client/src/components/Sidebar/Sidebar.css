@@ -283,7 +283,8 @@ aside::before {
         max-width: 56px;
     }
 
-    .growth-journey {
+    .sidebar .growth-journey,
+    aside .growth-journey {
         display: none;
     }
 }

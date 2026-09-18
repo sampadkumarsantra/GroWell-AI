@@ -10,6 +10,7 @@ import SoilHealth from "./SoilHealth";
 import Library from "./Library";
 import Analytics from "./Analytics";
 import Settings from "./Settings";
+import GrowthJourney from "../components/GrowthJourney/GrowthJourney";
 
 import About from "./About";
 import Terms from "./Terms";
@@ -34,6 +35,13 @@ function Dashboard({ user, onLogout }) {
 
             case "Soil Health":
                 return <SoilHealth />;
+
+            case "Journey":
+                return (
+                    <div className="journey-page">
+                        <GrowthJourney />
+                    </div>
+                );
 
             case "Library":
                 return <Library />;
