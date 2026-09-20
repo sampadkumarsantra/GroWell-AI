@@ -365,20 +365,21 @@ export default function Analytics() {
 
             const history =
                 (result.markets || [])
-                    .map(item =>
-                        Number(item.modalPrice)
-                    )
+                    .map(item => ({
+                        date: item.date || "",
+                        price: Number(item.modalPrice)
+                    }))
                     .filter(
-                        value =>
-                            Number.isFinite(value) &&
-                            value > 0
+                        item =>
+                            Number.isFinite(item.price) &&
+                            item.price > 0
                     );
 
 
             const finalHistory =
                 history.length > 0
                     ? history.slice(-30)
-                    : [price];
+                    : [{ date: "", price }];
 
 
             // =================================================
@@ -661,6 +662,34 @@ export default function Analytics() {
             );
 
         }, [search]);
+
+
+    // =====================================================
+    // SEARCH AUTO-SELECT
+    //
+    // When the user searches for a commodity, the main
+    // graph must follow and show that commodity instead
+    // of keeping the previously selected one.
+    // =====================================================
+
+    useEffect(() => {
+
+        if (!search.trim()) {
+            return;
+        }
+
+        if (
+            filteredCrops.length > 0 &&
+            !filteredCrops.includes(selectedCrop)
+        ) {
+
+            setSelectedCrop(
+                filteredCrops[0]
+            );
+
+        }
+
+    }, [search, filteredCrops, selectedCrop]);
 
 
     // =====================================================
