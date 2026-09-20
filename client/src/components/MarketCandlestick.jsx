@@ -7,6 +7,7 @@ import {
 
 import {
     createChart,
+    AreaSeries,
     ColorType,
     CrosshairMode,
     LineStyle
@@ -354,17 +355,20 @@ export default function MarketCandlestick({ data, selectedCrop }) {
             );
 
         const series =
-            chart.addAreaSeries({
-                lineColor: "#c9a872",
-                topColor: "rgba(201, 168, 114, 0.32)",
-                bottomColor: "rgba(201, 168, 114, 0.02)",
-                lineWidth: 2,
-                priceLineVisible: false,
-                lastValueVisible: false,
-                crosshairMarkerRadius: 4,
-                crosshairMarkerBackgroundColor: "#c9a872",
-                crosshairMarkerBorderColor: "#10150f"
-            });
+            chart.addSeries(
+                AreaSeries,
+                {
+                    lineColor: "#c9a872",
+                    topColor: "rgba(201, 168, 114, 0.32)",
+                    bottomColor: "rgba(201, 168, 114, 0.02)",
+                    lineWidth: 2,
+                    priceLineVisible: false,
+                    lastValueVisible: false,
+                    crosshairMarkerRadius: 4,
+                    crosshairMarkerBackgroundColor: "#c9a872",
+                    crosshairMarkerBorderColor: "#10150f"
+                }
+            );
 
         chartRef.current = chart;
         seriesRef.current = series;
