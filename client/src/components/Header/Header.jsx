@@ -3,7 +3,6 @@ import "./Header.css";
 
 import {
     Bell,
-    Search,
     CircleUserRound,
     LogOut,
     UserRound,
@@ -24,7 +23,6 @@ function Header({
     setActivePage,
     onLogout
 }) {
-    const [search, setSearch] = useState("");
     const [profileOpen, setProfileOpen] = useState(false);
     const [infoOpen, setInfoOpen] = useState(false);
 
@@ -84,116 +82,6 @@ function Header({
             );
         };
     }, []);
-
-    // =====================================================
-    // FEATURE SEARCH
-    // =====================================================
-
-    const features = [
-        {
-            keywords: [
-                "chat",
-                "ai",
-                "ask",
-                "assistant"
-            ],
-            page: "Chat"
-        },
-
-        {
-            keywords: [
-                "crop",
-                "diagnosis",
-                "disease",
-                "plant disease"
-            ],
-            page: "Crop Diagnosis"
-        },
-
-        {
-            keywords: [
-                "weather",
-                "rain",
-                "temperature",
-                "forecast"
-            ],
-            page: "Weather"
-        },
-
-        {
-            keywords: [
-                "soil",
-                "soil health",
-                "soil intelligence",
-                "ph",
-                "nutrient"
-            ],
-            page: "Soil Health"
-        },
-
-        {
-            keywords: [
-                "library",
-                "disease library",
-                "pest",
-                "reference"
-            ],
-            page: "Library"
-        },
-
-        {
-            keywords: [
-                "analytics",
-                "analysis",
-                "statistics",
-                "market"
-            ],
-            page: "Analytics"
-        },
-
-        {
-            keywords: [
-                "settings",
-                "preferences",
-                "configuration"
-            ],
-            page: "Settings"
-        }
-    ];
-
-    function performSearch() {
-        const query = search.toLowerCase().trim();
-
-        if (!query) {
-            return;
-        }
-
-        const match = features.find(feature =>
-            feature.keywords.some(
-                keyword =>
-                    keyword === query ||
-                    keyword.includes(query) ||
-                    query.includes(keyword)
-            )
-        );
-
-        if (match) {
-            setActivePage(match.page);
-            setSearch("");
-            setInfoOpen(false);
-            setProfileOpen(false);
-        } else {
-            alert(
-                `No GroWell AI feature found for "${search}".`
-            );
-        }
-    }
-
-    function handleKeyDown(e) {
-        if (e.key === "Enter") {
-            performSearch();
-        }
-    }
 
     // =====================================================
     // LOGOUT
@@ -264,28 +152,42 @@ function Header({
             <div className="header-right">
 
                 {/* =================================================
-                    SEARCH
+                    PREMIUM
                 ================================================= */}
 
-                <div className="search-box">
+                <button
+                    className={`premium-btn ${
+                        isPremium
+                            ? "premium-btn-active"
+                            : ""
+                    }`}
+                    type="button"
+                    onClick={() => {
+                        setInfoOpen(false);
+                        setProfileOpen(false);
+                        setActivePage("Premium");
+                    }}
+                    title={
+                        isPremium
+                            ? "Manage your Premium plan"
+                            : "Upgrade to GroWell Premium"
+                    }
+                    aria-label={
+                        isPremium
+                            ? "Manage your Premium plan"
+                            : "Upgrade to GroWell Premium"
+                    }
+                >
 
-                    <Search
-                        size={18}
-                        className="search-icon"
-                        onClick={performSearch}
-                    />
+                    <Sparkles size={16} />
 
-                    <input
-                        type="text"
-                        placeholder="Search features..."
-                        value={search}
-                        onChange={(e) =>
-                            setSearch(e.target.value)
-                        }
-                        onKeyDown={handleKeyDown}
-                    />
+                    <span>
+                        {isPremium
+                            ? "Premium"
+                            : "Go Premium"}
+                    </span>
 
-                </div>
+                </button>
 
                 {/* =================================================
                     NOTIFICATIONS

@@ -62,53 +62,52 @@
 }
 
 /* =====================================================
-   SEARCH BOX
+   PREMIUM BUTTON
    ===================================================== */
 
-.search-box {
+.premium-btn {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     height: 42px;
-    width: 210px;
-    padding: 0 14px;
-    border-radius: 12px;
-    background: var(--gw-paper);
-    border: 1px solid var(--gw-line);
-    color: var(--gw-faint);
+    padding: 0 18px;
+    border: 1px solid var(--gw-brass);
+    border-radius: var(--radius-pill);
+    background: linear-gradient(
+        135deg,
+        rgba(176, 141, 87, 0.22),
+        rgba(176, 141, 87, 0.08)
+    );
+    color: var(--gw-ink);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
     box-shadow: var(--shadow-soft);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, width 0.25s ease;
+    transition: var(--transition);
 }
 
-.search-box:focus-within {
+.premium-btn:hover {
+    transform: translateY(-1px);
     border-color: var(--gw-brass);
     box-shadow: var(--shadow-glow);
-    width: 240px;
 }
 
-.search-icon {
+.premium-btn svg {
     flex-shrink: 0;
-    cursor: pointer;
-    transition: color 0.2s ease;
-}
-
-.search-icon:hover {
     color: var(--gw-brass);
 }
 
-.search-box input {
-    flex: 1;
-    min-width: 0;
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 13px;
-    color: var(--gw-ink);
+.premium-btn.premium-btn-active {
+    background: var(--gw-brass);
+    color: var(--gw-forest-deep);
 }
 
-.search-box input::placeholder {
-    color: var(--gw-faint);
+.premium-btn.premium-btn-active svg {
+    color: var(--gw-forest-deep);
 }
+
 
 /* =====================================================
    ICON BUTTONS (base defined in index.css)
@@ -417,14 +416,11 @@
    ===================================================== */
 
 @media (max-width: 980px) {
-    .search-box {
-        width: 150px;
-    }
-
-    .search-box:focus-within {
-        width: 170px;
+    .premium-btn {
+        padding: 0 14px;
     }
 }
+
 
 @media (max-width: 700px) {
     .gw-header {
@@ -441,9 +437,14 @@
         display: none;
     }
 
-    .search-box {
+    .premium-btn {
+        padding: 0 12px;
+    }
+
+    .premium-btn span {
         display: none;
     }
+
 
     .info-dropdown {
         width: 290px;
