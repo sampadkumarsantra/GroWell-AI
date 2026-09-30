@@ -477,8 +477,12 @@ GroWell AI/
 │   ├── agricultureEngine.js
 │   ├── ai.js
 │   ├── geminiVision.js
+│   ├── docaService.js
 │   ├── growellDecision.js
-│   ├── marketService.js
+│   ├── marketRefresher.js
+│   ├── marketResponse.js
+│   ├── marketSources.js
+│   ├── marketStore.js
 │   ├── soilAnalysis.js
 │   └── weatherService.js
 │
@@ -626,6 +630,40 @@ The backend provides multiple service endpoints:
 ```
 
 Each route is responsible for a different component of the agricultural intelligence platform.
+
+## Market price sources
+
+`/api/market/analytics` resolves each crop against two independent
+government sources, then a durable stored copy:
+
+| Order | Source | What it is |
+| --- | --- | --- |
+| 1 | Agmarknet via `data.gov.in` | Market-level mandi prices. The preferred figure. |
+| 2 | DOCA Price Monitoring System | All-India average wholesale price. Used only when Agmarknet cannot be reached. |
+| 3 | `market_snapshots` (Postgres) | The last good payload, returned with `stale: true`. |
+| 4 | Unavailable | Only when no source has ever answered for that crop. |
+
+The `data.gov.in` gateway fails often (502/503), so the second source and
+the stored snapshot exist to keep the page useful during an outage.
+
+Notes on honesty of the data:
+
+- A DOCA figure is a **national average**, not a local mandi rate. It is
+  labelled as such in the response `basis` and `sourceNote` fields and is
+  shown that way in the interface.
+- DOCA publishes a fixed basket covering only Rice, Wheat, Potato, Onion
+  and Tomato. Crops it does not track are never substituted with a
+  similar commodity.
+- Snapshots older than three days are not served; the response is
+  `available: false` rather than a number from last week.
+- If no source covers a crop, the response is `available: false`. GroWell
+  never estimates or invents a price.
+
+`services/marketRefresher.js` sweeps every supported crop shortly after
+startup and every two hours, writing the current payload to
+`market_snapshots`. This means an outage is already covered by the time a
+farmer opens the page, rather than the first page view being the one that
+discovers the feed is down.
 
 ---
 

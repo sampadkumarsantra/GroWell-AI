@@ -1,4 +1,4 @@
-const { get, run } = require("./pool");
+const { all, run } = require("./pool");
 
 
 // =====================================================
@@ -87,6 +87,33 @@ const MIGRATIONS = [
         up: `
             CREATE INDEX IF NOT EXISTS idx_usage_user_kind_time
                 ON usage_events (user_id, kind, created_at)
+        `
+    },
+
+    {
+        // The last good price per crop, kept in the database so
+        // prices survive a deploy or a restart while the
+        // government feed is down. The API is frequently
+        // unreachable, and a farmer must never see an empty
+        // price because a process bounced.
+        id: "006_market_snapshots",
+        up: `
+            CREATE TABLE IF NOT EXISTS market_snapshots (
+                crop          TEXT PRIMARY KEY,
+                payload       JSONB NOT NULL,
+                source        TEXT NOT NULL,
+                captured_at   TIMESTAMPTZ NOT NULL
+                              DEFAULT NOW(),
+                price_date    TEXT
+            )
+        `
+    },
+
+    {
+        id: "007_market_snapshot_indexes",
+        up: `
+            CREATE INDEX IF NOT EXISTS idx_market_snapshots_captured
+                ON market_snapshots (captured_at)
         `
     }
 ];

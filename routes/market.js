@@ -1,229 +1,185 @@
 const express = require("express");
-const axios = require("axios");
+
+const sources = require("../services/marketSources");
+const store = require("../services/marketStore");
+const {
+    buildAgmarknetResponse,
+    buildDocaResponse
+} = require("../services/marketResponse");
 
 const router = express.Router();
 
-const DATA_GOV_URL =
-    "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070";
 
-// A snapshot older than this is too old to present as today's
-// price — the UI goes back to "Unavailable" instead of showing
-// an obsolete number as if it were current.
-const STALE_MAX_AGE_MS =
+// A stored snapshot older than this is too old to present as a
+// current price. Beyond it the honest answer is "unavailable"
+// rather than a number from last week.
+const SNAPSHOT_MAX_AGE_MS =
     3 * 24 * 60 * 60 * 1000;
 
-console.log("🔥 MARKET ROUTER LOADED");
+// Agmarknet is slow to answer when it is degraded, and the page
+// asks for twelve crops at once. A short in-process cache keeps
+// a burst of traffic from turning into twelve upstream calls per
+// farmer.
+const LIVE_TTL_MS = 5 * 60 * 1000;
 
+const liveCache = new Map();
 
-// =====================================================
-// CACHE — LAST GOOD PRICES PER CROP
-//
-// The government feed is frequently down or throttled. On a
-// failure we keep serving the last successful snapshot for a
-// few days instead of showing "Unavailable". The response is
-// flagged `stale` so the UI can label it honestly.
-// =====================================================
-
-const marketCache = new Map();
 
 function cacheKey(crop) {
     return String(crop).trim().toLowerCase();
 }
 
-function cacheResponse(crop, payload) {
-    marketCache.set(cacheKey(crop), {
-        payload,
-        cachedAt: new Date().toISOString()
-    });
-}
-
-function cachedResponse(crop) {
+function readLiveCache(crop) {
 
     const entry =
-        marketCache.get(cacheKey(crop));
+        liveCache.get(cacheKey(crop));
 
     if (!entry) {
         return null;
     }
 
-    const age =
-        Date.now() -
-        new Date(entry.cachedAt).getTime();
-
-    if (age > STALE_MAX_AGE_MS) {
+    if (
+        Date.now() - entry.fetchedAt > LIVE_TTL_MS
+    ) {
         return null;
     }
 
     return entry.payload;
 }
 
+function writeLiveCache(crop, payload) {
+
+    liveCache.set(cacheKey(crop), {
+        payload,
+        fetchedAt: Date.now()
+    });
+}
+
 
 // =====================================================
-// RESPONSE BUILDER
+// RESOLUTION ORDER
 // =====================================================
+//
+// 1. Agmarknet        — live, market level (preferred)
+// 2. DOCA             — live, all-India average
+// 3. Stored snapshot  — last good payload, marked stale
+// 4. Unavailable      — only when no source has ever answered
+//
 
-function buildMarketResponse(crop, markets) {
+async function resolveCrop(crop) {
 
-    const prices =
-        markets.map(
-            market =>
-                market.modalPrice
-        );
+    const cached = readLiveCache(crop);
 
-    const highestPrice =
-        Math.max(...prices);
-
-    const lowestPrice =
-        Math.min(...prices);
-
-    const averagePrice =
-        prices.reduce(
-            (sum, price) =>
-                sum + price,
-            0
-        ) / prices.length;
-
-    const bestMarket =
-        markets.reduce(
-            (best, current) => {
-
-                return current.modalPrice >
-                    best.modalPrice
-                    ? current
-                    : best;
-
-            }
-        );
-
-    const variance =
-        prices.reduce(
-            (sum, price) => {
-
-                return (
-                    sum +
-                    Math.pow(
-                        price -
-                        averagePrice,
-                        2
-                    )
-                );
-
-            },
-            0
-        ) / prices.length;
-
-    const standardDeviation =
-        Math.sqrt(variance);
-
-    const volatility =
-        averagePrice > 0
-            ? (
-                standardDeviation /
-                averagePrice
-            ) * 100
-            : 0;
-
-    let volatilityLevel = "Low";
-
-    if (volatility >= 10) {
-
-        volatilityLevel = "High";
-
-    } else if (volatility >= 5) {
-
-        volatilityLevel = "Moderate";
-
+    if (cached) {
+        return { payload: cached, origin: "cache" };
     }
 
-    return {
-        success: true,
-        available: true,
-        source: "data.gov.in",
-        crop,
-        updatedAt:
-            new Date().toISOString(),
-        summary: {
-            price:
-                Math.round(
-                    bestMarket.modalPrice
-                ),
-            averagePrice:
-                Math.round(
-                    averagePrice
-                ),
-            highestPrice:
-                Math.round(
-                    highestPrice
-                ),
-            lowestPrice:
-                Math.round(
-                    lowestPrice
-                ),
-            volatility:
-                Number(
-                    volatility.toFixed(2)
-                ),
-            volatilityLevel,
-            priceSpread:
-                Math.round(
-                    highestPrice -
-                    lowestPrice
-                )
-        },
-        bestMarket: {
-            market:
-                bestMarket.market,
-            district:
-                bestMarket.district,
-            state:
-                bestMarket.state,
-            modalPrice:
-                bestMarket.modalPrice,
-            minPrice:
-                bestMarket.minPrice,
-            maxPrice:
-                bestMarket.maxPrice
-        },
-        markets
-    };
-}
+    // ------------------------------------------
+    // 1. AGMARKNET
+    // ------------------------------------------
 
+    try {
 
-function unavailableResponse(
-    crop,
-    message
-) {
+        const markets =
+            await sources.fetchAgmarknet(crop);
 
-    return {
-        success: false,
-        available: false,
-        crop,
-        message,
-        source: "data.gov.in",
-        records: []
-    };
-}
+        const payload =
+            buildAgmarknetResponse(
+                crop,
+                markets
+            );
 
+        writeLiveCache(crop, payload);
 
-function staleResponse(crop, message) {
+        store.saveSnapshot(
+            crop,
+            payload,
+            payload.source,
+            markets[0]?.date || null
+        );
 
-    const stale = cachedResponse(crop);
+        return { payload, origin: "agmarknet" };
 
-    if (!stale) {
-        return null;
+    } catch (agmarknetError) {
+
+        console.warn(
+            `⚠️  Agmarknet unavailable for ${crop}: ${agmarknetError.message}`
+        );
     }
 
-    return {
-        ...stale,
-        stale: true,
-        message
-    };
+    // ------------------------------------------
+    // 2. DOCA
+    // ------------------------------------------
+
+    try {
+
+        const quote =
+            await sources.fetchDoca(crop);
+
+        if (quote) {
+
+            const payload =
+                buildDocaResponse(quote);
+
+            writeLiveCache(crop, payload);
+
+            store.saveSnapshot(
+                crop,
+                payload,
+                payload.source,
+                quote.asOn || null
+            );
+
+            return { payload, origin: "doca" };
+        }
+
+    } catch (docaError) {
+
+        console.warn(
+            `⚠️  DOCA unavailable for ${crop}: ${docaError.message}`
+        );
+    }
+
+    // ------------------------------------------
+    // 3. STORED SNAPSHOT
+    // ------------------------------------------
+
+    const snapshot =
+        await store.readSnapshot(crop);
+
+    if (snapshot) {
+
+        const age =
+            Date.now() -
+            new Date(
+                snapshot.capturedAt
+            ).getTime();
+
+        if (age <= SNAPSHOT_MAX_AGE_MS) {
+
+            console.log(
+                `🗄️  Serving stored snapshot for ${crop}`
+            );
+
+            return {
+                payload: {
+                    ...snapshot.payload,
+                    stale: true,
+                    message:
+                        "The government market data service is unavailable. These are the last prices GroWell recorded."
+                },
+                origin: "snapshot"
+            };
+        }
+    }
+
+    return { payload: null, origin: "none" };
 }
 
 
-// --------------------------------------------------
-// TEST
-// --------------------------------------------------
+// =====================================================
+// ROUTES
+// =====================================================
 
 router.get("/hello", (req, res) => {
     res.json({
@@ -232,9 +188,6 @@ router.get("/hello", (req, res) => {
     });
 });
 
-// --------------------------------------------------
-// MARKET ANALYTICS
-// --------------------------------------------------
 
 router.get("/analytics", async (req, res) => {
 
@@ -244,146 +197,22 @@ router.get("/analytics", async (req, res) => {
 
     try {
 
-        console.log("");
-        console.log("=================================");
-        console.log("🌾 MARKET ANALYTICS");
-        console.log("🌾 CROP:", crop);
-        console.log("=================================");
+        const { payload } =
+            await resolveCrop(crop);
 
-        // ------------------------------------------
-        // FETCH SPECIFIC COMMODITY
-        // ------------------------------------------
+        if (!payload) {
 
-        const response = await axios.get(
-            DATA_GOV_URL,
-            {
-                params: {
-                    "api-key":
-                        process.env.DATA_GOV_API_KEY,
-
-                    format: "json",
-
-                    limit: 100,
-
-                    "filters[commodity]": crop
-                },
-
-                timeout: 30000
-            }
-        );
-
-        console.log(
-            "📡 DATA.GOV STATUS:",
-            response.status
-        );
-
-        const records =
-            response.data?.records || [];
-
-        console.log(
-            `📊 ${crop} RECORDS:`,
-            records.length
-        );
-
-        // ------------------------------------------
-        // NORMALIZE RECORDS
-        // ------------------------------------------
-
-        const markets = records
-            .map(record => ({
-
-                state:
-                    record.state || "",
-
-                district:
-                    record.district || "",
-
-                market:
-                    record.market || "",
-
-                commodity:
-                    record.commodity || crop,
-
-                variety:
-                    record.variety || "",
-
-                grade:
-                    record.grade || "",
-
-                date:
-                    record.arrival_date || "",
-
-                minPrice:
-                    Number(
-                        record.min_price
-                    ) || 0,
-
-                maxPrice:
-                    Number(
-                        record.max_price
-                    ) || 0,
-
-                modalPrice:
-                    Number(
-                        record.modal_price
-                    ) || 0
-
-            }))
-            .filter(
-                record =>
-                    record.modalPrice > 0
-            );
-
-        console.log(
-            "💰 VALID PRICE RECORDS:",
-            markets.length
-        );
-
-        // ------------------------------------------
-        // NO LIVE DATA — FALL BACK TO CACHE
-        // ------------------------------------------
-
-        if (markets.length === 0) {
-
-            const stale = staleResponse(
+            return res.json({
+                success: false,
+                available: false,
                 crop,
-                "The government market data service returned no records right now. Showing the last known prices."
-            );
-
-            if (stale) {
-
-                console.log(
-                    `⚠️ USING CACHED (STALE) DATA FOR ${crop}`
-                );
-
-                return res.json(stale);
-
-            }
-
-            console.log(
-                `⚠️ NO CURRENT DATA FOR ${crop}`
-            );
-
-            return res.json(
-                unavailableResponse(
-                    crop,
-                    `No current government mandi records were found for ${crop}.`
-                )
-            );
-
+                source:
+                    "Agmarknet (data.gov.in)",
+                message:
+                    `No government price record was available for ${crop} from any source.`,
+                records: []
+            });
         }
-
-        // ------------------------------------------
-        // LIVE DATA AVAILABLE — BUILD AND CACHE
-        // ------------------------------------------
-
-        const payload =
-            buildMarketResponse(
-                crop,
-                markets
-            );
-
-        cacheResponse(crop, payload);
 
         return res.json(payload);
 
@@ -391,40 +220,17 @@ router.get("/analytics", async (req, res) => {
 
         console.error(
             "❌ MARKET ERROR:",
-            error.response?.data ||
             error.message
         );
-
-        // ------------------------------------------
-        // UPSTREAM UNREACHABLE — FALL BACK TO CACHE
-        // ------------------------------------------
-
-        const stale = staleResponse(
-            crop,
-            "The government market data service is unreachable right now. Showing the last known prices."
-        );
-
-        if (stale) {
-
-            console.log(
-                `⚠️ USING CACHED (STALE) DATA FOR ${crop}`
-            );
-
-            return res.json(stale);
-
-        }
 
         return res.status(500).json({
             success: false,
             message:
                 "Unable to fetch government market data.",
-            error:
-                error.response?.data ||
-                error.message
+            error: error.message
         });
-
     }
-
 });
+
 
 module.exports = router;

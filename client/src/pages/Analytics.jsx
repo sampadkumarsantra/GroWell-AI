@@ -453,6 +453,14 @@ export default function Analytics() {
                     result.source ||
                     "data.gov.in",
 
+                basis:
+                    result.basis ||
+                    "",
+
+                sourceNote:
+                    result.sourceNote ||
+                    "",
+
                 updatedAt:
                     result.updatedAt ||
                     null,
@@ -1104,15 +1112,18 @@ export default function Analytics() {
                                 <div>
 
                                     <strong>
-                                        GOVERNMENT MARKET DATA
+                                        {
+                                            data.basis
+                                                ? data.basis.toUpperCase()
+                                                : "GOVERNMENT MARKET DATA"
+                                        }
                                     </strong>
 
                                     <span>
 
-                                        Prices are sourced from
-                                        government mandi market
-                                        records through
-                                        data.gov.in.
+                                        {data.sourceNote
+                                            ? data.sourceNote
+                                            : `Prices are sourced from government mandi market records through ${data.source}.`}
 
                                     </span>
 

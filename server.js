@@ -21,6 +21,7 @@ const translateRoute = require("./routes/translate");
 const billingRoute = require("./routes/billing");
 
 const { migrate } = require("./database/migrate");
+const marketRefresher = require("./services/marketRefresher");
 
 
 // =========================
@@ -199,6 +200,11 @@ app.use((err, req, res, next) => {
  */
 migrate()
     .then(() => {
+
+        // Capture prices proactively so an outage is already
+        // covered by the time a farmer opens the page.
+        marketRefresher.start();
+
         app.listen(PORT, () => {
 
             console.log("");
