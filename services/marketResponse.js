@@ -12,10 +12,27 @@
 
 
 /**
- * Market-level response built from Agmarknet mandi records.
+ * Market-level response built from market-level mandi records.
  * Preferred source: this is an actual mandi price.
+ *
+ * The mirror returns rows in this same shape but from a
+ * different host and a different level of trust, so provenance
+ * is passed in rather than assumed. Every field that tells the
+ * farmer where a number came from is overridable, because a
+ * response that reports a third-party price under the official
+ * source's label is worse than no response at all.
  */
-function buildAgmarknetResponse(crop, markets) {
+function buildAgmarknetResponse(
+    crop,
+    markets,
+    provenance = {}
+) {
+
+    const {
+        source = "Agmarknet (data.gov.in)",
+        basis = "Market-level mandi prices",
+        sourceNote = null
+    } = provenance;
 
     const prices =
         markets.map(
@@ -74,8 +91,9 @@ function buildAgmarknetResponse(crop, markets) {
     return {
         success: true,
         available: true,
-        source: "Agmarknet (data.gov.in)",
-        basis: "Market-level mandi prices",
+        source,
+        basis,
+        ...(sourceNote ? { sourceNote } : {}),
         crop,
         updatedAt: new Date().toISOString(),
         summary: {

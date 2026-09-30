@@ -642,21 +642,69 @@ government sources, then a durable stored copy:
 | 2 | Agmarknet direct (`api.agmarknet.gov.in`) | The same mandi prices from Agmarknet's own host, which stays up when the gateway is down. Covers every crop. |
 | 3 | DOCA wholesale | All-India average wholesale price. Used only when neither Agmarknet host answers. |
 | 4 | DOCA retail | All-India average retail price, converted to a quintal. Covers only `Chilli`, which DOCA prices solely at retail. |
-| 5 | `market_snapshots` (Postgres) | The last good payload, returned with `stale: true`. |
-| 6 | Unavailable | Only when no source has ever answered for that crop. |
+| 5 | Agmarknet mirror | The same Agmarknet mandi records republished by a third-party community mirror. Consulted only when sources 1–4 have all failed. |
+| 6 | `market_snapshots` (Postgres) | The last good payload, returned with `stale: true`. |
+| 7 | Unavailable | Only when no source has ever answered for that crop. |
 
 The `data.gov.in` gateway fails often (502/503), so the direct Agmarknet
 host, the DOCA figures and the stored snapshot exist to keep the page
 useful during an outage.
 
-Current coverage while both Agmarknet hosts are down is 6 of 12 crops.
-Maize, Groundnut, Mustard, Soybean, Cotton and Turmeric have no
-government source at all at present: DOCA does not publish them in any
-form, and there is no substitute that would be honest. `Bajra` is not
-maize, `Groundnut Oil (Packed)` is a processed product worth many times
-the seed, and `Turmeric (powder)` is not turmeric root. Those six become
-available automatically the moment either Agmarknet host returns, and the
-refresher then stores them permanently.
+### Mandi mirror
+
+`services/mandiMirrorService.js` covers the one case the other sources
+cannot: both Agmarknet hosts and DOCA down at the same time. In that state
+DOCA alone leaves Maize, Groundnut, Mustard, Soybean, Cotton and Turmeric
+with no honest price, and all twelve crops are blank.
+
+It re-publishes the same Agmarknet mandi records from separate
+infrastructure, and is deliberately placed last so it is never consulted
+while an official host is answering — the moment Agmarknet returns, the
+mirror disappears from the response. It is a third-party service with no
+uptime promise, so it is treated as a gap filler, not a replacement:
+
+- **Every response is labelled.** `source` reads `Agmarknet mirror` and
+  `sourceNote` states that the official feeds are down, names the arrival
+  date the mirror actually recorded, lists the states covered, and tells
+  the farmer to confirm at their mandi.
+- **It is not a current price.** The mirror's records lag by days, so the
+  arrival date is passed through untouched rather than replaced with the
+  fetch time.
+- **Commodity names are matched exactly.** `Soybean` is queried as
+  `Soyabean` because that is the published name. A row whose commodity is
+  not on the crop's explicit alias list is discarded, so a loosely
+  filtered upstream response cannot put a neighbouring commodity's price
+  on the screen. Chilli is not mapped at all, because the mirror does not
+  carry it and source 4 already covers it.
+- **Only the latest trading day is used.** A response is paginated by
+  record rather than by day, so a thinly traded crop arrives spread over a
+  month of trading days — one Turmeric response carried thirty-one distinct
+  dates. Averaging those would compress a month of trading into a single
+  "current" figure. Asking the mirror for a specific date returns the same
+  rows for an extra request, so the latest date is selected locally.
+- **Bad rows are dropped.** Prices are bounds-checked, and a modal price
+  that falls outside its own reported min/max range is treated as a
+  mis-parsed record. At least one such row exists per crop — one Potato
+  record reports `0.01` for min, max and modal alike.
+- **The shared rate limit is respected.** The mirror allows 100 requests
+  per 15 minutes per IP, and every instance behind the same egress address
+  draws on the same budget. Each crop is cached for 30 minutes and
+  concurrent requests for the same crop are collapsed into one, so a
+  twelve-crop page costs one request per crop rather than one per viewer.
+  A 429 opens a cooldown for as long as the server says the window resets.
+
+Set `MANDI_MIRROR_ENABLED=false` to remove the source entirely, or point
+`MANDI_MIRROR_URL` at your own deployment of it.
+
+### Coverage
+
+With all four live sources in the chain, coverage is 12 of 12 crops. During
+an outage where both Agmarknet hosts are unreachable, Maize, Groundnut,
+Mustard, Soybean, Cotton and Turmeric come from the mirror rather than
+being blank. None of those six can be served by DOCA, which does not
+publish them in any form: `Bajra` is not maize, `Groundnut Oil (Packed)`
+is a processed product worth many times the seed, and `Turmeric (powder)`
+is not turmeric root.
 
 ### Retail fallback
 

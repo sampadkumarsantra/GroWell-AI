@@ -3,6 +3,8 @@ const axios = require("axios");
 const doca = require("./docaService");
 const agmarknetDirect =
     require("./agmarknetDirectService");
+const mandiMirror =
+    require("./mandiMirrorService");
 
 
 /*
@@ -260,14 +262,28 @@ async function fetchAgmarknetDirect(crop) {
 }
 
 
+/**
+ * Fetches market-level prices from the community Agmarknet
+ * mirror. Consulted only once both official Agmarknet hosts
+ * and DOCA have all failed, so it covers the crops DOCA cannot
+ * price honestly during a government outage.
+ */
+async function fetchMandiMirror(crop) {
+    return mandiMirror.fetchCrop(crop);
+}
+
+
 module.exports = {
     CROPS,
     fetchAgmarknet,
     fetchAgmarknetDirect,
     fetchDoca,
     fetchDocaRetail,
+    fetchMandiMirror,
     docaSupports: doca.supports,
     docaSupportsRetail: doca.supportsRetail,
+    mirrorSupports: mandiMirror.supports,
+    mirrorSource: mandiMirror.MIRROR_SOURCE,
     breakerState,
     UpstreamUnavailableError,
     AGMARKNET_URL

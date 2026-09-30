@@ -67,8 +67,9 @@ function writeLiveCache(crop, payload) {
 // 2. Agmarknet direct  — live, market level, separate host
 // 3. DOCA wholesale    — live, all-India average
 // 4. DOCA retail       — live, all-India average, few crops
-// 5. Stored snapshot   — last good payload, marked stale
-// 6. Unavailable       — only when no source has ever answered
+// 5. Agmarknet mirror  — live, market level, third-party
+// 6. Stored snapshot   — last good payload, marked stale
+// 7. Unavailable       — only when no source has ever answered
 //
 
 async function resolveCrop(crop) {
@@ -239,7 +240,62 @@ async function resolveCrop(crop) {
     }
 
     // ------------------------------------------
-    // 5. STORED SNAPSHOT
+    // 5. AGMARKNET MIRROR
+    // ------------------------------------------
+    //
+    // A community mirror of the same Agmarknet mandi records,
+    // on infrastructure separate from both official hosts. It
+    // exists to cover an outage in which both Agmarknet hosts
+    // and DOCA are down at once, which is the one case where
+    // maize, groundnut, mustard, soybean, cotton and turmeric
+    // would otherwise have no price at all.
+    //
+    // It is placed after the official sources on purpose: it is
+    // never consulted while Agmarknet is answering, so it
+    // disappears from the response as soon as the outage ends.
+    // The response carries its own source label and the arrival
+    // date the mirror actually recorded, because those prices
+    // lag the current day.
+
+    try {
+
+        const result =
+            await sources.fetchMandiMirror(crop);
+
+        const payload =
+            buildAgmarknetResponse(
+                crop,
+                result.markets,
+                {
+                    source:
+                        sources.mirrorSource,
+                    basis:
+                        "Market-level mandi prices",
+                    sourceNote:
+                        `The official Agmarknet feeds are unavailable right now, so these are the same mandi records republished by a third-party mirror, as on ${result.asOn || "the latest trading day"}, covering ${result.states.length} state${result.states.length === 1 ? "" : "s"} (${result.states.join(", ")}). The mirror is not an official source and its figures lag by days, so confirm the rate at your mandi before selling.`
+                }
+            );
+
+        writeLiveCache(crop, payload);
+
+        store.saveSnapshot(
+            crop,
+            payload,
+            payload.source,
+            result.asOn || null
+        );
+
+        return { payload, origin: "mirror" };
+
+    } catch (mirrorError) {
+
+        console.warn(
+            `⚠️  Mandi mirror unavailable for ${crop}: ${mirrorError.message}`
+        );
+    }
+
+    // ------------------------------------------
+    // 6. STORED SNAPSHOT
     // ------------------------------------------
 
     const snapshot =
