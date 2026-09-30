@@ -184,6 +184,10 @@ function createUnavailableData(crop, message = "") {
 
         markets: [],
 
+        stale: false,
+
+        staleMessage: "",
+
         message:
             message ||
             `No current government mandi records were found for ${crop}.`
@@ -469,6 +473,12 @@ export default function Analytics() {
 
                 markets:
                     result.markets || [],
+
+                stale:
+                    result.stale === true,
+
+                staleMessage:
+                    result.message || "",
 
                 message: ""
 
@@ -958,6 +968,20 @@ export default function Analytics() {
 
                                             )}
 
+                                            {cropData.stale && (
+                                                <span
+                                                    style={{
+                                                        fontSize: "9px",
+                                                        opacity: 0.6,
+                                                        textTransform: "uppercase",
+                                                        letterSpacing: "0.5px"
+                                                    }}
+                                                    title="Showing last known price while the government data service is unavailable"
+                                                >
+                                                    stale
+                                                </span>
+                                            )}
+
                                         </div>
 
                                     ) : (
@@ -1095,6 +1119,22 @@ export default function Analytics() {
                                 </div>
 
                             </div>
+
+
+                            {data.stale && (
+                                <div className="market-stale-banner">
+                                    <Activity size={16} />
+                                    <div>
+                                        <strong>
+                                            STALE DATA
+                                        </strong>
+                                        <span>
+                                            {data.staleMessage ||
+                                                "The government market data service is unavailable. Showing the last known prices."}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
 
 
                             {/* =================================================

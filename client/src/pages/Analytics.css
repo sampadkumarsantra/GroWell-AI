@@ -341,6 +341,41 @@
     color: var(--gw-muted);
 }
 
+/* ---- Stale data notice ---- */
+.market-stale-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    border: 1px solid rgba(221, 130, 55, 0.35);
+    border-radius: 10px;
+    background: rgba(221, 130, 55, 0.08);
+}
+
+.market-stale-banner svg {
+    flex-shrink: 0;
+    color: var(--gw-warn);
+}
+
+.market-stale-banner div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.market-stale-banner strong {
+    font-size: 11px;
+    color: var(--gw-warn);
+}
+
+.market-stale-banner span {
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--gw-muted);
+}
+
 /* ---- Price chart card ---- */
 .price-chart-card {
     width: 100%;

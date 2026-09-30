@@ -6,7 +6,6 @@ import {
     BarChart3,
     Settings,
     BookOpen,
-    Flower2,
     Sparkles
 } from "lucide-react";
 
@@ -20,7 +19,6 @@ const menu = [
     { icon: ScanLine, label: "Crop Diagnosis" },
     { icon: CloudSun, label: "Weather" },
     { icon: Sprout, label: "Soil Health" },
-    { icon: Flower2, label: "Journey", hideOnMobile: true },
     { icon: BookOpen, label: "Library" },
     { icon: BarChart3, label: "Analytics" },
     { icon: Settings, label: "Settings" }
