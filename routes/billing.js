@@ -60,10 +60,17 @@ router.post(
             const subscription =
                 await billing.createSubscription(user);
 
+            const shortUrl = subscription.shortUrl;
+
+            // Prefer the hosted checkout ("pay on the branded
+            // page" — the Spotify-style flow). The in-app modal
+            // key stays in the payload so the client can fall
+            // back when no hosted link exists.
             return res.json({
                 success: true,
                 subscriptionId: subscription.id,
-                shortUrl: subscription.shortUrl,
+                shortUrl,
+                hostedUrl: shortUrl,
                 keyId: process.env.RAZORPAY_KEY_ID
             });
 

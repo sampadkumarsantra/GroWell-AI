@@ -167,22 +167,27 @@ function Premium() {
             setNotice(
                 "Payment received. Activating your plan…"
             );
-            syncAccount();
+            pollForActivation();
         } else if (params.get("subscription_id")) {
-            syncAccount();
+            pollForActivation();
         }
 
     }, []);
 
 
     /**
-     * Razorpay's hosted subscription page redirects back after the
-     * first payment. The webhook is what actually grants Premium,
-     * so poll briefly rather than trusting the return URL.
+     * Only the signed webhook ever grants Premium. After the
+     * customer finishes paying on the hosted page we poll the
+     * server until the subscription lands, then refresh the full
+     * profile so the UI reflects the new plan immediately.
      */
-    async function syncAccount() {
+    async function pollForActivation() {
 
-        for (let attempt = 0; attempt < 6; attempt++) {
+        for (let attempt = 0; attempt < 20; attempt++) {
+
+            await new Promise((resolve) =>
+                setTimeout(resolve, 3000)
+            );
 
             const data = await refresh();
 
@@ -202,28 +207,33 @@ function Premium() {
                     console.error(authError);
                 }
 
-                return;
+                return true;
             }
-
-            await new Promise((resolve) =>
-                setTimeout(resolve, 2000)
-            );
         }
 
-        setNotice(
-            "Payment received. Your plan will activate within a minute."
-        );
+        return false;
     }
 
 
     // =================================================
     // SUBSCRIBE
+    //
+    // Standard commercial-app flow: create the Razorpay
+    // subscription, then send the customer to the branded
+    // hosted payment page in a new tab. Their plan activates
+    // automatically once the webhook confirms the payment.
     // =================================================
 
     async function handleSubscribe() {
 
         setError("");
         setLoading(true);
+
+        // Reserve the checkout tab synchronously, inside the
+        // click gesture. After an awaited fetch most browsers
+        // block a fresh window.open.
+        let checkoutWindow =
+            window.open("", "_blank");
 
         try {
 
@@ -246,10 +256,65 @@ function Premium() {
             const data = await readJson(response);
 
             if (!response.ok) {
+
+                if (checkoutWindow) {
+                    checkoutWindow.close();
+                    checkoutWindow = null;
+                }
+
                 throw new Error(
                     data.message ||
                         "Could not start the subscription."
                 );
+            }
+
+            // -----------------------------------------
+            // HOSTED CHECKOUT (primary)
+            // -----------------------------------------
+
+            if (data.hostedUrl || data.shortUrl) {
+
+                const hostedUrl =
+                    data.hostedUrl || data.shortUrl;
+
+                setNotice(
+                    "Payment page opened in a new tab. Finish the payment there — your plan activates automatically within about a minute."
+                );
+
+                if (checkoutWindow) {
+
+                    checkoutWindow.location.href =
+                        hostedUrl;
+
+                    const activated =
+                        await pollForActivation();
+
+                    if (!activated) {
+                        setNotice(
+                            "We are waiting for payment confirmation. If you have paid, your plan will activate within a minute — if not, please try again."
+                        );
+                    }
+
+                } else {
+
+                    // Pop-up blocked — navigate the app itself
+                    // to the secure payment page. Returning to
+                    // the app re-checks the plan.
+                    window.location.assign(
+                        hostedUrl
+                    );
+                }
+
+                return;
+            }
+
+            // -----------------------------------------
+            // IN-APP CHECKOUT (fallback)
+            // -----------------------------------------
+
+            if (checkoutWindow) {
+                checkoutWindow.close();
+                checkoutWindow = null;
             }
 
             const Razorpay =
@@ -259,7 +324,9 @@ function Premium() {
                 key: data.keyId || keyId
             });
 
-            rzp.openSubscription(data.subscriptionId);
+            rzp.openSubscription(
+                data.subscriptionId
+            );
 
         } catch (subscribeError) {
 
