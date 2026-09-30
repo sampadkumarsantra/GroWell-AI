@@ -90,9 +90,8 @@ async function resolveCrop(crop) {
     // 1. AGMARKNET
     // ------------------------------------------
     //
-    // Read from Agmarknet's own API rather than through the
-    // data.gov.in gateway, which is a proxy in front of these
-    // same records and one that fails on its own schedule.
+    // Read from Agmarknet's own API, which is the authority
+    // behind every other source in this list.
 
     try {
 
@@ -340,8 +339,7 @@ router.get("/analytics", async (req, res) => {
                 success: false,
                 available: false,
                 crop,
-                source:
-                    "Agmarknet (data.gov.in)",
+                source: AGMARKNET_SOURCE,
                 message:
                     `No government price record was available for ${crop} from any source.`,
                 records: []
@@ -357,12 +355,61 @@ router.get("/analytics", async (req, res) => {
             error.message
         );
 
-        return res.status(500).json({
+        /*
+         * A source failing is an ordinary event and each one is
+         * already caught on its own. Reaching here means something
+         * unexpected threw, and the one thing that must not happen
+         * is a 500: a farmer who taps a crop gets an error page
+         * instead of a price, and a whole outage then reads as a
+         * broken app rather than a temporary gap.
+         *
+         * So the stored copy is tried once more. It is a real
+         * price with the date it was recorded, which is the most
+         * useful thing that can honestly be shown. Only when there
+         * is nothing stored at all does this report unavailable.
+         */
+        try {
+
+            const snapshot =
+                await store.readSnapshot(crop);
+
+            if (snapshot) {
+
+                const recordedOn =
+                    snapshot.priceDate ||
+                    new Date(
+                        snapshot.capturedAt
+                    ).toLocaleDateString("en-IN");
+
+                return res.json({
+                    ...snapshot.payload,
+                    stale: true,
+                    recordedOn,
+                    message:
+                        `The live feed could not be reached just now. These are the last prices GroWell recorded for ${crop}, as on ${recordedOn} from ${snapshot.source}. Check with your mandi before selling.`
+                });
+
+            }
+
+        } catch (storeError) {
+
+            console.error(
+                "❌ SNAPSHOT FALLBACK FAILED:",
+                storeError.message
+            );
+
+        }
+
+        return res.json({
             success: false,
+            available: false,
+            crop,
+            source: AGMARKNET_SOURCE,
             message:
-                "Unable to fetch government market data.",
-            error: error.message
+                `No government price record was available for ${crop} from any source.`,
+            records: []
         });
+
     }
 });
 

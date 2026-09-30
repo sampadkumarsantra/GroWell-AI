@@ -638,24 +638,24 @@ government sources, then a durable stored copy:
 
 | Order | Source | What it is |
 | --- | --- | --- |
-| 1 | Agmarknet via `data.gov.in` | Market-level mandi prices. The preferred figure. |
-| 2 | Agmarknet direct (`api.agmarknet.gov.in`) | The same mandi prices from Agmarknet's own host, which stays up when the gateway is down. Covers every crop. |
-| 3 | DOCA wholesale | All-India average wholesale price. Used only when neither Agmarknet host answers. |
-| 4 | DOCA retail | All-India average retail price, converted to a quintal. Covers only `Chilli`, which DOCA prices solely at retail. |
+| 1 | Agmarknet (`api.agmarknet.gov.in`) | Market-level mandi prices, read from the Directorate of Marketing & Inspection's own API. The preferred figure, and the only source that covers every crop. |
+| 2 | DOCA wholesale | All-India average wholesale price. Used only when Agmarknet does not answer. |
+| 3 | DOCA retail | All-India average retail price, converted to a quintal. Covers only `Chilli`, which DOCA prices solely at retail. |
+| 4 | Agmarknet mirror | The same Agmarknet mandi records republished by a third-party community mirror. Consulted only when sources 1–3 have all failed, which in practice means Turmeric. |
 | 5 | `market_snapshots` (Postgres) | The last good payload, returned with `stale: true`. |
 | 6 | Unavailable | Only when no source has ever answered for that crop. |
 
-The `data.gov.in` gateway fails often (502/503), so the direct Agmarknet
-host, the DOCA figures and the stored snapshot exist to keep the page
-useful during an outage.
+Agmarknet goes down regularly — 502, 503 and outright connection refusals,
+for hours at a time, across every crop. The DOCA figures, the mirror and the
+stored snapshot exist to keep the page useful during an outage.
 
-Current coverage while both Agmarknet hosts are down is 6 of 12 crops.
+Current coverage while Agmarknet is down is 6 of 12 crops.
 Maize, Groundnut, Mustard, Soybean, Cotton and Turmeric have no
 government source at all at present: DOCA does not publish them in any
 form, and there is no substitute that would be honest. `Bajra` is not
 maize, `Groundnut Oil (Packed)` is a processed product worth many times
 the seed, and `Turmeric (powder)` is not turmeric root. Those six become
-available automatically the moment either Agmarknet host returns, and the
+available automatically the moment Agmarknet returns, and the
 refresher then stores them permanently.
 
 ## Retail fallback
@@ -670,8 +670,8 @@ they are processed products, not the seed or bean a farmer sells.
 
 ## Agmarknet direct API
 
-`services/agmarknetDirectService.js` reads prices from Agmarknet's own
-API instead of the `data.gov.in` gateway. Two things are worth knowing
+`services/agmarknetService.js` reads prices from Agmarknet's own API, the
+authority behind every other source here. Two things are worth knowing
 before changing it:
 
 - **It is fail-safe, not fail-open.** Records are discovered by matching
@@ -708,12 +708,12 @@ Notes on honesty of the data:
 - If no source has ever answered for a crop, the response is
   `available: false`. GroWell never estimates or invents a price.
 
-`data.gov.in` sometimes accepts the connection and then hangs rather than
+Agmarknet sometimes accepts the connection and then hangs rather than
 returning an error, which would otherwise make every crop wait out the
 full timeout. A circuit breaker opens after two consecutive failures and
 stops paying for the same outage for ten minutes, so the fallback chain
-is reached immediately. Measured effect with the gateway down: all twelve
-crops resolve in ~110ms instead of 25s each.
+is reached immediately. Measured effect during an Agmarknet outage: all
+twelve crops resolve in ~110ms instead of 25s each.
 
 `services/marketRefresher.js` sweeps every supported crop shortly after
 startup and every two hours, writing the current payload to

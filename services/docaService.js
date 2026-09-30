@@ -6,11 +6,11 @@ const axios = require("axios");
  * SECOND GOVERNMENT SOURCE — DOCA PRICE MONITORING
  * =====================================================
  *
- * The Agmarknet feed behind data.gov.in is the only source of
- * market-level (per mandi) prices, and its gateway goes down
- * regularly. The Department of Consumer Affairs publishes its
- * own daily price monitoring figures on fcainfoweb.nic.in,
- * which is a different ministry and a different server.
+ * Agmarknet is the only source of market-level (per mandi)
+ * prices, and it goes down regularly. The Department of
+ * Consumer Affairs publishes its own daily price monitoring
+ * figures on fcainfoweb.nic.in, which is a different ministry
+ * and a different server.
  *
  * This is deliberately NOT a substitute for mandi data and is
  * never presented as one. DOCA publishes all-India average

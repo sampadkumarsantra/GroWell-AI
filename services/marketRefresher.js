@@ -60,9 +60,7 @@ async function refreshCrop(crop) {
     try {
 
         // Agmarknet's own API is the primary source for the
-        // sweep, read directly rather than through the
-        // data.gov.in gateway that used to sit in front of these
-        // same records.
+        // sweep.
         const result =
             await sources.fetchAgmarknet(crop);
 

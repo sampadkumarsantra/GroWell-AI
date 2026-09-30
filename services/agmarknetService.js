@@ -8,13 +8,12 @@ const axios = require("axios");
  *
  * Agmarknet is operated by the Directorate of Marketing &
  * Inspection and is the authority the whole chain is built
- * around. It used to be reached through the data.gov.in
- * gateway, but that gateway is a proxy in front of the same
- * records and it fails on its own schedule: 502, 503 and
- * outright connection refusals, for hours at a time, across
- * every crop. Reading the API directly removes a whole failure
- * point and nothing else, because both paths serve identical
- * mandi records.
+ * around. Its API is read directly. An intermediary gateway
+ * sits in front of these same records and fails on its own
+ * schedule — 502, 503 and outright connection refusals, for
+ * hours at a time, across every crop — so reading the
+ * authority itself removes a whole failure point and changes
+ * nothing about the records served.
  *
  * These are the endpoints the Agmarknet 2.0 portal itself
  * calls. Both are reachable without an account:
