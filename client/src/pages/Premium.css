@@ -323,6 +323,98 @@
 }
 
 /* =====================================================
+   PAYMENT METHODS
+   ===================================================== */
+
+.premium-methods {
+    margin-bottom: var(--space-xl);
+}
+
+.premium-methods h3 {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+    margin: 0 0 var(--space-xs);
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 600;
+}
+
+.premium-methods h3 svg {
+    color: var(--gw-brass);
+}
+
+.premium-methods-note {
+    max-width: 62ch;
+    margin: 0 0 var(--space-md);
+    color: var(--gw-muted);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+}
+
+.premium-method-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-sm);
+}
+
+.premium-method {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+    padding: var(--space-md);
+    border: 1px solid var(--gw-line);
+    border-radius: var(--radius-md);
+    background: var(--gw-paper);
+    text-align: left;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.premium-method > svg:first-child {
+    color: var(--gw-forest);
+}
+
+.premium-method:hover {
+    border-color: var(--gw-brass);
+}
+
+.premium-method.is-selected {
+    border-color: var(--gw-brass);
+    background: rgba(168, 128, 60, 0.06);
+    box-shadow: var(--shadow-soft);
+}
+
+.premium-method-name {
+    font-family: var(--font-heading);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--gw-ink);
+    padding-right: 18px;
+}
+
+.premium-method-desc {
+    font-size: var(--text-xs);
+    line-height: 1.5;
+    color: var(--gw-muted);
+}
+
+.premium-method-check {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: var(--gw-ok);
+}
+
+.premium-methods-selected {
+    margin: var(--space-sm) 0 0;
+    color: var(--gw-ink-soft);
+    font-size: var(--text-sm);
+}
+
+/* =====================================================
    EXPLAINER
    ===================================================== */
 

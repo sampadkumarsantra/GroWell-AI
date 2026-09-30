@@ -23,6 +23,7 @@ router.get("/plans", (req, res) => {
         configured: billing.isConfigured(),
         razorpayKeyId: process.env.RAZORPAY_KEY_ID || "",
         currency: "INR",
+        paymentMethods: billing.paymentMethods(),
         plans: billing.publicPlans()
     });
 

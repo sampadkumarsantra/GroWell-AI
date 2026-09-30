@@ -440,6 +440,46 @@ function publicPlans() {
 }
 
 
+// =====================================================
+// ACCEPTED PAYMENT METHODS
+// =====================================================
+//
+// The hosted Razorpay checkout accepts all of these. The list is
+// surfaced to the app so a farmer can pick the one they prefer
+// before being sent to the secure payment page.
+//
+
+function paymentMethods() {
+
+    return [
+        {
+            id: "upi",
+            name: "UPI",
+            description:
+                "GPay, PhonePe, Paytm or any UPI app"
+        },
+        {
+            id: "card",
+            name: "Debit / Credit Card",
+            description:
+                "Visa, Mastercard, RuPay or Amex"
+        },
+        {
+            id: "netbanking",
+            name: "Net Banking",
+            description:
+                "All major Indian banks"
+        },
+        {
+            id: "wallet",
+            name: "Wallets",
+            description:
+                "Paytm, Mobikwik, Amazon Pay and more"
+        }
+    ];
+}
+
+
 module.exports = {
     isConfigured,
     verifyWebhookSignature,
@@ -448,5 +488,6 @@ module.exports = {
     applySubscriptionEntity,
     reconcile,
     publicPlans,
+    paymentMethods,
     KEY_ID
 };

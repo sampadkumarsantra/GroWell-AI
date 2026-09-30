@@ -7,7 +7,11 @@ import {
     Lock,
     Loader2,
     ShieldCheck,
-    AlertCircle
+    AlertCircle,
+    Smartphone,
+    CreditCard,
+    Landmark,
+    Wallet
 } from "lucide-react";
 
 import { apiRequest, readJson } from "../services/api";
@@ -62,6 +66,18 @@ function loadCheckout() {
 
 
 // =====================================================
+// ACCEPTED PAYMENT METHOD ICONS
+// =====================================================
+
+const METHOD_ICONS = {
+    upi: Smartphone,
+    card: CreditCard,
+    netbanking: Landmark,
+    wallet: Wallet
+};
+
+
+// =====================================================
 // PAGE
 // =====================================================
 
@@ -77,6 +93,12 @@ function Premium() {
     const [plans, setPlans] = useState(null);
     const [keyId, setKeyId] = useState("");
     const [configured, setConfigured] = useState(true);
+
+    const [paymentMethods, setPaymentMethods] =
+        useState([]);
+
+    const [selectedMethod, setSelectedMethod] =
+        useState("upi");
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -107,6 +129,15 @@ function Premium() {
                 setPlans(data.plans);
                 setKeyId(data.razorpayKeyId);
                 setConfigured(data.configured);
+
+                const methods =
+                    data.paymentMethods || [];
+
+                setPaymentMethods(methods);
+
+                if (methods.length > 0) {
+                    setSelectedMethod(methods[0].id);
+                }
 
             } catch (loadError) {
                 console.error(loadError);
@@ -203,7 +234,12 @@ function Premium() {
                     headers: {
                         "Content-Type":
                             "application/json"
-                    }
+                    },
+                    body: JSON.stringify({
+                        method:
+                            selectedMethod ||
+                            "upi"
+                    })
                 }
             );
 
@@ -296,6 +332,19 @@ function Premium() {
     const freeFeatures = plans?.free?.features || [];
     const premiumFeatures =
         plans?.premium?.features || [];
+
+    const selectedMethodObj =
+        paymentMethods.find(
+            method =>
+                method.id === selectedMethod
+        ) || null;
+
+    const methodList =
+        paymentMethods
+            .map(method =>
+                method.name.toLowerCase()
+            )
+            .join(", ");
 
     const renewsOn = subscription?.currentPeriodEnd
         ? new Date(
@@ -510,6 +559,88 @@ function Premium() {
                 </div>
             </div>
 
+            {/* ===================== PAYMENT METHODS ===================== */}
+            {!isPremium && paymentMethods.length > 0 && (
+                <div className="premium-methods">
+                    <h3>
+                        <CreditCard size={17} />
+                        Choose how you want to pay
+                    </h3>
+
+                    <p className="premium-methods-note">
+                        Pick your preferred method. You
+                        complete the payment on Razorpay's
+                        secure payment page.
+                    </p>
+
+                    <div className="premium-method-grid">
+
+                        {paymentMethods.map((method) => {
+
+                            const MethodIcon =
+                                METHOD_ICONS[
+                                    method.id
+                                ] || CreditCard;
+
+                            const isSelected =
+                                selectedMethod ===
+                                method.id;
+
+                            return (
+                                <button
+                                    type="button"
+                                    key={method.id}
+                                    className={
+                                        isSelected
+                                            ? "premium-method is-selected"
+                                            : "premium-method"
+                                    }
+                                    onClick={() =>
+                                        setSelectedMethod(
+                                            method.id
+                                        )
+                                    }
+                                    aria-pressed={
+                                        isSelected
+                                    }
+                                >
+                                    <MethodIcon
+                                        size={20}
+                                    />
+
+                                    <span className="premium-method-name">
+                                        {method.name}
+                                    </span>
+
+                                    <span className="premium-method-desc">
+                                        {method.description}
+                                    </span>
+
+                                    {isSelected && (
+                                        <Check
+                                            size={14}
+                                            className="premium-method-check"
+                                        />
+                                    )}
+                                </button>
+                            );
+
+                        })}
+
+                    </div>
+
+                    {selectedMethodObj && (
+                        <p className="premium-methods-selected">
+                            You'll pay with{" "}
+                            <strong>
+                                {selectedMethodObj.name}
+                            </strong>{" "}
+                            on the secure payment page.
+                        </p>
+                    )}
+                </div>
+            )}
+
             {/* ===================== DEEP REASONING EXPLAINER ===================== */}
             {!isPremium && (
                 <div className="premium-explainer">
@@ -563,10 +694,12 @@ function Premium() {
             )}
 
             <p className="premium-fineprint">
-                Pay securely by UPI, netbanking or card via
-                Razorpay. Cancel any time from Settings —
-                you keep Premium until the end of the period
-                you have paid for.
+                {methodList
+                    ? `Pay securely by ${methodList} via Razorpay. `
+                    : "Pay securely via Razorpay. "}
+                Cancel any time from Settings —
+                you keep Premium until the end of the
+                period you have paid for.
             </p>
         </div>
     );
