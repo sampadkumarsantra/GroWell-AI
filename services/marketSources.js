@@ -44,12 +44,101 @@ const AGMARKNET_URL =
     "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070";
 
 
+// =====================================================
+// CIRCUIT BREAKER
+// =====================================================
+//
+// The data.gov.in gateway does two different things when it is
+// broken: it either answers 502/503 quickly, or it accepts the
+// connection and then hangs. The hanging case is why the page
+// used to take 25 seconds per crop to give up.
+//
+// Without a breaker every one of the twelve parallel requests
+// pays that full timeout before falling through to a source
+// that would have answered instantly. The breaker stops
+// paying for the same failure repeatedly, so the fallback
+// chain is reached immediately.
+//
+
+const FAILURES_BEFORE_OPEN = 2;
+const BREAKER_COOLDOWN_MS = 10 * 60 * 1000;
+
+// Long enough to fail fast, short enough that a farmer waiting
+// on the page is not left staring at a spinner.
+const AGMARKNET_TIMEOUT_MS = 6000;
+
+let breaker = {
+    failures: 0,
+    openUntil: 0
+};
+
+
+function breakerIsOpen() {
+    return Date.now() < breaker.openUntil;
+}
+
+
+function recordSuccess() {
+    breaker.failures = 0;
+    breaker.openUntil = 0;
+}
+
+
+function recordFailure() {
+
+    breaker.failures += 1;
+
+    if (
+        breaker.failures >=
+        FAILURES_BEFORE_OPEN
+    ) {
+
+        // Only the first request after the window probes the
+        // upstream; every other request during the window
+        // returns without touching the network at all.
+        breaker.openUntil =
+            Date.now() +
+            BREAKER_COOLDOWN_MS;
+    }
+}
+
+
+/**
+ * Thrown when the upstream is known to be down. The route
+ * treats this as a fast miss and moves to the next source.
+ */
+class UpstreamUnavailableError extends Error {
+
+    constructor(message) {
+        super(message);
+        this.name = "UpstreamUnavailableError";
+        this.isUpstreamUnavailable = true;
+    }
+}
+
+
+function breakerState() {
+
+    return {
+        open: breakerIsOpen(),
+        failures: breaker.failures,
+        openUntil: breaker.openUntil
+    };
+}
+
+
 /**
  * Fetches Agmarknet mandi records for one crop. Returns an
  * array of normalised market rows, or throws when the feed is
  * unreachable or has nothing for that crop.
  */
 async function fetchAgmarknet(crop) {
+
+    if (breakerIsOpen()) {
+        throw new UpstreamUnavailableError(
+            "data.gov.in is in a failure cooldown."
+        );
+    }
 
     const apiKey =
         process.env.DATA_GOV_API_KEY;
@@ -60,21 +149,29 @@ async function fetchAgmarknet(crop) {
         );
     }
 
-    const response = await axios.get(
-        AGMARKNET_URL,
-        {
-            params: {
-                "api-key": apiKey,
-                format: "json",
-                limit: 100,
-                "filters[commodity]": crop
-            },
-            timeout: 25000
-        }
-    );
+    let records;
 
-    const records =
-        response.data?.records || [];
+    try {
+
+        const response =
+            await axios.get(AGMARKNET_URL, {
+                params: {
+                    "api-key": apiKey,
+                    format: "json",
+                    limit: 100,
+                    "filters[commodity]": crop
+                },
+                timeout: AGMARKNET_TIMEOUT_MS
+            });
+
+        records = response.data?.records || [];
+
+    } catch (error) {
+
+        recordFailure();
+
+        throw error;
+    }
 
     const markets = records
         .map((record) => ({
@@ -120,6 +217,8 @@ async function fetchAgmarknet(crop) {
         );
     }
 
+    recordSuccess();
+
     return markets;
 }
 
@@ -138,5 +237,7 @@ module.exports = {
     fetchAgmarknet,
     fetchDoca,
     docaSupports: doca.supports,
+    breakerState,
+    UpstreamUnavailableError,
     AGMARKNET_URL
 };

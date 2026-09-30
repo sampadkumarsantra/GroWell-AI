@@ -524,52 +524,44 @@ export default function Analytics() {
 
         setError("");
 
-
-        const results =
-            await Promise.all(
-
-                crops.map(
-                    async crop => {
-
-                        const data =
-                            await fetchCropMarket(
-                                crop
-                            );
-
-                        return [
-                            crop,
-                            data
-                        ];
-
-                    }
-                )
-
-            );
+        // Clear any previous results so a refresh does not
+        // briefly show prices that are about to be replaced.
+        setMarketData({});
 
 
-        const updated = {};
+        // Render each crop as it arrives instead of waiting for
+        // the slowest fetch to complete. When the government
+        // gateway stalls, this makes the page usable long before
+        // the last request times out.
+        const resolved = await Promise.all(
+            crops.map(
+                async crop => {
 
+                    const data =
+                        await fetchCropMarket(
+                            crop
+                        );
 
-        results.forEach(
-            ([crop, data]) => {
+                    setMarketData(
+                        (previous) => ({
+                            ...previous,
+                            [crop]: data
+                        })
+                    );
 
-                updated[crop] =
-                    data;
+                    return data;
 
-            }
+                }
+            )
+
         );
 
 
-        setMarketData(updated);
-
-
         const availableCount =
-            Object.values(updated)
-                .filter(
-                    item =>
-                        item?.available
-                )
-                .length;
+            resolved.filter(
+                (item) => item?.available
+            )
+            .length;
 
 
         if (availableCount === 0) {

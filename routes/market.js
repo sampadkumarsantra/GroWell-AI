@@ -10,11 +10,14 @@ const {
 const router = express.Router();
 
 
-// A stored snapshot older than this is too old to present as a
-// current price. Beyond it the honest answer is "unavailable"
-// rather than a number from last week.
+// A stored snapshot is served for as long as one exists, but
+// never as a current price: the response always carries the
+// date it was recorded and is flagged stale. Dropping it after a
+// few days just replaced a dated real price with a blank
+// screen, which is worse for a farmer trying to decide whether
+// to sell.
 const SNAPSHOT_MAX_AGE_MS =
-    3 * 24 * 60 * 60 * 1000;
+    365 * 24 * 60 * 60 * 1000;
 
 // Agmarknet is slow to answer when it is degraded, and the page
 // asks for twelve crops at once. A short in-process cache keeps
@@ -102,9 +105,13 @@ async function resolveCrop(crop) {
 
     } catch (agmarknetError) {
 
-        console.warn(
-            `⚠️  Agmarknet unavailable for ${crop}: ${agmarknetError.message}`
-        );
+        // A breaker fast-fail is expected during an outage and
+        // says nothing new, so it is not logged per crop.
+        if (!agmarknetError.isUpstreamUnavailable) {
+            console.warn(
+                `⚠️  Agmarknet unavailable for ${crop}: ${agmarknetError.message}`
+            );
+        }
     }
 
     // ------------------------------------------
@@ -157,16 +164,23 @@ async function resolveCrop(crop) {
 
         if (age <= SNAPSHOT_MAX_AGE_MS) {
 
+            const recordedOn =
+                snapshot.priceDate ||
+                new Date(
+                    snapshot.capturedAt
+                ).toLocaleDateString("en-IN");
+
             console.log(
-                `🗄️  Serving stored snapshot for ${crop}`
+                `🗄️  Serving stored snapshot for ${crop} (recorded ${recordedOn})`
             );
 
             return {
                 payload: {
                     ...snapshot.payload,
                     stale: true,
+                    recordedOn,
                     message:
-                        "The government market data service is unavailable. These are the last prices GroWell recorded."
+                        `The live government feed is unavailable. These are the last prices GroWell recorded for ${crop}, as on ${recordedOn} from ${snapshot.source}. Check with your mandi before selling.`
                 },
                 origin: "snapshot"
             };

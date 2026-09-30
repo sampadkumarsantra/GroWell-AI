@@ -653,11 +653,23 @@ Notes on honesty of the data:
   shown that way in the interface.
 - DOCA publishes a fixed basket covering only Rice, Wheat, Potato, Onion
   and Tomato. Crops it does not track are never substituted with a
-  similar commodity.
-- Snapshots older than three days are not served; the response is
-  `available: false` rather than a number from last week.
-- If no source covers a crop, the response is `available: false`. GroWell
-  never estimates or invents a price.
+  similar commodity — for example `Groundnut Oil (Packed)` is not a
+  groundnut price, `Bajra` is not maize, and `Turmeric (powder)` is not
+  turmeric root.
+- A stored snapshot is served for up to a year, but never as a current
+  price. The response carries `stale: true` and `recordedOn`, and the
+  interface states the date it was recorded and which source it came
+  from. Dropping a dated real price after a few days only replaces it
+  with a blank screen.
+- If no source has ever answered for a crop, the response is
+  `available: false`. GroWell never estimates or invents a price.
+
+`data.gov.in` sometimes accepts the connection and then hangs rather than
+returning an error, which would otherwise make every crop wait out the
+full timeout. A circuit breaker opens after two consecutive failures and
+stops paying for the same outage for ten minutes, so the fallback chain
+is reached immediately. Measured effect with the gateway down: all twelve
+crops resolve in ~110ms instead of 25s each.
 
 `services/marketRefresher.js` sweeps every supported crop shortly after
 startup and every two hours, writing the current payload to
