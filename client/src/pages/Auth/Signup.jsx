@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 
 import "./Login.css";
-import logo from "../../assets/logo.svg";
+import logo from "../../assets/logo.png";
 import { apiRequest } from "../../services/api";
 
 

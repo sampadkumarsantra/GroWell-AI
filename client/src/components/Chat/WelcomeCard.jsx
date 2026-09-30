@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 
 import "./WelcomeCard.css";
-import logo from "../../assets/logo.svg";
+import logo from "../../assets/logo.png";
 
 
 function WelcomeCard({ onSuggestionClick = () => {} }) {

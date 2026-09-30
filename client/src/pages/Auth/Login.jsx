@@ -14,7 +14,7 @@ import "./Login.css";
 
 import { apiRequest } from "../../services/api";
 
-import logo from "../../assets/logo.svg";
+import logo from "../../assets/logo.png";
 
 
 function Login({ onLogin, onSwitchToSignup }) {
