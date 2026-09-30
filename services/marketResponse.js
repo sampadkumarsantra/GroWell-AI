@@ -29,7 +29,8 @@ function buildAgmarknetResponse(
 ) {
 
     const {
-        source = "Agmarknet (data.gov.in)",
+        source =
+            "Agmarknet (api.agmarknet.gov.in)",
         basis = "Market-level mandi prices",
         sourceNote = null
     } = provenance;

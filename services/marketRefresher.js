@@ -59,99 +59,121 @@ async function refreshCrop(crop) {
 
     try {
 
-        let markets = null;
-        let sourceLabel = null;
+        // Agmarknet's own API is the primary source for the
+        // sweep, read directly rather than through the
+        // data.gov.in gateway that used to sit in front of these
+        // same records.
+        const result =
+            await sources.fetchAgmarknet(crop);
 
-        // Prefer the gateway, but fall back to Agmarknet's own
-        // host, which survives a gateway outage and covers every
-        // crop.
-        try {
-
-            markets =
-                await sources.fetchAgmarknet(crop);
-
-            sourceLabel =
-                "Agmarknet (data.gov.in)";
-
-        } catch (gatewayError) {
-
-            markets =
-                await sources.fetchAgmarknetDirect(
-                    crop
-                );
-
-            sourceLabel =
-                "Agmarknet (api.agmarknet.gov.in)";
-        }
+        const sourceLabel =
+            "Agmarknet (api.agmarknet.gov.in)";
 
         const payload =
             buildAgmarknetResponse(
                 crop,
-                markets
+                result.markets,
+                {
+                    source: sourceLabel,
+                    basis:
+                        "Market-level mandi prices",
+                    sourceNote:
+                        `Market-level mandi prices from Agmarknet, the Directorate of Marketing & Inspection's own record, as on ${result.asOn || "the latest trading day"}, covering ${result.states.length} state${result.states.length === 1 ? "" : "s"} (${result.states.join(", ")}). Mandis report through the day, so this is what had arrived by the time of the sweep.`
+                }
             );
 
         await store.saveSnapshot(
             crop,
             payload,
             sourceLabel,
-            markets[0]?.date || null
+            result.asOn || null
         );
 
         logResult(
             crop,
             true,
-            `${markets.length} mandi records via ${sourceLabel}`
+            `${result.markets.length} mandi records via ${sourceLabel}`
         );
 
         return true;
 
     } catch (agmarknetError) {
 
-        // Fall back to the DOCA figures, wholesale first and
-        // then retail, so the sweep still leaves a usable price
-        // behind for as many crops as possible.
-        const docaAttempts = [
+        // Fall back in the same order the request route uses:
+        // DOCA wholesale, then DOCA retail, then the mirror for
+        // turmeric, which has no official line on any source. The
+        // sweep still leaves a usable price behind for as many
+        // crops as possible.
+        const fallbacks = [
             {
-                label: "wholesale",
-                fetch: sources.fetchDoca
+                label: "DOCA all-India wholesale average",
+                run: async () => {
+                    const quote = await sources.fetchDoca(crop);
+                    if (!quote) return null;
+                    return {
+                        payload: buildDocaResponse(quote),
+                        asOn: quote.asOn || null
+                    };
+                }
             },
             {
-                label: "retail",
-                fetch: sources.fetchDocaRetail
+                label: "DOCA all-India retail average",
+                run: async () => {
+                    const quote = await sources.fetchDocaRetail(crop);
+                    if (!quote) return null;
+                    return {
+                        payload: buildDocaResponse(quote),
+                        asOn: quote.asOn || null
+                    };
+                }
+            },
+            {
+                label: "Agmarknet community mirror",
+                run: async () => {
+                    if (!sources.mirrorSupports(crop)) {
+                        return null;
+                    }
+                    const result = await sources.fetchMandiMirror(crop);
+                    return {
+                        payload: buildAgmarknetResponse(
+                            crop,
+                            result.markets,
+                            {
+                                source: sources.mirrorSource,
+                                basis: "Market-level mandi prices",
+                                sourceNote:
+                                    `Agmarknet publishes no ${crop.toLowerCase()} record and neither does DOCA, so these are the same mandi figures republished by a third-party mirror of Agmarknet, as on ${result.asOn || "the latest trading day"}, covering ${result.states.length} state${result.states.length === 1 ? "" : "s"} (${result.states.join(", ")}). The mirror is not an official source and its figures lag by days, so confirm the rate at your mandi before selling.`
+                            }
+                        ),
+                        asOn: result.asOn || null
+                    };
+                }
             }
         ];
 
-        for (const attempt of docaAttempts) {
+        for (const fallback of fallbacks) {
 
             try {
 
-                const quote =
-                    await attempt.fetch(crop);
+                const outcome = await fallback.run();
 
-                if (!quote) {
+                if (!outcome) {
                     continue;
                 }
 
-                const payload =
-                    buildDocaResponse(quote);
-
                 await store.saveSnapshot(
                     crop,
-                    payload,
-                    payload.source,
-                    quote.asOn || null
+                    outcome.payload,
+                    outcome.payload.source,
+                    outcome.asOn
                 );
 
-                logResult(
-                    crop,
-                    true,
-                    `DOCA all-India ${attempt.label} average ₹${quote.price}`
-                );
+                logResult(crop, true, fallback.label);
 
                 return true;
 
-            } catch (docaError) {
-                // try the next basis
+            } catch (fallbackError) {
+                // try the next source
             }
         }
 

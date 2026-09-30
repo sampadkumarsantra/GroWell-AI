@@ -172,7 +172,7 @@ function createUnavailableData(crop, message = "") {
 
         state: "",
 
-        source: "data.gov.in",
+        source: "Agmarknet",
 
         updatedAt: null,
 
@@ -451,7 +451,7 @@ export default function Analytics() {
 
                 source:
                     result.source ||
-                    "data.gov.in",
+                    "Agmarknet",
 
                 basis:
                     result.basis ||
@@ -1861,7 +1861,7 @@ export default function Analytics() {
 
 
                         <strong>
-                            data.gov.in
+                            Agmarknet
                         </strong>
 
 

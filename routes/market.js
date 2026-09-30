@@ -28,6 +28,13 @@ const LIVE_TTL_MS = 5 * 60 * 1000;
 const liveCache = new Map();
 
 
+// Named in the response so a farmer can see which body
+// published the figure. Agmarknet is the authority; DOCA and
+// the mirror each say so separately.
+const AGMARKNET_SOURCE =
+    "Agmarknet (Directorate of Marketing & Inspection)";
+
+
 function cacheKey(crop) {
     return String(crop).trim().toLowerCase();
 }
@@ -63,13 +70,12 @@ function writeLiveCache(crop, payload) {
 // RESOLUTION ORDER
 // =====================================================
 //
-// 1. Agmarknet gateway — live, market level (preferred)
-// 2. Agmarknet direct  — live, market level, separate host
-// 3. DOCA wholesale    — live, all-India average
-// 4. DOCA retail       — live, all-India average, few crops
-// 5. Agmarknet mirror  — live, market level, third-party
-// 6. Stored snapshot   — last good payload, marked stale
-// 7. Unavailable       — only when no source has ever answered
+// 1. Agmarknet           — live, market level (preferred)
+// 2. DOCA wholesale      — live, all-India average
+// 3. DOCA retail         — live, all-India average, few crops
+// 4. Agmarknet mirror    — live, market level, third-party
+// 5. Stored snapshot     — last good payload, marked stale
+// 6. Unavailable         — only when no source has ever answered
 //
 
 async function resolveCrop(crop) {
@@ -83,16 +89,26 @@ async function resolveCrop(crop) {
     // ------------------------------------------
     // 1. AGMARKNET
     // ------------------------------------------
+    //
+    // Read from Agmarknet's own API rather than through the
+    // data.gov.in gateway, which is a proxy in front of these
+    // same records and one that fails on its own schedule.
 
     try {
 
-        const markets =
+        const result =
             await sources.fetchAgmarknet(crop);
 
         const payload =
             buildAgmarknetResponse(
                 crop,
-                markets
+                result.markets,
+                {
+                    source: AGMARKNET_SOURCE,
+                    basis: "Market-level mandi prices",
+                    sourceNote:
+                        `Market-level mandi prices from Agmarknet, the Directorate of Marketing & Inspection's own record, as on ${result.asOn || "the latest trading day"}, covering ${result.states.length} state${result.states.length === 1 ? "" : "s"} (${result.states.join(", ")}). Mandis report through the day, so this is what had arrived by the time of the fetch.`
+                }
             );
 
         writeLiveCache(crop, payload);
@@ -101,7 +117,7 @@ async function resolveCrop(crop) {
             crop,
             payload,
             payload.source,
-            markets[0]?.date || null
+            result.asOn || null
         );
 
         return { payload, origin: "agmarknet" };
@@ -118,56 +134,7 @@ async function resolveCrop(crop) {
     }
 
     // ------------------------------------------
-    // 2. AGMARKNET DIRECT API
-    // ------------------------------------------
-    //
-    // Agmarknet's own host, which serves the same mandi prices
-    // as the gateway above and stays up when the gateway is
-    // down. It covers every crop, unlike DOCA.
-
-    try {
-
-        const markets =
-            await sources.fetchAgmarknetDirect(
-                crop
-            );
-
-        const payload =
-            buildAgmarknetResponse(
-                crop,
-                markets.map((market) => ({
-                    ...market,
-                    variety:
-                        market.variety || "",
-                    grade:
-                        market.grade || "",
-                    date:
-                        market.date || ""
-                }))
-            );
-
-        writeLiveCache(crop, payload);
-
-        store.saveSnapshot(
-            crop,
-            payload,
-            payload.source,
-            markets[0]?.date || null
-        );
-
-        return { payload, origin: "agmarknet-direct" };
-
-    } catch (directError) {
-
-        if (!directError.isUpstreamUnavailable) {
-            console.warn(
-                `⚠️  Agmarknet direct unavailable for ${crop}: ${directError.message}`
-            );
-        }
-    }
-
-    // ------------------------------------------
-    // 3. DOCA
+    // 2. DOCA
     // ------------------------------------------
 
     try {
@@ -200,7 +167,7 @@ async function resolveCrop(crop) {
     }
 
     // ------------------------------------------
-    // 4. DOCA RETAIL
+    // 3. DOCA RETAIL
     // ------------------------------------------
     //
     // A last resort for the crops DOCA only prices at retail.
@@ -240,62 +207,68 @@ async function resolveCrop(crop) {
     }
 
     // ------------------------------------------
-    // 5. AGMARKNET MIRROR
+    // 4. AGMARKNET MIRROR
     // ------------------------------------------
     //
-    // A community mirror of the same Agmarknet mandi records,
-    // on infrastructure separate from both official hosts. It
-    // exists to cover an outage in which both Agmarknet hosts
-    // and DOCA are down at once, which is the one case where
-    // maize, groundnut, mustard, soybean, cotton and turmeric
-    // would otherwise have no price at all.
+    // A community republication of the same Agmarknet mandi
+    // records, kept as the one fill-in for turmeric.
     //
-    // It is placed after the official sources on purpose: it is
-    // never consulted while Agmarknet is answering, so it
-    // disappears from the response as soon as the outage ends.
-    // The response carries its own source label and the arrival
-    // date the mirror actually recorded, because those prices
-    // lag the current day.
+    // Turmeric is the single reason this source is here. Agmarknet
+    // publishes no turmeric line at all, and DOCA does not either,
+    // so without the mirror turmeric would have no price on any
+    // day. Every other crop is answered by Agmarknet itself, so
+    // for those the mirror is not consulted and never appears in
+    // the response.
+    //
+    // It is not an official source and its figures lag by days, so
+    // the response carries its own source label and the arrival
+    // date the mirror actually recorded.
 
-    try {
+    // The mirror only republishes a handful of commodities, and
+    // asking it for anything else only spends its rate limit.
+    if (sources.mirrorSupports(crop)) {
 
-        const result =
-            await sources.fetchMandiMirror(crop);
+        try {
 
-        const payload =
-            buildAgmarknetResponse(
+            const result =
+                await sources.fetchMandiMirror(
+                    crop
+                );
+
+            const payload =
+                buildAgmarknetResponse(
+                    crop,
+                    result.markets,
+                    {
+                        source: sources.mirrorSource,
+                        basis:
+                            "Market-level mandi prices",
+                        sourceNote:
+                            `Agmarknet publishes no ${crop.toLowerCase()} record and neither does DOCA, so these are the same mandi figures republished by a third-party mirror of Agmarknet, as on ${result.asOn || "the latest trading day"}, covering ${result.states.length} state${result.states.length === 1 ? "" : "s"} (${result.states.join(", ")}). The mirror is not an official source and its figures lag by days, so confirm the rate at your mandi before selling.`
+                    }
+                );
+
+            writeLiveCache(crop, payload);
+
+            store.saveSnapshot(
                 crop,
-                result.markets,
-                {
-                    source:
-                        sources.mirrorSource,
-                    basis:
-                        "Market-level mandi prices",
-                    sourceNote:
-                        `The official Agmarknet feeds are unavailable right now, so these are the same mandi records republished by a third-party mirror, as on ${result.asOn || "the latest trading day"}, covering ${result.states.length} state${result.states.length === 1 ? "" : "s"} (${result.states.join(", ")}). The mirror is not an official source and its figures lag by days, so confirm the rate at your mandi before selling.`
-                }
+                payload,
+                payload.source,
+                result.asOn || null
             );
 
-        writeLiveCache(crop, payload);
+            return { payload, origin: "mirror" };
 
-        store.saveSnapshot(
-            crop,
-            payload,
-            payload.source,
-            result.asOn || null
-        );
+        } catch (mirrorError) {
 
-        return { payload, origin: "mirror" };
-
-    } catch (mirrorError) {
-
-        console.warn(
-            `⚠️  Mandi mirror unavailable for ${crop}: ${mirrorError.message}`
-        );
+            console.warn(
+                `⚠️  Mandi mirror unavailable for ${crop}: ${mirrorError.message}`
+            );
+        }
     }
 
     // ------------------------------------------
-    // 6. STORED SNAPSHOT
+    // 5. STORED SNAPSHOT
     // ------------------------------------------
 
     const snapshot =

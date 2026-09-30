@@ -57,8 +57,5 @@ services:
       - key: GEMINI_VISION_MODEL
         sync: false
 
-      - key: DATA_GOV_API_KEY
-        sync: false
-
       - key: GOOGLE_CLIENT_ID
         sync: false

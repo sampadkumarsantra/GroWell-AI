@@ -6,22 +6,21 @@ const axios = require("axios");
  * MANDI MIRROR (fallback source)
  * =====================================================
  *
- * Both government mandi feeds have been unreachable at the
- * same time: the data.gov.in gateway answers 502/503, and
- * Agmarknet's own host returns 503 for every path. When that
- * happens the only source still answering is DOCA, and DOCA
- * publishes a fixed basket that cannot honestly cover maize,
- * groundnut, mustard, soybean, cotton or turmeric. It lists
- * Groundnut and Mustard only as refined oils and Turmeric only
- * as powder, which are different commodities, and this project
- * refuses to report a different product's price as the seed's.
+ * Agmarknet's own API is the primary source and answers every
+ * crop the app shows except one. Turmeric is the exception:
+ * Agmarknet publishes no turmeric line at all, and DOCA does
+ * not either, so turmeric has no official price on any day.
+ * DOCA also lists Groundnut and Mustard only as refined oils and
+ * Turmeric only as powder, which are different commodities, and
+ * this project refuses to report a different product's price as
+ * the seed's.
  *
  * This source is a community mirror that re-publishes the same
- * Agmarknet mandi records. It is consulted only after both
- * official hosts and DOCA have failed, so it is a gap filler
- * during an outage rather than a replacement for the
- * authoritative feed. The moment Agmarknet answers again this
- * source is not reached.
+ * Agmarknet mandi records. It is consulted for turmeric only,
+ * after Agmarknet has been asked and had nothing, which is the
+ * one case where turmeric would otherwise have no price at all.
+ * It is a gap filler, never a replacement for the authoritative
+ * feed, and it is not reached for any other crop.
  *
  * What it costs and what it guarantees:
  *
@@ -49,30 +48,21 @@ const MIRROR_URL =
     "https://mandi-api.onrender.com";
 
 const MIRROR_SOURCE =
-    "Agmarknet mirror";
+    "Agmarknet community mirror";
 
-// The commodity names the mirror publishes for each crop the
-// app shows, as Agmarknet itself spells them. Matching is
-// exact: "Soybean" is queried as "Soyabean" because that is
-// the published name, and a response carrying anything not
-// listed here is rejected rather than approximately matched.
+// Agmarknet's own API is now the primary source and answers
+// every crop except turmeric, for which it publishes no line at
+// all, and DOCA does not either. The mirror therefore exists for
+// turmeric alone and is not consulted for anything else, so a
+// stale third-party figure can never displace a live official
+// one.
+//
+// Only turmeric is listed. Matching stays exact: "Soyabean" and
+// the rest were the published spellings of the other crops, but
+// those crops no longer need this source.
 const CROP_ALIASES = {
-    Rice: ["Rice"],
-    Wheat: ["Wheat"],
-    Maize: ["Maize"],
-    Potato: ["Potato"],
-    Tomato: ["Tomato"],
-    Onion: ["Onion"],
-    Groundnut: ["Groundnut"],
-    Mustard: ["Mustard"],
-    Soybean: ["Soyabean"],
-    Cotton: ["Cotton"],
     Turmeric: ["Turmeric"]
 };
-
-// Chilli is absent because the mirror does not carry it. It is
-// left out rather than pointed at "Red Chillies", since that
-// line is the DOCA retail basket's, not this source's.
 
 
 const REQUEST_TIMEOUT_MS = 8000;
