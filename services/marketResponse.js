@@ -130,13 +130,17 @@ function buildDocaResponse(quote) {
 
     const asOn = quote.asOn || "the latest date";
 
+    const isRetail =
+        quote.basis.includes("retail");
+
     return {
         success: true,
         available: true,
         source: quote.source,
         basis: quote.basis,
-        sourceNote:
-            `The mandi feed is unavailable, so this is the ${quote.basis.toLowerCase()} published by the Department of Consumer Affairs as on ${asOn}. It is not your local mandi rate.`,
+        sourceNote: isRetail
+            ? `The mandi feed is unavailable, so this is the ${quote.basis} price for ${quote.commodity} published by the Department of Consumer Affairs as on ${asOn}. Retail rates sit above wholesale, so treat this as an upper reference, not your mandi rate.`
+            : `The mandi feed is unavailable, so this is the ${quote.basis} published by the Department of Consumer Affairs as on ${asOn}. It is not your local mandi rate.`,
         crop: quote.crop,
         updatedAt: new Date().toISOString(),
         summary: {
@@ -147,8 +151,7 @@ function buildDocaResponse(quote) {
             volatility: 0,
             volatilityLevel: "Nationwide",
             priceSpread: 0
-        },
-        bestMarket: {
+        },        bestMarket: {
             market: row.market,
             district: "",
             state: row.state,

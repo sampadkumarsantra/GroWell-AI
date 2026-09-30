@@ -640,13 +640,33 @@ government sources, then a durable stored copy:
 | --- | --- | --- |
 | 1 | Agmarknet via `data.gov.in` | Market-level mandi prices. The preferred figure. |
 | 2 | Agmarknet direct (`api.agmarknet.gov.in`) | The same mandi prices from Agmarknet's own host, which stays up when the gateway is down. Covers every crop. |
-| 3 | DOCA Price Monitoring System | All-India average wholesale price. Used only when neither Agmarknet host answers. |
-| 4 | `market_snapshots` (Postgres) | The last good payload, returned with `stale: true`. |
-| 5 | Unavailable | Only when no source has ever answered for that crop. |
+| 3 | DOCA wholesale | All-India average wholesale price. Used only when neither Agmarknet host answers. |
+| 4 | DOCA retail | All-India average retail price, converted to a quintal. Covers only `Chilli`, which DOCA prices solely at retail. |
+| 5 | `market_snapshots` (Postgres) | The last good payload, returned with `stale: true`. |
+| 6 | Unavailable | Only when no source has ever answered for that crop. |
 
 The `data.gov.in` gateway fails often (502/503), so the direct Agmarknet
 host, the DOCA figures and the stored snapshot exist to keep the page
 useful during an outage.
+
+Current coverage while both Agmarknet hosts are down is 6 of 12 crops.
+Maize, Groundnut, Mustard, Soybean, Cotton and Turmeric have no
+government source at all at present: DOCA does not publish them in any
+form, and there is no substitute that would be honest. `Bajra` is not
+maize, `Groundnut Oil (Packed)` is a processed product worth many times
+the seed, and `Turmeric (powder)` is not turmeric root. Those six become
+available automatically the moment either Agmarknet host returns, and the
+refresher then stores them permanently.
+
+## Retail fallback
+
+DOCA only prices `Red Chillies (whole)` at retail, not wholesale, so
+Chilli is served from the retail grid and converted from rupees per
+kilogram to a quintal. The response reports
+`basis: "All-India average retail"` and the interface states that retail
+sits above wholesale, so the figure is read as an upper reference rather
+than a mandi rate. The oils and dals are deliberately not used this way:
+they are processed products, not the seed or bean a farmer sells.
 
 ## Agmarknet direct API
 

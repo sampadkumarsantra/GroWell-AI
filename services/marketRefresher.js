@@ -107,14 +107,30 @@ async function refreshCrop(crop) {
 
     } catch (agmarknetError) {
 
-        // Fall back to DOCA for the crops it tracks, so the
-        // sweep still leaves a usable price behind.
-        try {
+        // Fall back to the DOCA figures, wholesale first and
+        // then retail, so the sweep still leaves a usable price
+        // behind for as many crops as possible.
+        const docaAttempts = [
+            {
+                label: "wholesale",
+                fetch: sources.fetchDoca
+            },
+            {
+                label: "retail",
+                fetch: sources.fetchDocaRetail
+            }
+        ];
 
-            const quote =
-                await sources.fetchDoca(crop);
+        for (const attempt of docaAttempts) {
 
-            if (quote) {
+            try {
+
+                const quote =
+                    await attempt.fetch(crop);
+
+                if (!quote) {
+                    continue;
+                }
 
                 const payload =
                     buildDocaResponse(quote);
@@ -129,14 +145,14 @@ async function refreshCrop(crop) {
                 logResult(
                     crop,
                     true,
-                    `DOCA all-India average ₹${quote.price}`
+                    `DOCA all-India ${attempt.label} average ₹${quote.price}`
                 );
 
                 return true;
-            }
 
-        } catch (docaError) {
-            // fall through to the combined report
+            } catch (docaError) {
+                // try the next basis
+            }
         }
 
         logResult(

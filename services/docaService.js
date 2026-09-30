@@ -40,8 +40,27 @@ const CROP_TO_DOCA = {
 };
 
 
+// A few crops DOCA only prices at retail. These are used only
+// when no wholesale figure exists for the crop, and the response
+// is labelled retail, because a retail rate and a wholesale rate
+// are not the same measurement.
+//
+// "Red Chillies (whole)" is the same product a chilli grower
+// sells, so it qualifies. The oils do not: Groundnut Oil is a
+// processed product worth several times the seed, and Mustard and
+// Soya Oil likewise say nothing about the seed or bean price.
+const CROP_TO_DOCA_RETAIL = {
+    Chilli: "Red Chillies (whole)"
+};
+
+
+// DOCA publishes retail rates in rupees per kilogram.
+const RETAIL_TO_PER_QUINTAL = 100;
+
+
 let cache = {
-    prices: null,
+    wholesale: null,
+    retail: null,
     date: null,
     fetchedAt: 0
 };
@@ -51,18 +70,16 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 
 /**
  * DOCA renders its figures into ASP.NET grid spans with stable
- * ids. Each wholesale grid is a <table> whose rows carry a
- * commodity span followed by a price span, both in rupees per
- * quintal.
+ * ids. Each grid is a <table> whose rows carry a commodity span
+ * followed by a price span. Wholesale grids are rupees per
+ * quintal; retail grids are rupees per kilogram.
  */
-function parseWholesaleTables(html) {
+function parseTables(html, gridPattern) {
 
     const prices = {};
 
     const tables =
-        html.match(
-            /<table[^>]*id="GridViewWholesaleGroup[ABCD]"[\s\S]*?<\/table>/gi
-        ) || [];
+        html.match(gridPattern) || [];
 
     tables.forEach((table) => {
 
@@ -109,6 +126,24 @@ function parseWholesaleTables(html) {
 }
 
 
+function parseWholesaleTables(html) {
+
+    return parseTables(
+        html,
+        /<table[^>]*id="GridViewWholesaleGroup[ABCDE]"[\s\S]*?<\/table>/gi
+    );
+}
+
+
+function parseRetailTables(html) {
+
+    return parseTables(
+        html,
+        /<table[^>]*id="GridViewRetailGroup[ABCDE]"[\s\S]*?<\/table>/gi
+    );
+}
+
+
 function parseDate(html) {
 
     const match =
@@ -142,15 +177,15 @@ function parseDate(html) {
 
 
 /**
- * Returns { prices, date, fetchedAt } for the whole DOCA basket,
- * or throws. The basket is fetched once and reused for a short
- * period so a page load that needs twelve crops makes a single
- * request to a government server.
+ * Returns { wholesale, retail, date, fetchedAt } for the whole
+ * DOCA basket, or throws. The basket is fetched once and reused
+ * for a short period so a page load that needs twelve crops makes
+ * a single request to a government server.
  */
 async function fetchBasket() {
 
     if (
-        cache.prices &&
+        cache.wholesale &&
         Date.now() - cache.fetchedAt < CACHE_TTL_MS
     ) {
         return cache;
@@ -170,23 +205,27 @@ async function fetchBasket() {
         response.data || ""
     );
 
-    const prices =
+    const wholesale =
         parseWholesaleTables(html);
 
-    if (Object.keys(prices).length === 0) {
+    const retail =
+        parseRetailTables(html);
+
+    if (Object.keys(wholesale).length === 0) {
         throw new Error(
             "DOCA returned no parsable wholesale prices."
         );
     }
 
     cache = {
-        prices,
+        wholesale,
+        retail,
         date: parseDate(html),
         fetchedAt: Date.now()
     };
 
     console.log(
-        `🏛️  DOCA price monitoring: ${Object.keys(prices).length} commodities as on ${cache.date}`
+        `🏛️  DOCA price monitoring: ${Object.keys(wholesale).length} wholesale and ${Object.keys(retail).length} retail commodities as on ${cache.date}`
     );
 
     return cache;
@@ -209,7 +248,7 @@ async function fetchCropWholesale(crop) {
     const basket = await fetchBasket();
 
     const price =
-        basket.prices[commodity];
+        basket.wholesale[commodity];
 
     if (!price) {
         return null;
@@ -228,13 +267,61 @@ async function fetchCropWholesale(crop) {
 }
 
 
+/**
+ * Returns the DOCA retail price for one crop converted to a
+ * quintal, or null when DOCA does not price it at retail.
+ *
+ * This is only consulted when no wholesale figure exists. It
+ * reports its own basis so a retail rate is never presented as a
+ * wholesale one.
+ */
+async function fetchCropRetail(crop) {
+
+    const commodity =
+        CROP_TO_DOCA_RETAIL[crop];
+
+    if (!commodity) {
+        return null;
+    }
+
+    const basket = await fetchBasket();
+
+    const pricePerKg =
+        basket.retail[commodity];
+
+    if (!pricePerKg) {
+        return null;
+    }
+
+    return {
+        crop,
+        commodity,
+        price: Math.round(
+            pricePerKg * RETAIL_TO_PER_QUINTAL
+        ),
+        unit: "₹/quintal",
+        basis: "All-India average retail",
+        asOn: basket.date,
+        source: "DOCA Price Monitoring System",
+        sourceUrl: DOCA_URL
+    };
+}
+
+
 function supports(crop) {
     return Boolean(CROP_TO_DOCA[crop]);
 }
 
 
+function supportsRetail(crop) {
+    return Boolean(CROP_TO_DOCA_RETAIL[crop]);
+}
+
+
 module.exports = {
     fetchCropWholesale,
+    fetchCropRetail,
     supports,
+    supportsRetail,
     DOCA_URL
 };

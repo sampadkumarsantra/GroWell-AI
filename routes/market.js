@@ -65,9 +65,10 @@ function writeLiveCache(crop, payload) {
 //
 // 1. Agmarknet gateway — live, market level (preferred)
 // 2. Agmarknet direct  — live, market level, separate host
-// 3. DOCA              — live, all-India average
-// 4. Stored snapshot   — last good payload, marked stale
-// 5. Unavailable       — only when no source has ever answered
+// 3. DOCA wholesale    — live, all-India average
+// 4. DOCA retail       — live, all-India average, few crops
+// 5. Stored snapshot   — last good payload, marked stale
+// 6. Unavailable       — only when no source has ever answered
 //
 
 async function resolveCrop(crop) {
@@ -198,7 +199,47 @@ async function resolveCrop(crop) {
     }
 
     // ------------------------------------------
-    // 4. STORED SNAPSHOT
+    // 4. DOCA RETAIL
+    // ------------------------------------------
+    //
+    // A last resort for the crops DOCA only prices at retail.
+    // The response is built with its own retail basis, so the
+    // figure is never read as a wholesale mandi rate.
+
+    try {
+
+        const quote =
+            await sources.fetchDocaRetail(crop);
+
+        if (quote) {
+
+            const payload =
+                buildDocaResponse(quote);
+
+            writeLiveCache(crop, payload);
+
+            store.saveSnapshot(
+                crop,
+                payload,
+                payload.source,
+                quote.asOn || null
+            );
+
+            return {
+                payload,
+                origin: "doca-retail"
+            };
+        }
+
+    } catch (retailError) {
+
+        console.warn(
+            `⚠️  DOCA retail unavailable for ${crop}: ${retailError.message}`
+        );
+    }
+
+    // ------------------------------------------
+    // 5. STORED SNAPSHOT
     // ------------------------------------------
 
     const snapshot =

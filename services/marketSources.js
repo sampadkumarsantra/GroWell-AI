@@ -235,6 +235,21 @@ async function fetchDoca(crop) {
 
 
 /**
+ * Fetches the DOCA all-India average retail price for one crop,
+ * converted to a quintal. Returns null when DOCA does not price
+ * that crop at retail.
+ *
+ * Only a handful of crops have this, and it is a retail rate
+ * rather than a wholesale one, so it is used strictly as a last
+ * resort after both Agmarknet hosts and the wholesale figures
+ * have all failed. The response reports its own basis.
+ */
+async function fetchDocaRetail(crop) {
+    return doca.fetchCropRetail(crop);
+}
+
+
+/**
  * Fetches mandi-level prices from Agmarknet's own API, which is
  * a different host from the data.gov.in gateway and stays up
  * when the gateway is down. Same authoritative source, same
@@ -250,7 +265,9 @@ module.exports = {
     fetchAgmarknet,
     fetchAgmarknetDirect,
     fetchDoca,
+    fetchDocaRetail,
     docaSupports: doca.supports,
+    docaSupportsRetail: doca.supportsRetail,
     breakerState,
     UpstreamUnavailableError,
     AGMARKNET_URL
