@@ -11,8 +11,13 @@ import {
     Save,
     ShieldCheck,
     SlidersHorizontal,
-    UserRound
+    UserRound,
+    CreditCard,
+    Sparkles
 } from "lucide-react";
+
+import { usePremium } from "../context/PremiumContext";
+import { apiRequest, readJson } from "../services/api";
 
 import "./Settings.css";
 
@@ -94,13 +99,23 @@ const tabs = [
     { name: "Profile", icon: UserRound },
     { name: "Preferences", icon: SlidersHorizontal },
     { name: "Notifications", icon: Bell },
+    { name: "Plan & Billing", icon: CreditCard },
     { name: "Privacy & Data", icon: ShieldCheck }
 ];
 
-function Settings() {
+function Settings({ setActivePage }) {
+    const {
+        isPremium,
+        subscription,
+        limits,
+        refresh
+    } = usePremium();
+
     const [activeTab, setActiveTab] = useState("Profile");
     const [settings, setSettings] = useState(loadSettings);
     const [saved, setSaved] = useState(false);
+    const [billingBusy, setBillingBusy] = useState(false);
+    const [billingError, setBillingError] = useState("");
 
     useEffect(() => {
         localStorage.setItem(
@@ -156,6 +171,51 @@ function Settings() {
             setSaved(false);
         }, 2500);
     }
+
+    async function cancelPlan() {
+        if (
+            !window.confirm(
+                "Stop your Premium plan? You keep every benefit until the end of the period you have already paid for."
+            )
+        ) {
+            return;
+        }
+
+        setBillingError("");
+        setBillingBusy(true);
+
+        try {
+            const response = await apiRequest(
+                "/api/billing/cancel",
+                { method: "POST" }
+            );
+
+            const data = await readJson(response);
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                        "Could not cancel your plan."
+                );
+            }
+
+            await refresh();
+        } catch (error) {
+            setBillingError(error.message);
+        } finally {
+            setBillingBusy(false);
+        }
+    }
+
+    const renewsOn = subscription?.currentPeriodEnd
+        ? new Date(
+              subscription.currentPeriodEnd
+          ).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "long",
+              year: "numeric"
+          })
+        : null;
 
     function exportSettings() {
         const file = new Blob(
@@ -237,8 +297,13 @@ function Settings() {
                 </aside>
 
                 <div className="settings-content">
-                    {activeTab === "Profile" && (
-                        <>
+                    <div
+                        className={
+                            activeTab === "Profile"
+                                ? "settings-section active"
+                                : "settings-section"
+                        }
+                    >
                             <section className="settings-panel">
                                 <div className="panel-heading">
                                     <div>
@@ -362,11 +427,15 @@ function Settings() {
                                     </label>
                                 </div>
                             </section>
-                        </>
-                    )}
+                        </div>
 
-                    {activeTab === "Preferences" && (
-                        <>
+                    <div
+                        className={
+                            activeTab === "Preferences"
+                                ? "settings-section active"
+                                : "settings-section"
+                        }
+                    >
                             <section className="settings-panel">
                                 <div className="panel-heading">
                                     <div>
@@ -418,6 +487,9 @@ function Settings() {
                                             <option>Quick</option>
                                             <option>Balanced</option>
                                             <option>Detailed</option>
+                                            {isPremium && (
+                                                <option>Deep</option>
+                                            )}
                                         </select>
                                     </label>
 
@@ -485,10 +557,15 @@ function Settings() {
                                     </p>
                                 </div>
                             </section>
-                        </>
-                    )}
+                        </div>
 
-                    {activeTab === "Notifications" && (
+                    <div
+                        className={
+                            activeTab === "Notifications"
+                                ? "settings-section active"
+                                : "settings-section"
+                        }
+                    >
                         <section className="settings-panel">
                             <div className="panel-heading">
                                 <div>
@@ -558,10 +635,149 @@ function Settings() {
                                 }
                             />
                         </section>
-                    )}
+                    </div>
 
-                    {activeTab === "Privacy & Data" && (
-                        <>
+                    <div
+                        className={
+                            activeTab === "Plan & Billing"
+                                ? "settings-section active"
+                                : "settings-section"
+                        }
+                    >
+                            <section className="settings-panel">
+                                <div className="panel-heading">
+                                    <div>
+                                        <h2>Your plan</h2>
+                                        <p>
+                                            GroWell Premium is a monthly
+                                            subscription. Cancel any time
+                                            and keep access until the end
+                                            of the period you have paid for.
+                                        </p>
+                                    </div>
+
+                                    {isPremium ? (
+                                        <Sparkles size={21} />
+                                    ) : (
+                                        <CreditCard size={21} />
+                                    )}
+                                </div>
+
+                                <div className="plan-current">
+                                    <div>
+                                        <strong>
+                                            {isPremium
+                                                ? "GroWell Premium"
+                                                : "GroWell Free"}
+                                        </strong>
+
+                                        <span>
+                                            {isPremium
+                                                ? subscription?.cancelAtPeriodEnd
+                                                    ? renewsOn
+                                                        ? `Access ends on ${renewsOn}`
+                                                        : "Cancelling at period end"
+                                                    : renewsOn
+                                                    ? `Renews on ${renewsOn}`
+                                                    : "Active"
+                                                : "15 questions a day, 30 voice questions a month"}
+                                        </span>
+                                    </div>
+
+                                    {!isPremium && (
+                                        <button
+                                            type="button"
+                                            className="primary-action"
+                                            onClick={() =>
+                                                setActivePage?.(
+                                                    "Premium"
+                                                )
+                                            }
+                                        >
+                                            <Sparkles size={17} />
+                                            Upgrade
+                                        </button>
+                                    )}
+                                </div>
+
+                                {billingError && (
+                                    <p className="plan-error">
+                                        {billingError}
+                                    </p>
+                                )}
+
+                                {isPremium && (
+                                    <div className="data-actions">
+                                        {!subscription?.cancelAtPeriodEnd && (
+                                            <button
+                                                type="button"
+                                                className="secondary-action"
+                                                onClick={cancelPlan}
+                                                disabled={billingBusy}
+                                            >
+                                                Cancel plan
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </section>
+
+                            <section className="settings-panel">
+                                <div className="panel-heading">
+                                    <div>
+                                        <h2>Your allowance</h2>
+                                        <p>
+                                            Resets every day for
+                                            questions and every month for
+                                            voice.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="plan-limits">
+                                    <div>
+                                        <span>
+                                            AI questions
+                                        </span>
+                                        <strong>
+                                            {limits.chatPerDay === null
+                                                ? "Unlimited"
+                                                : `${limits.chatPerDay} a day`}
+                                        </strong>
+                                    </div>
+
+                                    <div>
+                                        <span>
+                                            Voice questions
+                                        </span>
+                                        <strong>
+                                            {limits.voicePerMonth === null
+                                                ? "Unlimited"
+                                                : `${limits.voicePerMonth} a month`}
+                                        </strong>
+                                    </div>
+
+                                    <div>
+                                        <span>
+                                            Deep Reasoning
+                                        </span>
+                                        <strong>
+                                            {limits.deepReasoning
+                                                ? "Included"
+                                                : "Premium only"}
+                                        </strong>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                    <div
+                        className={
+                            activeTab === "Privacy & Data"
+                                ? "settings-section active"
+                                : "settings-section"
+                        }
+                    >
                             <section className="settings-panel">
                                 <div className="panel-heading">
                                     <div>
@@ -619,8 +835,7 @@ function Settings() {
                                     </button>
                                 </div>
                             </section>
-                        </>
-                    )}
+                        </div>
 
                     <div className="settings-save-bar">
                         <span>

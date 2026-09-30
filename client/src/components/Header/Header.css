@@ -455,3 +455,47 @@
         right: -8px;
     }
 }
+/* =====================================================
+   PREMIUM — badge + plan row
+   ===================================================== */
+
+.pro-badge {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    padding: 1px 6px;
+    border-radius: var(--radius-pill);
+    background: var(--gw-brass);
+    color: var(--gw-forest-deep);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1.5;
+}
+
+.profile-btn {
+    position: relative;
+}
+
+.profile-plan {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    padding: 10px 14px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font-family: var(--font-body);
+    text-align: left;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.profile-plan:hover {
+    background: var(--gw-paper-2);
+}
+
+.profile-plan .profile-account-icon {
+    color: var(--gw-brass);
+}

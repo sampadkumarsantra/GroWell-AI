@@ -20,8 +20,35 @@ export function apiUrl(path) {
     return `${API_BASE_URL}${normalizePath(path)}`;
 }
 
+export function getToken() {
+    return localStorage.getItem("growell_token");
+}
+
+/*
+ * Every call carries the session token. The server reads the plan
+ * from this identity to decide what the farmer is allowed to do, so
+ * a request without it is treated as anonymous and gets free-tier
+ * limits only.
+ */
+function withAuth(options = {}) {
+    const token = getToken();
+
+    if (!token) {
+        return options;
+    }
+
+    return {
+        ...options,
+        headers: {
+            ...(options.headers || {}),
+            Authorization: `Bearer ${token}`
+        }
+    };
+}
+
 export async function apiRequest(path, options = {}) {
     const target = normalizePath(path);
+    const authorized = withAuth(options);
 
     const candidates = [];
 
@@ -47,7 +74,7 @@ export async function apiRequest(path, options = {}) {
         try {
             const response = await fetch(
                 `${base}${target}`,
-                options
+                authorized
             );
             return response;
         } catch (error) {
@@ -59,4 +86,17 @@ export async function apiRequest(path, options = {}) {
         lastError ||
         new Error("GroWell AI server could not be reached.")
     );
+}
+
+/**
+ * Reads a JSON body and, when the server reports a paid-only
+ * feature or an exhausted quota, returns the payload instead of
+ * throwing so the UI can open the upgrade sheet.
+ */
+export async function readJson(response) {
+    try {
+        return await response.json();
+    } catch {
+        return {};
+    }
 }

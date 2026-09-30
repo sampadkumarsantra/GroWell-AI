@@ -143,11 +143,42 @@ function Terms() {
 
             <div className="info-section">
 
-                <h2>7. Changes to the Platform</h2>
+                <h2>7. GroWell Premium Subscription</h2>
 
                 <p>
-                    GroWell AI may be updated, modified or expanded
-                    as the platform develops.
+                    Some GroWell AI features are provided under a
+                    paid monthly subscription called GroWell Premium.
+                    The current price is shown on the upgrade page
+                    before you subscribe.
+                </p>
+
+                <p>
+                    Premium is billed monthly in Indian Rupees
+                    through Razorpay by UPI, netbanking or card. The
+                    subscription renews automatically each month
+                    until you cancel it. We do not see or store your
+                    card or UPI details.
+                </p>
+
+                <p>
+                    You can cancel at any time from Settings, under
+                    Plan &amp; Billing. Cancellation stops future
+                    renewals. You keep full access to Premium until
+                    the end of the period you have already paid for,
+                    and your account then returns to the free tier.
+                </p>
+
+                <p>
+                    If a renewal payment fails, Premium may pause
+                    until payment is resolved. We will attempt to
+                    notify you.
+                </p>
+
+                <p>
+                    Payments are processed by Razorpay. Fees charged
+                    by your bank or payment provider are your
+                    responsibility. Refunds are handled according to
+                    our refund policy and the applicable law.
                 </p>
 
             </div>
@@ -155,7 +186,38 @@ function Terms() {
 
             <div className="info-section">
 
-                <h2>8. Changes to These Terms</h2>
+                <h2>8. Acceptable Use of Premium</h2>
+
+                <p>
+                    Premium is licensed to one individual or farming
+                    household. Automated scraping, reselling,
+                    credential sharing, or using GroWell AI to build a
+                    competing commercial service is not permitted.
+                    We may suspend a paid account that misuses the
+                    service.
+                </p>
+
+            </div>
+
+
+            <div className="info-section">
+
+                <h2>9. Changes to the Platform</h2>
+
+                <p>
+                    GroWell AI may be updated, modified or expanded
+                    as the platform develops. Features included in
+                    Premium may change. If a change materially
+                    reduces the value of a paid subscription, we
+                    will give notice before it takes effect.
+                </p>
+
+            </div>
+
+
+            <div className="info-section">
+
+                <h2>10. Changes to These Terms</h2>
 
                 <p>
                     These Terms of Use may be updated as GroWell AI

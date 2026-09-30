@@ -131,6 +131,14 @@
     box-shadow: 0 8px 16px rgba(30, 81, 59, 0.22);
 }
 
+.settings-section {
+    display: none;
+}
+
+.settings-section.active {
+    display: block;
+}
+
 .settings-panel {
     margin-bottom: 20px;
     padding: 26px;
@@ -391,8 +399,11 @@
     }
 
     .settings-tabs {
-        flex-direction: row;
-        overflow-x: auto;
+        display: none;
+    }
+
+    .settings-section {
+        display: block;
     }
 
     .settings-tab {
@@ -463,4 +474,88 @@
 :root[data-theme="light"] .settings-fields select option {
     color: var(--gw-ink);
     background-color: #ffffff;
+}
+/* =====================================================
+   PLAN & BILLING
+   ===================================================== */
+
+.primary-action {
+    display: inline-flex;
+    gap: 7px;
+    align-items: center;
+    padding: 9px 16px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--gw-forest);
+    color: var(--gw-cream);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.primary-action:hover:not(:disabled) {
+    background: var(--gw-forest-2);
+}
+
+.primary-action:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.plan-current {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    padding: var(--space-md);
+    border: 1px solid var(--gw-line);
+    border-radius: var(--radius-md);
+    background: var(--gw-paper-2);
+}
+
+.plan-current strong {
+    display: block;
+    margin-bottom: 2px;
+    font-size: var(--text-md);
+    font-weight: 600;
+}
+
+.plan-current span {
+    color: var(--gw-muted);
+    font-size: var(--text-xs);
+}
+
+.plan-error {
+    margin: var(--space-sm) 0 0;
+    color: var(--gw-danger);
+    font-size: var(--text-xs);
+}
+
+.plan-limits {
+    display: grid;
+    gap: var(--space-sm);
+}
+
+.plan-limits > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px var(--space-md);
+    border: 1px solid var(--gw-line);
+    border-radius: var(--radius-sm);
+    background: var(--gw-paper);
+}
+
+.plan-limits span {
+    color: var(--gw-muted);
+    font-size: var(--text-sm);
+}
+
+.plan-limits strong {
+    font-size: var(--text-sm);
+    font-weight: 600;
 }

@@ -14,6 +14,7 @@ import "./ChatInput.css";
 
 import { registerGrowthAction } from "../../services/growthTracker";
 import { apiRequest } from "../../services/api";
+import { usePremium } from "../../context/PremiumContext";
 import {
     loadConversations,
     saveConversations,
@@ -97,6 +98,13 @@ function notifyGrowthUpdated() {
    ===================================================== */
 
 function Chat({ user, setActivePage }) {
+
+    const {
+        isPremium,
+        deepMode,
+        toggleDeepMode,
+        applyEntitlement
+    } = usePremium();
 
     /* -------------------------------------------------
        CONVERSATION STATE
@@ -621,7 +629,9 @@ ${
                                 settings.language,
 
                             effort:
-                                settings.effort,
+                                deepMode
+                                    ? "Deep"
+                                    : settings.effort,
 
                             profile:
                                 settings.profile
@@ -633,6 +643,24 @@ ${
             const data =
                 await response.json();
 
+            /*
+             * The free daily allowance is spent. Do not bury
+             * this in a generic error — the farmer needs to know
+             * the account is the reason, and how to fix it.
+             */
+            if (data.code === "QUOTA_EXCEEDED") {
+                applyEntitlement(
+                    data.entitlement
+                );
+
+                appendMessage({
+                    sender: "bot",
+                    text: data.reply
+                });
+
+                return;
+            }
+
             if (!response.ok) {
                 throw new Error(
                     data.reply ||
@@ -641,9 +669,18 @@ ${
                 );
             }
 
+            applyEntitlement(data.entitlement);
+
             const aiReply =
                 data.reply ||
                 "GroWell AI did not return a response.";
+
+            if (data.effort !== (deepMode ? "Deep" : settings.effort)) {
+                appendMessage({
+                    sender: "bot",
+                    text: `*Answered at ${data.effort} reasoning — Deep Reasoning is a Premium feature.*`
+                });
+            }
 
             appendMessage({
                 sender: "bot",
@@ -747,6 +784,14 @@ ${
                     onOpenJourney={() => {
                         if (setActivePage) {
                             setActivePage("Journey");
+                        }
+                    }}
+                    isPremium={isPremium}
+                    deepMode={deepMode}
+                    onToggleDeep={toggleDeepMode}
+                    onUpgrade={() => {
+                        if (setActivePage) {
+                            setActivePage("Premium");
                         }
                     }}
                 />

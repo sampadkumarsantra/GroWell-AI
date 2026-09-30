@@ -170,3 +170,28 @@
         height: 40px;
     }
 }
+/* =====================================================
+   DEEP REASONING TOGGLE
+   ===================================================== */
+
+.chat-input button.deep-active {
+    background: rgba(176, 141, 87, 0.22);
+    color: var(--gw-forest);
+}
+
+.chat-input button.deep-locked {
+    color: var(--gw-faint);
+}
+
+.chat-input button.deep-locked:hover {
+    color: var(--gw-brass);
+}
+
+.deep-status {
+    margin: 6px 0 0;
+    padding: 0 4px;
+    color: var(--gw-faint);
+    font-size: 11px;
+    line-height: 1.5;
+    text-align: center;
+}

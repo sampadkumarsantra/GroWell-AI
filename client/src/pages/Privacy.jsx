@@ -128,7 +128,38 @@ function Privacy() {
 
             <div className="info-section">
 
-                <h2>7. Third-Party Services</h2>
+                <h2>7. Payment Information</h2>
+
+                <p>
+                    If you subscribe to GroWell Premium, payments are
+                    processed by Razorpay. We store only your billing
+                    relationship with them — a customer reference, a
+                    subscription reference, your plan, its status and
+                    the dates of the current period. We never receive
+                    or store your card number, UPI ID, CVV or any full
+                    banking credential.
+                </p>
+
+                <p>
+                    We also keep a count of how many AI questions and
+                    voice questions you have used, because the free
+                    tier has a daily and monthly limit. This is
+                    necessary to apply those limits and is not used
+                    for advertising.
+                </p>
+
+                <p>
+                    We never sell your payment data, and we do not
+                    store your payment data at all. Razorpay handles
+                    it under their own privacy policy.
+                </p>
+
+            </div>
+
+
+            <div className="info-section">
+
+                <h2>8. Third-Party Services</h2>
 
                 <p>
                     GroWell AI may integrate third-party services for
@@ -141,7 +172,24 @@ function Privacy() {
 
             <div className="info-section">
 
-                <h2>8. Policy Updates</h2>
+                <h2>9. Deleting Your Account</h2>
+
+                <p>
+                    You can request deletion of your account and all
+                    associated data at any time. Deleting your
+                    account removes your profile, your subscription
+                    record and your usage history. Deleting your
+                    account does not by itself cancel a subscription —
+                    cancel it first from Settings so you are not
+                    billed again.
+                </p>
+
+            </div>
+
+
+            <div className="info-section">
+
+                <h2>10. Policy Updates</h2>
 
                 <p>
                     This Privacy Policy may be updated as GroWell AI

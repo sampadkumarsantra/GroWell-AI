@@ -1,0 +1,409 @@
+/* =====================================================
+   GROWELL PREMIUM — upgrade, pricing, checkout
+   ===================================================== */
+
+.premium-page {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: var(--space-lg) var(--space-md) 64px;
+    font-family: var(--font-body);
+    color: var(--gw-ink);
+    animation: premium-rise 0.4s var(--ease-out);
+}
+
+@keyframes premium-rise {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes premium-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spin {
+    animation: premium-spin 0.9s linear infinite;
+}
+
+/* =====================================================
+   HEADER
+   ===================================================== */
+
+.premium-head {
+    display: flex;
+    gap: var(--space-md);
+    align-items: flex-start;
+    margin-bottom: var(--space-xl);
+}
+
+.premium-close {
+    flex-shrink: 0;
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border: 1px solid var(--gw-line);
+    border-radius: var(--radius-pill);
+    background: var(--gw-paper);
+    color: var(--gw-ink-soft);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.premium-close:hover {
+    border-color: var(--gw-brass);
+    color: var(--gw-forest);
+}
+
+.premium-head-text {
+    flex: 1;
+}
+
+.premium-eyebrow {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: var(--space-xs);
+    color: var(--gw-brass);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.premium-head h1 {
+    margin: 0 0 var(--space-sm);
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    line-height: 1.15;
+}
+
+.premium-head p {
+    max-width: 62ch;
+    margin: 0;
+    color: var(--gw-muted);
+    font-size: var(--text-sm);
+    line-height: 1.65;
+}
+
+/* =====================================================
+   BANNERS
+   ===================================================== */
+
+.premium-notice,
+.premium-error {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+    margin-bottom: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+}
+
+.premium-notice {
+    border: 1px solid var(--gw-line);
+    background: var(--gw-paper-2);
+    color: var(--gw-ink-soft);
+}
+
+.premium-error {
+    border: 1px solid rgba(179, 74, 63, 0.25);
+    background: rgba(179, 74, 63, 0.07);
+    color: var(--gw-danger);
+}
+
+.premium-error svg,
+.premium-notice svg {
+    flex-shrink: 0;
+}
+
+/* =====================================================
+   PLAN CARDS
+   ===================================================== */
+
+.premium-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+}
+
+.premium-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-lg);
+    border: 1px solid var(--gw-line);
+    border-radius: var(--radius-lg);
+    background: var(--gw-paper);
+    box-shadow: var(--shadow-soft);
+}
+
+.premium-card.is-featured {
+    border-color: var(--gw-brass);
+    box-shadow: var(--shadow-medium);
+}
+
+.premium-flag {
+    position: absolute;
+    top: -11px;
+    left: var(--space-lg);
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    padding: 4px 11px;
+    border-radius: var(--radius-pill);
+    background: var(--gw-forest);
+    color: var(--gw-cream);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.premium-card-head {
+    margin-bottom: var(--space-md);
+}
+
+.premium-card-head h2 {
+    margin: 0 0 var(--space-xs);
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 600;
+}
+
+.premium-price {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+}
+
+.premium-amount {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    color: var(--gw-forest);
+}
+
+.premium-period {
+    color: var(--gw-muted);
+    font-size: var(--text-sm);
+}
+
+/* =====================================================
+   FEATURE LISTS
+   ===================================================== */
+
+.premium-features {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.premium-features li {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: flex-start;
+    font-size: var(--text-sm);
+    line-height: 1.5;
+}
+
+.premium-features li svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.premium-features li.is-in {
+    color: var(--gw-ink-soft);
+}
+
+.premium-features li.is-in svg {
+    color: var(--gw-ok);
+}
+
+.premium-features li.is-out {
+    color: var(--gw-faint);
+    text-decoration: line-through;
+    text-decoration-color: var(--gw-line-2);
+}
+
+.premium-features li.is-out svg {
+    color: var(--gw-line-2);
+}
+
+/* =====================================================
+   ACTIONS
+   ===================================================== */
+
+.premium-cta {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: var(--space-lg);
+    padding: 13px var(--space-md);
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--gw-forest);
+    color: var(--gw-cream);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.premium-cta:hover:not(:disabled) {
+    background: var(--gw-forest-2);
+    transform: translateY(-1px);
+}
+
+.premium-cta:disabled {
+    background: var(--gw-line-2);
+    cursor: not-allowed;
+}
+
+.premium-active {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--gw-line);
+}
+
+.premium-active-row {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+    color: var(--gw-ok);
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+.premium-renew {
+    margin: var(--space-xs) 0 var(--space-sm);
+    color: var(--gw-muted);
+    font-size: var(--text-xs);
+}
+
+.premium-ghost {
+    width: 100%;
+    padding: 9px;
+    border: 1px solid var(--gw-line-2);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--gw-muted);
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.premium-ghost:hover:not(:disabled) {
+    border-color: var(--gw-danger);
+    color: var(--gw-danger);
+}
+
+.premium-ghost:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* =====================================================
+   EXPLAINER
+   ===================================================== */
+
+.premium-explainer {
+    margin-bottom: var(--space-lg);
+    padding: var(--space-lg);
+    border: 1px solid var(--gw-line);
+    border-radius: var(--radius-lg);
+    background: var(--gw-paper-2);
+}
+
+.premium-explainer h3 {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+    margin: 0 0 var(--space-md);
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 600;
+}
+
+.premium-explainer h3 svg {
+    color: var(--gw-brass);
+}
+
+.premium-explainer ol {
+    display: grid;
+    gap: var(--space-md);
+    margin: 0;
+    padding-left: 1.3em;
+}
+
+.premium-explainer li strong {
+    display: block;
+    margin-bottom: 3px;
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+.premium-explainer li p {
+    margin: 0;
+    color: var(--gw-muted);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+}
+
+/* =====================================================
+   FINE PRINT
+   ===================================================== */
+
+.premium-fineprint {
+    max-width: 60ch;
+    margin: 0;
+    color: var(--gw-faint);
+    font-size: var(--text-xs);
+    line-height: 1.7;
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 640px) {
+    .premium-page {
+        padding: var(--space-md) var(--space-sm) 48px;
+    }
+
+    .premium-head {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .premium-close {
+        align-self: flex-end;
+    }
+
+    .premium-head h1 {
+        font-size: var(--text-xl);
+    }
+
+    .premium-card {
+        padding: var(--space-md);
+    }
+}

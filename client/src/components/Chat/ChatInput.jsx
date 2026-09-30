@@ -2,7 +2,9 @@ import {
     Mic,
     Camera,
     SendHorizontal,
-    Flower2
+    Flower2,
+    Brain,
+    Lock
 } from "lucide-react";
 
 function ChatInput({
@@ -15,7 +17,11 @@ function ChatInput({
     openImagePicker,
     handleImageUpload,
     fileInputRef,
-    onOpenJourney
+    onOpenJourney,
+    isPremium,
+    deepMode,
+    onToggleDeep,
+    onUpgrade
 }) {
     return (
 
@@ -40,6 +46,36 @@ function ChatInput({
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
             />
+
+            <button
+                type="button"
+                title={
+                    isPremium
+                        ? "Deep Reasoning — works out what you actually need before answering"
+                        : "Deep Reasoning — Premium feature"
+                }
+                aria-pressed={isPremium ? deepMode : false}
+                className={
+                    isPremium && deepMode
+                        ? "deep-active"
+                        : isPremium
+                        ? ""
+                        : "deep-locked"
+                }
+                onClick={() => {
+                    if (isPremium) {
+                        onToggleDeep();
+                    } else {
+                        onUpgrade();
+                    }
+                }}
+            >
+                {isPremium ? (
+                    <Brain size={20} />
+                ) : (
+                    <Lock size={17} />
+                )}
+            </button>
 
             <button
                 title={
@@ -80,6 +116,14 @@ function ChatInput({
             </button>
 
         </div>
+
+        {isPremium && (
+            <p className="deep-status">
+                {deepMode
+                    ? "Deep Reasoning is on — the model will plan the problem, check what it does not know, then answer."
+                    : "Deep Reasoning is off."}
+            </p>
+        )}
 
         </div>
 

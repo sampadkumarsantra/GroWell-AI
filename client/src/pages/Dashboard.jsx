@@ -10,6 +10,7 @@ import SoilHealth from "./SoilHealth";
 import Library from "./Library";
 import Analytics from "./Analytics";
 import Settings from "./Settings";
+import Premium from "./Premium";
 import GrowthJourney from "../components/GrowthJourney/GrowthJourney";
 
 import About from "./About";
@@ -50,7 +51,12 @@ function Dashboard({ user, onLogout }) {
                 return <Analytics />;
 
             case "Settings":
-                return <Settings />;
+                return (
+                    <Settings setActivePage={setActivePage} />
+                );
+
+            case "Premium":
+                return <Premium />;
 
             /* =========================================
                INFORMATION PAGES

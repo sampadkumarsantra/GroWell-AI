@@ -6,12 +6,14 @@ import {
     BarChart3,
     Settings,
     BookOpen,
-    Flower2
+    Flower2,
+    Sparkles
 } from "lucide-react";
 
 import "./Sidebar.css";
 import logo from "../../assets/logo.svg";
 import GrowthJourney from "../GrowthJourney/GrowthJourney";
+import { usePremium } from "../../context/PremiumContext";
 
 const menu = [
     { icon: MessageSquare, label: "Chat" },
@@ -25,6 +27,8 @@ const menu = [
 ];
 
 function Sidebar({ activePage, setActivePage }) {
+    const { isPremium } = usePremium();
+
     function handleMenuClick(label) {
         setActivePage(label);
     }
@@ -85,6 +89,31 @@ function Sidebar({ activePage, setActivePage }) {
                 })}
 
             </nav>
+
+            {/* =========================
+                PREMIUM UPSELL
+            ========================= */}
+            {!isPremium && (
+                <button
+                    type="button"
+                    className="gw-premium-cta"
+                    onClick={() =>
+                        setActivePage("Premium")
+                    }
+                >
+                    <Sparkles size={17} />
+
+                    <div>
+                        <strong>
+                            Go Premium
+                        </strong>
+
+                        <span>
+                            Deep Reasoning
+                        </span>
+                    </div>
+                </button>
+            )}
 
             {/* =========================
                 GROWTH JOURNEY

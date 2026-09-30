@@ -1,5 +1,11 @@
 const Groq = require("groq-sdk");
 
+const {
+    PLANS,
+    FREE,
+    effortAllowed
+} = require("./entitlements");
+
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY
 });
@@ -18,20 +24,137 @@ const EFFORT_CONFIG = {
     Detailed: {
         maxTokens: 1800,
         temperature: 0.6
+    },
+
+    // Premium only. Two model passes — see buildPlan().
+    Deep: {
+        maxTokens: 4000,
+        temperature: 0.3
     }
 };
 
-async function generateResponse(message, settings = {}) {
+
+// =====================================================
+// DEEP REASONING — PLANNER PASS
+// =====================================================
+//
+// A single pass tends to answer the question that was asked
+// rather than the question behind it. Before answering, a cheap
+// short pass reads the farmer's situation and writes down what
+// actually needs to be worked out. The main pass then reasons
+// from that plan instead of straight from the prompt.
+//
+
+const PLANNER_SYSTEM_PROMPT = `
+You are the analysis planner inside GroWell AI, an agricultural
+reasoning system for farmers.
+
+You do NOT answer the farmer. You only prepare the ground work that
+the answering model will reason from.
+
+Read the farmer's question and their farm profile. Then output a
+short plan in exactly this structure:
+
+UNKNOWN
+- List the facts that are genuinely missing and that would change
+  the answer (stage, variety, soil type, dose, days after sowing,
+  rainfall, temperature, budget, etc).
+- If nothing material is missing, write "Nothing material."
+
+RISKS
+- List the ways a naive answer here could go wrong, or could cause
+  financial or crop loss.
+- Focus on real agronomic traps: wrong growth stage, wrong dose,
+  phytotoxicity, wrong fungicide for the pathogen, ignoring
+  resistance, unsafe spraying conditions, off-label use.
+
+ANGLE
+- One or two sentences naming the core decision the farmer is
+  really trying to make.
+
+Keep it under 120 words total. Plain text. No emoji. No preamble.
+`;
+
+async function buildPlan(message, context) {
+
+    try {
+
+        const completion =
+            await groq.chat.completions.create({
+                model: "openai/gpt-oss-120b",
+                temperature: 0.2,
+                max_tokens: 400,
+                messages: [
+                    {
+                        role: "system",
+                        content: PLANNER_SYSTEM_PROMPT
+                    },
+                    {
+                        role: "user",
+                        content: `${context}\n\nFARMER QUESTION:\n${message}`
+                    }
+                ]
+            });
+
+        const plan =
+            completion?.choices?.[0]?.message
+                ?.content?.trim();
+
+        if (!plan) {
+            return null;
+        }
+
+        console.log(
+            "[GroWell] Deep planner pass complete"
+        );
+
+        return plan;
+
+    } catch (error) {
+
+        // A failed planner must never cost the farmer their
+        // answer — fall through to a normal single pass.
+        console.warn(
+            "[GroWell] Planner pass failed, answering directly:",
+            error.message
+        );
+
+        return null;
+
+    }
+}
+
+async function generateResponse(
+    message,
+    settings = {},
+    options = {}
+) {
 
     const profile = settings.profile || {};
 
     const language =
         settings.language || "English";
 
-    const effort =
+    const requestedEffort =
         EFFORT_CONFIG[settings.effort]
             ? settings.effort
             : "Balanced";
+
+    // The client can ask for anything. The server decides what it
+    // actually gets, so a forged request cannot unlock a paid
+    // reasoning tier.
+    const isPremium = options.isPremium === true;
+
+    const effort =
+        !isPremium &&
+        !effortAllowed(
+            PLANS[FREE].id,
+            requestedEffort
+        )
+            ? PLANS[FREE].maxEffort
+            : requestedEffort;
+
+    const isDeep = effort === "Deep";
 
     const config =
         EFFORT_CONFIG[effort];
@@ -50,6 +173,62 @@ async function generateResponse(message, settings = {}) {
         profile.location ||
         settings.location ||
         "Not specified";
+
+
+    // =================================================
+    // DEEP REASONING — PLANNER PASS
+    // =================================================
+
+    const farmContext = `
+Farm: ${farmName}
+Main crops: ${crops}
+Location: ${location}
+Reply language: ${language}
+`;
+
+    const plan = isDeep
+        ? await buildPlan(message, farmContext)
+        : null;
+
+    const deepInstructions = isDeep
+        ? `
+DEEP REASONING MODE
+
+You are running the full GroWell reasoning stack. A separate
+planning pass has already analysed this question. Use it.
+
+${plan ? `ANALYSIS PLAN FROM THE PLANNER PASS\n\n${plan}` : "No plan was produced. Reason from first principles and be explicit about any assumption you make."}
+
+Then follow this structure:
+
+### 🧠 Reasoning
+
+- Show the reasoning, not just the conclusion.
+- State the assumption you are making where the farmer's data was incomplete.
+- If the planner listed unknowns, name the one that matters most and explain how you handled it.
+- If the planner flagged a risk, say explicitly why a common wrong answer would have caused loss here.
+
+### 🌱 Assessment
+
+Short bullet points.
+
+### 🛠️ Recommended actions
+
+Numbered practical steps, specific enough to act on today.
+
+### 💰 Cost and risk
+
+- Rough input cost per acre where a purchase is involved.
+- What could go wrong, and how to avoid it.
+
+### 👀 What to monitor
+
+Short bullet points.
+
+
+Stay factual. Never invent a field observation you were not given.
+`
+        : "";
 
 
     const systemPrompt = `
@@ -219,7 +398,7 @@ Give a useful explanation plus practical actions.
 
 Detailed:
 Give a comprehensive agricultural answer, but ALWAYS maintain short paragraphs, bullets, numbered steps and blank-line spacing.
-
+${deepInstructions}
 
 AGRICULTURAL SAFETY
 
@@ -340,5 +519,6 @@ Before returning your answer, verify:
 
 
 module.exports = {
-    generateResponse
+    generateResponse,
+    buildPlan
 };

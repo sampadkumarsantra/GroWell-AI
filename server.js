@@ -18,6 +18,9 @@ const soilRoutes = require("./routes/soil");
 const decisionRoutes = require("./routes/decision");
 const authRoute = require("./routes/auth");
 const translateRoute = require("./routes/translate");
+const billingRoute = require("./routes/billing");
+
+const { migrate } = require("./database/migrate");
 
 
 // =========================
@@ -43,7 +46,21 @@ app.use(
     })
 );
 
-app.use(express.json());
+/*
+ * The Razorpay webhook signature is computed over the exact raw
+ * bytes of the request. express.json() discards them, so the body
+ * is captured first and the webhook verifies against that. The
+ * verify hook only records the bytes — parsing still happens
+ * normally, so no other route changes behaviour.
+ */
+app.use(
+    express.json({
+        limit: "2mb",
+        verify(req, res, buffer) {
+            req.rawBody = buffer;
+        }
+    })
+);
 
 app.use(express.urlencoded({ extended: true }));
 
@@ -67,6 +84,9 @@ app.use("/api/decision", decisionRoutes);
 // 🔐 AUTHENTICATION
 app.use("/api/auth", authRoute);
 
+// 💳 PREMIUM BILLING
+app.use("/api/billing", billingRoute);
+
 // 🌐 TRANSLATION
 app.use("/api/translate", translateRoute);
 
@@ -85,7 +105,6 @@ app.get("/api/status", (req, res) => {
     });
 
 });
-
 
 // =========================
 // SERVE REACT APP (client/dist)
@@ -173,16 +192,35 @@ app.use((err, req, res, next) => {
 // START SERVER
 // =========================
 
-app.listen(PORT, () => {
+/*
+ * Migrations run before the server accepts traffic. A paying
+ * farmer must never hit an endpoint that queries a table which
+ * does not exist yet.
+ */
+migrate()
+    .then(() => {
+        app.listen(PORT, () => {
 
-    console.log("");
-    console.log("======================================");
-    console.log("🌱 GroWell AI Backend Started");
-    console.log("======================================");
-    console.log(`🚀 Server : http://localhost:${PORT}`);
-    console.log(`📡 Status : http://localhost:${PORT}/api/status`);
-    console.log(`🔐 Auth   : http://localhost:${PORT}/api/auth`);
-    console.log("======================================");
-    console.log("");
+            console.log("");
+            console.log("======================================");
+            console.log("🌱 GroWell AI Backend Started");
+            console.log("======================================");
+            console.log(`🚀 Server : http://localhost:${PORT}`);
+            console.log(`📡 Status : http://localhost:${PORT}/api/status`);
+            console.log(`🔐 Auth   : http://localhost:${PORT}/api/auth`);
+            console.log(`💳 Billing: http://localhost:${PORT}/api/billing/plans`);
+            console.log("======================================");
+            console.log("");
 
-});
+        });
+    })
+    .catch((error) => {
+        console.error("");
+        console.error("❌ Database migration failed.");
+        console.error("   The server cannot start without a database,");
+        console.error("   because paid subscriptions are stored there.");
+        console.error("");
+        console.error(error.message);
+        console.error("");
+        process.exit(1);
+    });

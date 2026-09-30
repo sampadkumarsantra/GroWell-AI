@@ -12,8 +12,12 @@ import {
     Leaf,
     FileText,
     ShieldCheck,
-    MessageCircle
+    MessageCircle,
+    Sparkles,
+    CreditCard
 } from "lucide-react";
+
+import { usePremium } from "../../context/PremiumContext";
 
 function Header({
     user,
@@ -23,6 +27,8 @@ function Header({
     const [search, setSearch] = useState("");
     const [profileOpen, setProfileOpen] = useState(false);
     const [infoOpen, setInfoOpen] = useState(false);
+
+    const { isPremium } = usePremium();
 
     const profileRef = useRef(null);
     const infoRef = useRef(null);
@@ -529,6 +535,12 @@ function Header({
 
                         <CircleUserRound size={34} />
 
+                        {isPremium && (
+                            <span className="pro-badge">
+                                PRO
+                            </span>
+                        )}
+
                         <ChevronDown
                             size={14}
                             className={`profile-chevron ${
@@ -597,6 +609,45 @@ function Header({
                                 </div>
 
                             </div>
+
+                            {/* =================================================
+                                PLAN
+                            ================================================= */}
+
+                            <button
+                                className="profile-account profile-plan"
+                                type="button"
+                                onClick={() => {
+                                    setProfileOpen(false);
+                                    setActivePage("Premium");
+                                }}
+                            >
+
+                                <div className="profile-account-icon">
+                                    {isPremium ? (
+                                        <Sparkles size={16} />
+                                    ) : (
+                                        <CreditCard size={16} />
+                                    )}
+                                </div>
+
+                                <div>
+
+                                    <span>
+                                        {isPremium
+                                            ? "Premium plan"
+                                            : "Upgrade to Premium"}
+                                    </span>
+
+                                    <small>
+                                        {isPremium
+                                            ? "Deep Reasoning is on"
+                                            : "Unlimited questions, no daily cap"}
+                                    </small>
+
+                                </div>
+
+                            </button>
 
                             <div className="profile-divider"></div>
 
