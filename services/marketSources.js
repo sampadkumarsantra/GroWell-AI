@@ -1,6 +1,8 @@
 const axios = require("axios");
 
 const doca = require("./docaService");
+const agmarknetDirect =
+    require("./agmarknetDirectService");
 
 
 /*
@@ -232,9 +234,21 @@ async function fetchDoca(crop) {
 }
 
 
+/**
+ * Fetches mandi-level prices from Agmarknet's own API, which is
+ * a different host from the data.gov.in gateway and stays up
+ * when the gateway is down. Same authoritative source, same
+ * market-level figures, covering every crop.
+ */
+async function fetchAgmarknetDirect(crop) {
+    return agmarknetDirect.fetchCrop(crop);
+}
+
+
 module.exports = {
     CROPS,
     fetchAgmarknet,
+    fetchAgmarknetDirect,
     fetchDoca,
     docaSupports: doca.supports,
     breakerState,

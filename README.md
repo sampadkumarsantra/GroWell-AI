@@ -639,12 +639,36 @@ government sources, then a durable stored copy:
 | Order | Source | What it is |
 | --- | --- | --- |
 | 1 | Agmarknet via `data.gov.in` | Market-level mandi prices. The preferred figure. |
-| 2 | DOCA Price Monitoring System | All-India average wholesale price. Used only when Agmarknet cannot be reached. |
-| 3 | `market_snapshots` (Postgres) | The last good payload, returned with `stale: true`. |
-| 4 | Unavailable | Only when no source has ever answered for that crop. |
+| 2 | Agmarknet direct (`api.agmarknet.gov.in`) | The same mandi prices from Agmarknet's own host, which stays up when the gateway is down. Covers every crop. |
+| 3 | DOCA Price Monitoring System | All-India average wholesale price. Used only when neither Agmarknet host answers. |
+| 4 | `market_snapshots` (Postgres) | The last good payload, returned with `stale: true`. |
+| 5 | Unavailable | Only when no source has ever answered for that crop. |
 
-The `data.gov.in` gateway fails often (502/503), so the second source and
-the stored snapshot exist to keep the page useful during an outage.
+The `data.gov.in` gateway fails often (502/503), so the direct Agmarknet
+host, the DOCA figures and the stored snapshot exist to keep the page
+useful during an outage.
+
+### Agmarknet direct API
+
+`services/agmarknetDirectService.js` reads prices from Agmarknet's own
+API instead of the `data.gov.in` gateway. Two things are worth knowing
+before changing it:
+
+- **It is fail-safe, not fail-open.** Records are discovered by matching
+  field names rather than assuming one response layout, and anything
+  unrecognised is rejected. Unit strings like `"Rs 4,185 /quintal"`,
+  implausible prices, records for a different crop, and records with no
+  market name all throw instead of producing a number. An unexpected
+  response therefore yields no price rather than a wrong one.
+- **It sends a browser User-Agent on purpose.** The host sits behind a
+  Google front end that returns 403 to the default `axios/1.19.0` agent,
+  which would make this source fail permanently with a misleading error.
+
+The endpoint obtains its token by sending an OTP to a mobile number, and
+there is no public API key, so `AGMARKNET_API_TOKEN` is optional. Set it
+to a Bearer token if you have one; without it the call is still
+attempted anonymously and simply fails over to the next source if the
+host requires authentication.
 
 Notes on honesty of the data:
 

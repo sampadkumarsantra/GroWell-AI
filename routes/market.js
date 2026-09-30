@@ -63,10 +63,11 @@ function writeLiveCache(crop, payload) {
 // RESOLUTION ORDER
 // =====================================================
 //
-// 1. Agmarknet        — live, market level (preferred)
-// 2. DOCA             — live, all-India average
-// 3. Stored snapshot  — last good payload, marked stale
-// 4. Unavailable      — only when no source has ever answered
+// 1. Agmarknet gateway — live, market level (preferred)
+// 2. Agmarknet direct  — live, market level, separate host
+// 3. DOCA              — live, all-India average
+// 4. Stored snapshot   — last good payload, marked stale
+// 5. Unavailable       — only when no source has ever answered
 //
 
 async function resolveCrop(crop) {
@@ -115,7 +116,56 @@ async function resolveCrop(crop) {
     }
 
     // ------------------------------------------
-    // 2. DOCA
+    // 2. AGMARKNET DIRECT API
+    // ------------------------------------------
+    //
+    // Agmarknet's own host, which serves the same mandi prices
+    // as the gateway above and stays up when the gateway is
+    // down. It covers every crop, unlike DOCA.
+
+    try {
+
+        const markets =
+            await sources.fetchAgmarknetDirect(
+                crop
+            );
+
+        const payload =
+            buildAgmarknetResponse(
+                crop,
+                markets.map((market) => ({
+                    ...market,
+                    variety:
+                        market.variety || "",
+                    grade:
+                        market.grade || "",
+                    date:
+                        market.date || ""
+                }))
+            );
+
+        writeLiveCache(crop, payload);
+
+        store.saveSnapshot(
+            crop,
+            payload,
+            payload.source,
+            markets[0]?.date || null
+        );
+
+        return { payload, origin: "agmarknet-direct" };
+
+    } catch (directError) {
+
+        if (!directError.isUpstreamUnavailable) {
+            console.warn(
+                `⚠️  Agmarknet direct unavailable for ${crop}: ${directError.message}`
+            );
+        }
+    }
+
+    // ------------------------------------------
+    // 3. DOCA
     // ------------------------------------------
 
     try {
@@ -148,7 +198,7 @@ async function resolveCrop(crop) {
     }
 
     // ------------------------------------------
-    // 3. STORED SNAPSHOT
+    // 4. STORED SNAPSHOT
     // ------------------------------------------
 
     const snapshot =

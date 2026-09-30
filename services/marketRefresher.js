@@ -59,8 +59,30 @@ async function refreshCrop(crop) {
 
     try {
 
-        const markets =
-            await sources.fetchAgmarknet(crop);
+        let markets = null;
+        let sourceLabel = null;
+
+        // Prefer the gateway, but fall back to Agmarknet's own
+        // host, which survives a gateway outage and covers every
+        // crop.
+        try {
+
+            markets =
+                await sources.fetchAgmarknet(crop);
+
+            sourceLabel =
+                "Agmarknet (data.gov.in)";
+
+        } catch (gatewayError) {
+
+            markets =
+                await sources.fetchAgmarknetDirect(
+                    crop
+                );
+
+            sourceLabel =
+                "Agmarknet (api.agmarknet.gov.in)";
+        }
 
         const payload =
             buildAgmarknetResponse(
@@ -71,14 +93,14 @@ async function refreshCrop(crop) {
         await store.saveSnapshot(
             crop,
             payload,
-            payload.source,
+            sourceLabel,
             markets[0]?.date || null
         );
 
         logResult(
             crop,
             true,
-            `${markets.length} mandi records`
+            `${markets.length} mandi records via ${sourceLabel}`
         );
 
         return true;
