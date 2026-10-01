@@ -2,6 +2,7 @@ const express = require("express");
 
 const sources = require("../services/marketSources");
 const store = require("../services/marketStore");
+const portal = require("../services/agmarknetPortal");
 const {
     buildAgmarknetResponse,
     buildDocaResponse
@@ -319,6 +320,127 @@ router.get("/hello", (req, res) => {
         success: true,
         message: "GroWell Market API is working"
     });
+});
+
+
+/*
+ * =====================================================
+ * AGMARKNET PORTAL
+ * =====================================================
+ *
+ * The whole published picture for every crop the app shows, in
+ * one request.
+ *
+ * Kept apart from /analytics on purpose. That route answers one
+ * crop with one national average, which is the right shape for a
+ * chat reply and a price line. A portal needs the shape of the
+ * market underneath it: states, districts, mandis, varieties,
+ * arrivals and how the prices spread. Re-asking /analytics once
+ * per crop cannot produce that, because each call re-derives the
+ * same average and drops the rows holding the detail.
+ *
+ * The answer is cached upstream, so opening the page repeatedly
+ * costs one grouping over rows already held rather than a fresh
+ * walk of a shared government host.
+ */
+
+router.get("/portal", async (req, res) => {
+
+    try {
+
+        const payload = await portal.buildPortal();
+
+        return res.json({
+            success: true,
+            ...payload
+        });
+
+    } catch (error) {
+
+        /*
+         * The portal is a read-only view, so a failure here is
+         * reported in the body rather than as a status code.
+         * A 500 would replace the page with a browser error and
+         * lose the fact that the per-crop prices on the same
+         * screen may still be perfectly good.
+         */
+        console.error(
+            "❌ PORTAL ERROR:",
+            error.message
+        );
+
+        return res.json({
+            success: false,
+            available: false,
+            source: portal.SOURCE,
+            message:
+                "The full market report could not be assembled just now. The per-crop prices on this page come from a separate feed and may still be current.",
+            crops: []
+        });
+
+    }
+
+});
+
+
+/*
+ * History for one crop.
+ *
+ * Split out from the portal payload on purpose. Building a
+ * six-day series means six days of state reports, and the portal
+ * itself needs only the most recent. Pulling the whole series for
+ * all twelve crops on every page open would ask the upstream for
+ * seventy-two reports to draw one line the reader has not
+ * scrolled to yet.
+ */
+
+router.get("/portal/history", async (req, res) => {
+
+    const crop = String(
+        req.query.crop || ""
+    ).trim();
+
+    if (!crop || !portal.hasCrop(crop)) {
+        return res.json({
+            success: false,
+            crop,
+            history: [],
+            message: `Agmarknet publishes no ${crop || "named"} line, so there is no official price history for it.`
+        });
+    }
+
+    try {
+
+        const history = await portal.fetchCropHistory(
+            crop,
+            Number(req.query.days) ||
+                portal.HISTORY_DAYS
+        );
+
+        return res.json({
+            success: true,
+            crop,
+            unit: "Rs. per quintal",
+            history
+        });
+
+    } catch (error) {
+
+        console.error(
+            `❌ PORTAL HISTORY ERROR (${crop}):`,
+            error.message
+        );
+
+        return res.json({
+            success: false,
+            crop,
+            history: [],
+            message:
+                "The price history could not be loaded just now."
+        });
+
+    }
+
 });
 
 

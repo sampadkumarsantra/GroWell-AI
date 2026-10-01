@@ -1078,6 +1078,7 @@ module.exports = {
     API_ROOT,
     fetchMarketMaster,
     fetchStateReport,
+    configuredStates,
     isQuintalUnit,
     toNumber,
     breakerIsOpen

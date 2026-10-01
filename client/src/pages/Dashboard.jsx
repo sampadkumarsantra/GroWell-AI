@@ -5,6 +5,7 @@ import Sidebar from "../components/Sidebar/Sidebar";
 import Chat from "../components/Chat/Chat";
 
 import Weather from "../components/Weather/Weather";
+import Analytics from "./Analytics";
 import CropDiagnosis from "./CropDiagnosis";
 import SoilHealth from "./SoilHealth";
 import Library from "./Library";
@@ -32,6 +33,9 @@ function Dashboard({ user, onLogout }) {
 
             case "Weather":
                 return <Weather />;
+
+            case "Market":
+                return <Analytics />;
 
             case "Soil Health":
                 return <SoilHealth />;
