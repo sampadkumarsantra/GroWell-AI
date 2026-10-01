@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 
 import {
     Search,
@@ -6,6 +6,7 @@ import {
     TrendingDown,
     RefreshCw,
     BarChart3,
+    Database,
     Newspaper,
     CalendarDays,
     MapPin,
@@ -21,6 +22,17 @@ import "./Analytics.css";
 
 import MarketCandlestick
     from "../components/MarketCandlestick";
+
+/*
+ * The record explorer pulls in a charting library the per-crop
+ * view does not use, and it is a second tab rather than the
+ * page's main event. Loaded on demand so a farmer who only
+ * wants this morning's price for wheat does not download a
+ * charting engine to see it.
+ */
+const AgmarknetExplorer = lazy(() =>
+    import("../components/AgmarknetExplorer")
+);
 
 import { apiRequest }
     from "../services/api";
@@ -225,6 +237,14 @@ export default function Analytics() {
 
     const [error, setError] =
         useState("");
+
+    // Which of the two views is open. "crop" is the per-crop
+    // price screen this page was built around; "record" is the
+    // whole Agmarknet record set behind it. Both answer the
+    // same question at different scales, which is why they sit
+    // on one page rather than two.
+    const [view, setView] =
+        useState("crop");
 
 
     // =================================================
@@ -740,8 +760,14 @@ export default function Analytics() {
     // =====================================================
     // LOADING
     // =====================================================
+    //
+    // Only the per-crop view waits on twelve upstream calls.
+    // The record view reads the database and is ready on its
+    // own, so it must not be held behind the crop fetch.
+    //
 
     if (
+        view === "crop" &&
         loading &&
         Object.keys(marketData).length === 0
     ) {
@@ -800,15 +826,17 @@ export default function Analytics() {
 
 
                     <h1>
-                        Agricultural Market
+                        {view === "crop"
+                            ? "Agricultural Market"
+                            : "Agmarknet Record Set"}
                     </h1>
 
 
                     <p>
 
-                        Track government-reported
-                        crop prices, mandi activity,
-                        demand and market conditions.
+                        {view === "crop"
+                            ? "Track government-reported crop prices, mandi activity, demand and market conditions."
+                            : "The whole published dataset — every mandi, every commodity, every variety, with arrivals — the way Agmarknet releases it."}
 
                     </p>
 
@@ -825,6 +853,77 @@ export default function Analytics() {
 
             </header>
 
+
+            {/* =================================================
+                VIEW TABS
+            ================================================= */}
+
+            <div className="analytics-viewtabs">
+
+                <button
+                    className={
+                        view === "crop"
+                            ? "active"
+                            : ""
+                    }
+                    onClick={() =>
+                        setView("crop")
+                    }
+                >
+
+                    <BarChart3 size={14} />
+
+                    Crop prices
+
+                </button>
+
+
+                <button
+                    className={
+                        view === "record"
+                            ? "active"
+                            : ""
+                    }
+                    onClick={() =>
+                        setView("record")
+                    }
+                >
+
+                    <Database size={14} />
+
+                    Agmarknet data
+
+                </button>
+
+            </div>
+
+
+            {view === "record" ? (
+
+                <Suspense
+                    fallback={
+
+                        <div className="market-loading">
+
+                            <RefreshCw
+                                size={22}
+                                className="spin"
+                            />
+
+                            Loading the record explorer...
+
+                        </div>
+
+                    }
+                >
+
+                    <AgmarknetExplorer />
+
+                </Suspense>
+
+            ) : (
+
+                <>
 
             {/* =================================================
                 SEARCH
@@ -1877,6 +1976,9 @@ export default function Analytics() {
                 </aside>
 
             </div>
+
+                </>
+            )}
 
         </div>
 

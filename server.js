@@ -14,6 +14,7 @@ const weatherRoute = require("./routes/weather");
 const chatRoute = require("./routes/chat");
 const diagnoseRoute = require("./routes/diagnose");
 const marketRoutes = require("./routes/market");
+const agmarknetRoutes = require("./routes/agmarknet");
 const soilRoutes = require("./routes/soil");
 const decisionRoutes = require("./routes/decision");
 const authRoute = require("./routes/auth");
@@ -22,6 +23,7 @@ const billingRoute = require("./routes/billing");
 
 const { migrate } = require("./database/migrate");
 const marketRefresher = require("./services/marketRefresher");
+const mandiCollector = require("./services/mandiCollector");
 
 
 // =========================
@@ -73,6 +75,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/weather", weatherRoute);
 
 app.use("/api/chat", chatRoute);
+
+// 📊 AGMARKNET NATIONAL RECORD SET
+// Mounted before the crop router because the more specific path
+// should win regardless of registration order.
+app.use("/api/market/agmarknet", agmarknetRoutes);
 
 app.use("/api/market", marketRoutes);
 
@@ -204,6 +211,12 @@ migrate()
         // Capture prices proactively so an outage is already
         // covered by the time a farmer opens the page.
         marketRefresher.start();
+
+        // Walk the national Agmarknet record set into the
+        // database. This is the long sweep, so it starts after
+        // the crop refresher to keep the two off each other's
+        // upstream calls.
+        mandiCollector.start();
 
         app.listen(PORT, () => {
 

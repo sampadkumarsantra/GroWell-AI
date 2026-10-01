@@ -183,7 +183,7 @@ function headers() {
 
 }
 
-async function get(path, params) {
+async function get(path, params, timeoutMs) {
 
     if (breakerIsOpen()) {
         throw new UpstreamUnavailableError(
@@ -198,7 +198,8 @@ async function get(path, params) {
                 API_ROOT.replace(/\/$/, "") + path,
                 {
                     params,
-                    timeout: REQUEST_TIMEOUT_MS,
+                    timeout:
+                        timeoutMs || REQUEST_TIMEOUT_MS,
                     headers: headers(),
                     validateStatus: (status) =>
                         status >= 200 && status < 300
@@ -237,6 +238,7 @@ async function get(path, params) {
 
 let masterCache = {
     markets: null,
+    entries: null,
     fetchedAt: 0
 };
 
@@ -277,10 +279,33 @@ async function loadMaster() {
 
     masterCache = {
         markets: byName,
+        entries,
         fetchedAt: Date.now()
     };
 
     return byName;
+}
+
+
+/**
+ * The market master in the shape Agmarknet publishes it, for
+ * callers that need the market_id / district_id / state_id
+ * columns rather than a name-keyed lookup. The place index
+ * sweep stores alongside every price record.
+ */
+async function fetchMarketMaster() {
+
+    const data = await get("/market-district-state");
+
+    const entries = Array.isArray(data) ? data : [];
+
+    if (entries.length === 0) {
+        throw new Error(
+            "Agmarknet returned no market master list."
+        );
+    }
+
+    return entries;
 }
 
 
@@ -765,11 +790,295 @@ async function fetchCrop(crop) {
 }
 
 
+// =====================================================
+// FULL NATIONAL DATASET
+// =====================================================
+//
+// Everything above serves one crop out of the twelve the app
+// shows, filtered to a per-quintal price and to a twelve-state
+// window. Agmarknet publishes far more than that: about four
+// thousand mandis, a hundred commodities per state across
+// fifteen groups, arrivals in tonnes, and a variety per price
+// line.
+//
+// The place index sweep below is what stores that whole
+// picture, so the analytics explorer can graph it as Agmarknet
+// publishes it instead of the twelve-crop slice the product
+// screens were built around.
+//
+// Two rules carry over unchanged:
+//
+//   - The unit is stored as published and never converted.
+//     Agmarknet quotes Rs./Quintal, Rs./Bundle and Rs./Unit in
+//     the same report, and inventing a weight for a bundle
+//     would put a count of baskets on the same axis as tonnes.
+//   - A market the master list does not know keeps its price and
+//     its recorded state, but is given no invented district.
+//
+
+// A whole-state report is a much larger payload than the
+// twelve-crop query this service started with, and Tamil Nadu in
+// particular has taken over fifteen seconds to generate. This is
+// a background sweep, so it is given room rather than the
+// interactive timeout above.
+const FULL_REPORT_TIMEOUT_MS = 45 * 1000;
+
+const fullReportCache = new Map();
+
+const fullReportInFlight = new Map();
+
+
+function isQuintalUnit(unit) {
+
+    return QUINTAL_UNITS.includes(
+        String(unit || "")
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, " ")
+    );
+
+}
+
+
+/**
+ * Flattens one state report into rows that keep every field the
+ * response carries: the commodity group, the variety, the
+ * arrivals with their unit, and the price unit as published.
+ *
+ * Nothing is filtered out here. Whether a row is comparable with
+ * another is decided at read time by unit, not by dropping it at
+ * write time, so the stored set is the full record.
+ */
+function parseFullReport(data, requestedDate) {
+
+    const groups =
+        Array.isArray(data?.commodityGroups)
+            ? data.commodityGroups
+            : [];
+
+    const asOn =
+        parseReportDate(data?.title) ||
+        requestedDate;
+
+    const titleState =
+        parseTitleState(data?.title);
+
+    const rows = [];
+
+    groups.forEach((group) => {
+
+        const groupName =
+            String(
+                group?.CommodityGroup || ""
+            ).trim();
+
+        const commodities =
+            Array.isArray(group?.commodities)
+                ? group.commodities
+                : [];
+
+        commodities.forEach((commodity) => {
+
+            const commodityName =
+                String(
+                    commodity?.commodityName || ""
+                ).trim();
+
+            if (!commodityName) {
+                return;
+            }
+
+            const markets =
+                Array.isArray(commodity?.markets)
+                    ? commodity.markets
+                    : [];
+
+            markets.forEach((market) => {
+
+                const marketName =
+                    String(
+                        market?.marketCenter || ""
+                    ).trim();
+
+                if (!marketName) {
+                    return;
+                }
+
+                const totalArrivals =
+                    toNumber(
+                        market?.total_arrivals
+                    );
+
+                const entries =
+                    Array.isArray(market?.data)
+                        ? market.data
+                        : [];
+
+                entries.forEach((entry) => {
+
+                    const modalPrice =
+                        toNumber(
+                            entry?.modalPrice
+                        );
+
+                    // A row with no usable modal price has
+                    // nothing to graph. This is the only field
+                    // a record is required to carry.
+                    if (
+                        modalPrice === null ||
+                        modalPrice <
+                            MIN_PLAUSIBLE_PRICE ||
+                        modalPrice >
+                            MAX_PLAUSIBLE_PRICE
+                    ) {
+                        return;
+                    }
+
+                    const minPrice =
+                        toNumber(
+                            entry?.minimumPrice
+                        );
+
+                    const maxPrice =
+                        toNumber(
+                            entry?.maximumPrice
+                        );
+
+                    const rangeIsUsable =
+                        minPrice !== null &&
+                        maxPrice !== null &&
+                        minPrice >=
+                            MIN_PLAUSIBLE_PRICE &&
+                        maxPrice <=
+                            MAX_PLAUSIBLE_PRICE &&
+                        minPrice <= maxPrice &&
+                        modalPrice >= minPrice &&
+                        modalPrice <= maxPrice;
+
+                    rows.push({
+                        tradeDate: asOn,
+                        state:
+                            titleState || "",
+                        market: marketName,
+                        commodityGroup:
+                            groupName,
+                        commodity:
+                            commodityName,
+                        variety: String(
+                            entry?.variety || ""
+                        ).trim(),
+                        minPrice:
+                            rangeIsUsable
+                                ? minPrice
+                                : modalPrice,
+                        maxPrice:
+                            rangeIsUsable
+                                ? maxPrice
+                                : modalPrice,
+                        modalPrice,
+                        priceUnit:
+                            String(
+                                entry?.unitOfPrice ||
+                                    ""
+                            ).trim(),
+                        arrivals: toNumber(
+                            entry?.arrivals
+                        ),
+                        arrivalsUnit:
+                            String(
+                                entry?.unitOfArrivals ||
+                                    ""
+                            ).trim(),
+                        totalArrivals,
+                        marketKey:
+                            masterKey(marketName)
+                    });
+
+                });
+            });
+        });
+    });
+
+    return { rows, asOn, state: titleState };
+}
+
+
+/**
+ * Fetches one state's full report for one date. Cached per state
+ * and date on the same terms as the crop report above.
+ */
+async function fetchStateReport(
+    date,
+    stateId,
+    { useCache = true } = {}
+) {
+
+    const key = `${date}:${stateId}`;
+
+    if (useCache) {
+
+        const cached =
+            fullReportCache.get(key);
+
+        if (
+            cached &&
+            Date.now() - cached.fetchedAt <
+                CACHE_TTL_MS
+        ) {
+            return cached.report;
+        }
+
+        if (fullReportInFlight.has(key)) {
+            return fullReportInFlight.get(key);
+        }
+
+    }
+
+    const request = (async () => {
+
+        const data =
+            await get(
+                "/prices-and-arrivals/" +
+                "commodity-market/" +
+                "daily-report-state",
+                {
+                    date,
+                    state: stateId,
+                    includeExcel: false
+                },
+                FULL_REPORT_TIMEOUT_MS
+            );
+
+        const report = parseFullReport(data, date);
+
+        fullReportCache.set(key, {
+            report,
+            fetchedAt: Date.now()
+        });
+
+        return report;
+
+    })()
+        .finally(() => {
+            fullReportInFlight.delete(key);
+        });
+
+    fullReportInFlight.set(key, request);
+
+    return request;
+}
+
+
 module.exports = {
     fetchCrop,
     supports,
     breakerState,
     UpstreamUnavailableError,
     CROP_ALIASES,
-    API_ROOT
+    API_ROOT,
+    fetchMarketMaster,
+    fetchStateReport,
+    isQuintalUnit,
+    toNumber,
+    breakerIsOpen
 };

@@ -95,6 +95,51 @@
     50% { opacity: 0.35; }
 }
 
+/* ---- View tabs ----
+   The per-crop screen and the whole Agmarknet record set are
+   the same question at two scales, so they share the page
+   rather than splitting the sidebar. */
+.analytics-viewtabs {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+    background: var(--gw-paper);
+    border: 1px solid var(--gw-line);
+    border-radius: 11px;
+    box-shadow: var(--shadow-soft);
+}
+
+.analytics-viewtabs button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--gw-muted);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.18s ease, color 0.18s ease;
+}
+
+.analytics-viewtabs button:hover {
+    background: var(--gw-cream-2);
+    color: var(--gw-ink);
+}
+
+.analytics-viewtabs button.active {
+    background: rgba(30, 81, 59, 0.08);
+    border-color: rgba(30, 81, 59, 0.2);
+    color: var(--gw-forest);
+    font-weight: 600;
+}
+
 /* ---- Search ---- */
 .analytics-search {
     width: 100%;
