@@ -530,7 +530,7 @@ function Premium() {
                             <span className="premium-amount">
                                 {plans?.premium
                                     ?.priceLabel ||
-                                    "₹499"}
+                                    "₹99"}
                             </span>
                             <span className="premium-period">
                                 {plans?.premium
@@ -618,9 +618,9 @@ function Premium() {
                                 ? "Opening checkout…"
                                 : `Upgrade to Premium — ${
                                       plans?.premium
-                                          ?.priceLabel ||
-                                      "₹499"
-                                  }/month`}
+?.priceLabel ||
+                                          "₹99"
+                                      }/month`}
                         </button>
                     )}
                 </div>

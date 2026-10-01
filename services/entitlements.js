@@ -72,8 +72,8 @@ const PLANS = {
     [PREMIUM]: {
         id: PREMIUM,
         name: "GroWell Premium",
-        priceInPaise: 49900,
-        priceLabel: "₹499",
+        priceInPaise: 9900,
+        priceLabel: "₹99",
         pricePeriod: "per month",
 
         chatPerDay: null,
