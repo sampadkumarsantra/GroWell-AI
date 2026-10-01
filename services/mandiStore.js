@@ -394,7 +394,8 @@ async function readStatus() {
         districts: [],
         groups: [],
         commodities: [],
-        lastCollectedAt: null
+        lastCollectedAt: null,
+        error: null
     };
 
     let dates;
@@ -404,13 +405,12 @@ async function readStatus() {
         dates = await db.all(
             `SELECT trade_date::text AS trade_date,
                     COUNT(*)::int AS records,
-                    completed_at
+                    MAX(collected_at) AS collected_at
              FROM mandi_prices
              GROUP BY trade_date
              ORDER BY trade_date DESC
              LIMIT 90`
         );
-
     } catch (error) {
 
         if (isMissingTable(error)) {
@@ -422,7 +422,16 @@ async function readStatus() {
             describe(error)
         );
 
-        return empty;
+        // A read that failed is not the same thing as a table
+        // that has not been collected into yet. Reporting both
+        // as "still collecting" leaves the explorer waiting on
+        // a sweep that can never fix a broken query, so the
+        // reason is passed up and shown instead.
+        return {
+            ...empty,
+            error: describe(error)
+        };
+
     }
 
     if (dates.length === 0) {

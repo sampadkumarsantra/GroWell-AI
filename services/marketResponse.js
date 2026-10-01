@@ -89,6 +89,22 @@ function buildAgmarknetResponse(
         volatilityLevel = "Moderate";
     }
 
+    /*
+     * The trading day these prices belong to.
+     *
+     * updatedAt below is when this response was built, which is
+     * not the same question as when the government published
+     * the numbers. Mandi reports lag the calendar by days, so a
+     * farmer looking at a "just updated" timestamp would read it
+     * as today's rate when it is last week's. The date the rows
+     * themselves carry is what has to reach the screen.
+     */
+    const asOn = markets
+        .map((market) => market.date)
+        .filter(Boolean)
+        .sort()
+        .pop() || null;
+
     return {
         success: true,
         available: true,
@@ -96,6 +112,7 @@ function buildAgmarknetResponse(
         basis,
         ...(sourceNote ? { sourceNote } : {}),
         crop,
+        asOn,
         updatedAt: new Date().toISOString(),
         summary: {
             price: Math.round(bestMarket.modalPrice),

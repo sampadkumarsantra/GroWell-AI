@@ -16,6 +16,7 @@ import {
 
 import {
     Activity,
+    AlertTriangle,
     BarChart3,
     CalendarDays,
     Database,
@@ -1667,6 +1668,22 @@ export default function AgmarknetExplorer() {
     // STATUS
     // =================================================
 
+    /*
+     * Bumped every time status reports a different volume of
+     * stored rows.
+     *
+     * The overview and commodity queries below depend on this
+     * rather than on the record counts themselves. They used to
+     * depend on `status.ready` alone, which is a boolean: a sweep
+     * that landed ten thousand new rows for the same latest date
+     * flipped no dependency, so the coverage strip updated while
+     * every chart kept drawing the old aggregates. Watching the
+     * totals is what makes a finished sweep actually repaint.
+     */
+    const [dataVersion, setDataVersion] =
+        useState(0);
+
+
     const loadStatus = useCallback(async () => {
 
         try {
@@ -1678,21 +1695,33 @@ export default function AgmarknetExplorer() {
 
             setStatus(result);
 
-            if (
-                result?.ready &&
-                !date
-            ) {
-                setDate(result.latestDate || "");
-            }
+            setDataVersion(
+                (previous) =>
+                    result?.totals?.records ??
+                    previous
+            );
 
-            if (
-                result?.ready &&
-                !commodity &&
-                result.commodities?.length
-            ) {
-                setCommodity(
-                    result.commodities[0]
+            /*
+             * Seeded only while still empty.
+             *
+             * These read the previous value through the updater
+             * instead of closing over `date` and `commodity`. As
+             * dependencies they would change identity on every
+             * selection, tearing down and rebuilding the poll
+             * interval underneath the farmer's feet and leaving
+             * it permanently one tick behind the selection they
+             * just made.
+             */
+            if (result?.ready) {
+                setDate((previous) =>
+                    previous || result.latestDate || ""
                 );
+
+                if (result.commodities?.length) {
+                    setCommodity((previous) =>
+                        previous || result.commodities[0]
+                    );
+                }
             }
 
         } catch (error) {
@@ -1703,19 +1732,43 @@ export default function AgmarknetExplorer() {
             setStatusLoading(false);
         }
 
-    }, [date, commodity]);
+    }, []);
 
 
+    /*
+     * The record set is written by a background sweep that runs
+     * every few hours, so this view has to re-read on its own.
+     * Without it the page sat on whatever landed at mount and
+     * never noticed the next sweep arriving, and the empty state
+     * it may be showing could not heal itself once the first
+     * sweep finished. Sixty seconds keeps the status row honest
+     * without turning the database into the bottleneck.
+     */
     useEffect(() => {
 
+        /*
+         * Re-read immediately on mount. Deferring this to the
+         * first interval tick would leave the view blank for a
+         * minute on every visit, and the first read is what
+         * reveals whether there is anything to show at all.
+         */
         loadStatus();
 
-        // Runs once. The status is re-read on demand from the
-        // refresh button rather than polled, because the
-        // collector owns the schedule and polling it would say
-        // nothing the collector has not already said.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+
+        const timer =
+            setInterval(() => {
+
+                if (document.hidden) {
+                    return;
+                }
+
+                loadStatus();
+
+            }, 60000);
+
+        return () => clearInterval(timer);
+
+    }, [loadStatus]);
 
 
     // =================================================
@@ -1768,7 +1821,7 @@ export default function AgmarknetExplorer() {
             cancelled = true;
         };
 
-    }, [date, group, state, status?.ready]);
+    }, [date, group, state, status?.ready, dataVersion]);
 
 
     // =================================================
@@ -1811,7 +1864,7 @@ export default function AgmarknetExplorer() {
             cancelled = true;
         };
 
-    }, [commodity, status?.ready]);
+    }, [commodity, status?.ready, dataVersion]);
 
 
     // =================================================
@@ -1845,7 +1898,20 @@ export default function AgmarknetExplorer() {
                     "Collection started. The national view fills in as each day lands — give it a few minutes."
             );
 
-            setTimeout(loadStatus, 60000);
+            /*
+             * Follow the sweep instead of reading status once.
+             *
+             * A single re-read after a minute was useless: a
+             * full seven-day backfill runs for roughly twenty
+             * minutes, so that read landed long before any rows
+             * existed and the screen showed the same empty state
+             * it started with. The interval below keeps reading
+             * for the life of the sweep. The regular poll is
+             * already doing this, so nothing extra is needed
+             * here beyond re-reading immediately to show the
+             * sweep has started.
+             */
+            loadStatus();
 
         } catch (error) {
             setNotice(
@@ -1964,6 +2030,53 @@ export default function AgmarknetExplorer() {
                     className="spin"
                 />
                 Reading the national record set…
+            </div>
+
+        );
+
+    }
+
+
+    /*
+     * A read that failed is not a collection that has not
+     * finished. The two used to share this branch, so a broken
+     * query read as "still collecting" and the screen sat on that
+     * message indefinitely — offering a button whose only job
+     * was to trigger the sweep that could never fix it.
+     */
+    const statusError = status?.error;
+
+
+    if (isEmpty && statusError) {
+
+        return (
+
+            <div className="agm-waiting">
+
+                <AlertTriangle size={26} />
+
+                <h2>
+                    The record set could not be read
+                </h2>
+
+                <p>
+                    This is a problem with the stored data, not
+                    with collection, so running a sweep will not
+                    clear it.
+                </p>
+
+                <p className="agm-waiting-detail">
+                    {statusError}
+                </p>
+
+                <button onClick={loadStatus}>
+
+                    <RefreshCw size={16} />
+
+                    Try again
+
+                </button>
+
             </div>
 
         );

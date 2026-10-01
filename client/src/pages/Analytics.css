@@ -95,6 +95,24 @@
     50% { opacity: 0.35; }
 }
 
+/* Delayed or absent prices.
+   The pulse is the part that asserts liveness, so it stops
+   along with the green. A steady amber dot says the same thing
+   without the movement — nothing is arriving, and pretending
+   otherwise is how a farmer ends up acting on a figure that
+   stopped moving days ago. */
+.analytics-live.is-stale {
+    color: var(--gw-warn, #b45309);
+    background: #fffbeb;
+    border-color: #fde68a;
+}
+
+.analytics-live.is-stale::before {
+    background: var(--gw-warn, #b45309);
+    animation: none;
+    opacity: 0.75;
+}
+
 /* ---- View tabs ----
    The per-crop screen and the whole Agmarknet record set are
    the same question at two scales, so they share the page

@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 
 import {
     Search,
@@ -188,6 +188,8 @@ function createUnavailableData(crop, message = "") {
 
         updatedAt: null,
 
+        asOn: null,
+
         volatility: 0,
 
         volatilityLevel: "Unavailable",
@@ -208,12 +210,71 @@ function createUnavailableData(crop, message = "") {
 
 
 // =====================================================
+// TRADING DAY
+// =====================================================
+
+
+/*
+ * Renders the day the prices belong to.
+ *
+ * Two things have to be right. A date parsed as "2025-06-04" is
+ * read as UTC midnight and then formatted in local time, which
+ * lands on the previous day for anyone behind Greenwich — so
+ * the parts are split out and read directly. And Agmarknet
+ * dates arrive in more than one shape, so anything that is not
+ * a recognisable date is passed through as text rather than
+ * shown as "Invalid Date".
+ */
+function formatTradingDay(value) {
+
+    const iso = /^(\d{4})-(\d{2})-(\d{2})$/
+        .exec(String(value).trim());
+
+    if (iso) {
+        const [, year, month, day] = iso;
+
+        return new Date(
+            Number(year),
+            Number(month) - 1,
+            Number(day)
+        ).toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "short",
+            year: "numeric"
+        });
+    }
+
+    const parsed = new Date(value);
+
+    if (
+        Number.isNaN(parsed.getTime())
+    ) {
+        return String(value);
+    }
+
+    return parsed.toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+    });
+
+}
+
+
+// =====================================================
 // COMPONENT
 // =====================================================
 
 export default function Analytics() {
 
-    const crops = Object.keys(cropConfig);
+    // Memoised so it keeps a stable identity. loadMarketData
+    // depends on it, and it feeds the live-refresh effect —
+    // without this the list is a fresh array on every render
+    // and nothing downstream can hold a stable reference to it.
+    const crops = useMemo(
+        () => Object.keys(cropConfig),
+        []
+    );
 
 
     // =================================================
@@ -485,6 +546,17 @@ export default function Analytics() {
                     result.updatedAt ||
                     null,
 
+                /*
+                 * The trading day the government published these
+                 * prices for, which is not the day this response
+                 * was built. Mandi reporting lags the calendar,
+                 * so this is what the farmer actually needs to
+                 * know and it was previously only buried in a
+                 * prose note.
+                 */
+                asOn:
+                    result.asOn || null,
+
                 volatility:
                     Number(
                         summary.volatility
@@ -540,7 +612,11 @@ export default function Analytics() {
     // LOAD ALL COMMODITIES
     // =====================================================
 
-    async function loadMarketData() {
+    // Wrapped so both live-refresh effects can list it as a real
+    // dependency instead of running against a copy captured at
+    // mount. Everything it closes over is a setter, which is
+    // stable, plus `crops`, which is memoised above.
+    const loadMarketData = useCallback(async () => {
 
         setError("");
 
@@ -592,12 +668,49 @@ export default function Analytics() {
 
         }
 
-    }
+    }, [crops]);
 
 
     // =====================================================
-    // INITIAL LOAD
+    // INITIAL LOAD + LIVE REFRESH
     // =====================================================
+
+    /*
+     * How often an open page re-reads the market.
+     *
+     * Mandi prices move through the trading day, so a page
+     * opened in the morning and left alone showed the morning's
+     * numbers all afternoon underneath a badge claiming the
+     * data was live. Sixty seconds matches the server's own
+     * cache window, so polling cannot outrun the government
+     * gateway and hammer it for a fresher answer it has not
+     * published yet.
+     */
+    const POLL_MS = 60000;
+
+
+    // Read by the poll tick without making it a dependency.
+    // The refresh button already refetches by hand, so the tick
+    // only has to hold off while one is in flight. As a state
+    // value it would restart the interval on every press, which
+    // would reset the countdown the farmer is waiting on.
+    const refreshingRef =
+        useRef(false);
+
+    refreshingRef.current = refreshing;
+
+
+    /*
+     * The record view reads the database and is not the view
+     * that fetches from the upstream market gateway, so it is
+     * loaded once and then left alone. Re-running the whole
+     * twelve-crop fan-out on every tab switch would hit the
+     * gateway for data the screen is not even showing.
+     */
+    const viewRef = useRef(view);
+
+    viewRef.current = view;
+
 
     useEffect(() => {
 
@@ -652,7 +765,93 @@ export default function Analytics() {
 
         };
 
-    }, []);
+    }, [loadMarketData]);
+
+
+    useEffect(() => {
+
+        let cancelled = false;
+        let timer = null;
+
+
+        async function poll() {
+
+            /*
+             * Three ways a background tick must stand down.
+             *
+             * The page is not showing crop prices, a refresh is
+             * already in flight so its result is coming, or the
+             * tab is in the background where no one can see the
+             * update and the request would be wasted.
+             */
+            if (
+                cancelled ||
+                viewRef.current !== "crop" ||
+                refreshingRef.current ||
+                document.hidden
+            ) {
+                return;
+            }
+
+            try {
+                await loadMarketData();
+            } catch (error) {
+                /*
+                 * A failed tick keeps whatever is already on
+                 * screen. Replacing good figures with an error
+                 * because one of twelve requests timed out
+                 * would be a downgrade, not a correction.
+                 */
+                console.warn(
+                    "MARKET POLL ERROR:",
+                    error
+                );
+            }
+        }
+
+
+        function schedule() {
+            timer = setTimeout(() => {
+                poll().finally(schedule);
+            }, POLL_MS);
+        }
+
+        schedule();
+
+
+        /*
+         * Coming back to the tab is when stale numbers are most
+         * obvious, so re-read immediately rather than making the
+         * farmer wait out the remainder of the interval.
+         */
+        function onVisibility() {
+            if (document.visibilityState === "visible") {
+                poll();
+            }
+        }
+
+        document.addEventListener(
+            "visibilitychange",
+            onVisibility
+        );
+
+
+        return () => {
+
+            cancelled = true;
+
+            if (timer) {
+                clearTimeout(timer);
+            }
+
+            document.removeEventListener(
+                "visibilitychange",
+                onVisibility
+            );
+
+        };
+
+    }, [loadMarketData]);
 
 
     // =====================================================
@@ -675,6 +874,43 @@ export default function Analytics() {
 
 
     // =====================================================
+    // FRESHNESS
+    // =====================================================
+    //
+    // The badge used to pulse "LIVE GOVERNMENT DATA" no matter
+    // what was on screen. That was wrong in both directions: a
+    // stored snapshot served when the gateway was down claims to
+    // be live, and the record tab never consults a live source
+    // at all. The claim now has to be earned.
+    //
+
+    const liveFreshness = useMemo(() => {
+
+        if (view === "record") {
+            return {
+                live: false,
+                label: "STORED RECORD SET"
+            };
+        }
+
+        if (data.stale || !dataAvailable) {
+            return {
+                live: false,
+                label: data.stale
+                    ? "DELAYED FIGURES"
+                    : "NO LIVE PRICES"
+            };
+        }
+
+        return {
+            live: true,
+            label: "LIVE GOVERNMENT DATA"
+        };
+
+    }, [view, data.stale, dataAvailable]);
+
+
+    // =====================================================
     // SEARCH
     // =====================================================
 
@@ -691,7 +927,7 @@ export default function Analytics() {
                         )
             );
 
-        }, [search]);
+        }, [search, crops]);
 
 
     // =====================================================
@@ -843,11 +1079,22 @@ export default function Analytics() {
                 </div>
 
 
-                <div className="analytics-live">
+                <div
+                    className={
+                        liveFreshness.live
+                            ? "analytics-live"
+                            : "analytics-live is-stale"
+                    }
+                    title={
+                        liveFreshness.live
+                            ? "Prices refresh from the government gateway every minute."
+                            : "Showing stored figures. Live prices are not available right now."
+                    }
+                >
 
                     <Activity size={13} />
 
-                    LIVE GOVERNMENT DATA
+                    {liveFreshness.label}
 
                 </div>
 
@@ -1584,9 +1831,24 @@ export default function Analytics() {
                             Source:{" "}
                             {data.source}
 
+                            {/* The reporting day leads. It is the
+                                number the decision rests on, and
+                                putting the fetch time in its place
+                                made a week-old mandi report read as
+                                though it were from this morning. */}
+                            {data.asOn && (
+                                <>
+                                    {" • "}
+                                    Prices for{" "}
+                                    {formatTradingDay(
+                                        data.asOn
+                                    )}
+                                </>
+                            )}
+
                             {" • "}
 
-                            Last updated:{" "}
+                            Fetched:{" "}
 
                             {data.updatedAt
 
