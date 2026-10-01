@@ -1725,9 +1725,28 @@ export default function AgmarknetExplorer() {
             }
 
         } catch (error) {
-            setNotice(
-                readableError(error)
-            );
+
+            const message =
+                readableError(error);
+
+            /*
+             * Recorded on the status as well as the banner.
+             *
+             * A status that failed to load left `status` null, and
+             * a null status is indistinguishable from a record set
+             * that has not been collected yet — so a missing route
+             * rendered as "Collecting the national record set"
+             * with no error anywhere on the page, which is what a
+             * 404 from the server looked like to a visitor.
+             */
+            setStatus((previous) => ({
+                ...(previous || {}),
+                ready: false,
+                error: message
+            }));
+
+            setNotice(message);
+
         } finally {
             setStatusLoading(false);
         }
@@ -2045,6 +2064,78 @@ export default function AgmarknetExplorer() {
      * was to trigger the sweep that could never fix it.
      */
     const statusError = status?.error;
+
+
+    /*
+     * The sweep's own report of itself, kept apart from
+     * statusError because the two call for different things.
+     *
+     * A stored read that failed is not fixed by collecting, and a
+     * source that refused to answer is not fixed by retrying the
+     * read. Both present as an empty record set, and telling them
+     * apart is the difference between a page that explains itself
+     * and one that says "still collecting" indefinitely.
+     */
+    const sweepError =
+        status?.sweep?.error;
+
+
+    if (isEmpty && sweepError) {
+
+        /*
+         * Only offered when the status endpoint itself answered.
+         * If this branch is showing because the route is missing,
+         * a "Try again" would just fail identically and the page
+         * would look stuck rather than broken.
+         */
+        const routeMissing =
+            /route not found|404/i.test(
+                sweepError
+            );
+
+        return (
+
+            <div className="agm-waiting">
+
+                <AlertTriangle size={26} />
+
+                <h2>
+                    {routeMissing
+                        ? "The Agmarknet API is not deployed"
+                        : "The price source is not answering"}
+                </h2>
+
+                <p>
+                    {routeMissing
+                        ? "This server does not expose the Agmarknet routes yet, so the explorer has nothing to read. A redeploy is required."
+                        : sweepError}
+                </p>
+
+                <p className="agm-waiting-detail">
+                    {routeMissing
+                        ? "Nothing is wrong with the data. The running build predates the Agmarknet endpoints."
+                        : "Prices appear here once a sweep succeeds. This is retried on its own every few hours, and the panels below stay empty until then because there are no verified prices to show."}
+                </p>
+
+                {
+                    !routeMissing && (
+
+                        <button onClick={loadStatus}>
+
+                            <RefreshCw size={16} />
+
+                            Check again
+
+                        </button>
+
+                    )
+                }
+
+            </div>
+
+        );
+
+    }
 
 
     if (isEmpty && statusError) {

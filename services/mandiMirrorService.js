@@ -65,6 +65,52 @@ const CROP_ALIASES = {
 };
 
 
+/*
+ * The crops the mirror publishes under a name of their own, and
+ * the state list it carries.
+ *
+ * These exist for the national record set, not for the
+ * per-crop screen. The sweep's first source is Agmarknet's own
+ * API, which is authoritative and covers every state. When that
+ * API cannot be reached — it is a government host behind a bot
+ * filter, and it has refused connections outright — the sweep
+ * would store nothing at all and the whole explorer would sit
+ * empty, which is what a farmer sees as "no data" rather than
+ * "our upstream is down".
+ *
+ * So the collector has a second way in. It is deliberately
+ * narrower than the official source: five states, and only the
+ * crops the mirror names exactly. It fills the record set with
+ * real published prices when the primary source is unavailable
+ * and never displaces it when the primary source answers. The
+ * rows are labelled with this source's name so stored data is
+ * traceable to where it actually came from.
+ */
+const COLLECTION_CROPS = {
+    Rice: ["Rice"],
+    Wheat: ["Wheat"],
+    Maize: ["Maize"],
+    Potato: ["Potato"],
+    Tomato: ["Tomato"],
+    Onion: ["Onion"],
+    Groundnut: ["Groundnut"],
+    Mustard: ["Mustard"],
+    Soybean: ["Soyabean"],
+    Chilli: ["Dry Chillies"],
+    Cotton: ["Cotton"],
+    Turmeric: ["Turmeric"]
+};
+
+
+const COLLECTION_STATES = [
+    "Maharashtra",
+    "Uttar Pradesh",
+    "Punjab",
+    "Madhya Pradesh",
+    "Karnataka"
+];
+
+
 const REQUEST_TIMEOUT_MS = 8000;
 
 // A mandi price per quintal outside this range is a parsing
@@ -79,6 +125,9 @@ const MAX_PLAUSIBLE_PRICE = 500000;
 const CACHE_TTL_MS = 30 * 60 * 1000;
 
 const MAX_ROWS = 200;
+
+// The unit the stored record set is read with. See collectState.
+const QUINTAL = "Rs./Quintal";
 
 
 function enabled() {
@@ -301,15 +350,21 @@ const minPrice = toPrice(record.min_price);
 // FETCH
 // =====================================================
 
-async function requestRows(commodity) {
+async function requestRows(commodity, state) {
+
+    const params = {
+        commodity,
+        limit: MAX_ROWS
+    };
+
+    if (state) {
+        params.state = state;
+    }
 
     const response = await axios.get(
         MIRROR_URL.replace(/\/$/, "") + "/v1/prices",
         {
-            params: {
-                commodity,
-                limit: MAX_ROWS
-            },
+            params,
             timeout: REQUEST_TIMEOUT_MS,
             headers: {
                 Accept: "application/json",
@@ -473,6 +528,298 @@ async function fetchCrop(crop) {
 }
 
 
+// =====================================================
+// NATIONAL COLLECTION
+// =====================================================
+
+
+/*
+ * Fetches the crops this mirror publishes, for one state.
+ *
+ * Used by the record sweep when Agmarknet's own API cannot be
+ * reached. Returns rows already in the shape the store writes.
+ *
+ * The per-state question is asked to the mirror once per crop
+ * rather than once per state-and-crop, because the budget is
+ * small and shared. Walking five states across twelve crops is
+ * sixty requests to collect a week that twelve requests collect in
+ * full: the mirror answers a commodity query with rows from every
+ * state it holds, so the states are filtered out of the reply
+ * locally rather than being asked for one at a time. That is a
+ * fifth of the spend against a rate limit that throttles the whole
+ * service.
+ *
+ * The price unit is set to the quintal the record set is read
+ * with. The mirror publishes rupees per quintal without saying so
+ * in the payload, and a row filed under any other unit would be
+ * invisible to every query in the explorer, so the unit it is
+ * actually quoted in is recorded rather than left blank.
+ */
+async function collectState(stateName, crop) {
+
+    const aliases = COLLECTION_CROPS[crop];
+
+    if (!aliases) {
+        return [];
+    }
+
+    /*
+     * A cooldown is reported rather than returned as no rows.
+     *
+     * An empty array is a truthful answer about the market — it
+     * says this crop did not trade. Returning that while
+     * rate-limited would say the same thing about a source that
+     * was never asked, and the caller would report a quiet market
+     * when the truth is that the source was unavailable.
+     */
+    if (isCoolingDown()) {
+        throw new Error(
+            `Mandi mirror is in a rate-limit cooldown for another ${Math.ceil(cooldownRemainingMs() / 1000)}s.`
+        );
+    }
+
+    const accepted = aliases.map(normaliseName);
+    const wanted =
+        normaliseName(stateName);
+
+    const rows = [];
+
+    for (const commodity of aliases) {
+
+        let records;
+
+        try {
+            records =
+                await requestRows(commodity);
+        } catch (error) {
+
+            noteFailure(error);
+
+            continue;
+        }
+
+        for (const record of records) {
+
+            const row = toMarketRow(
+                record,
+                accepted
+            );
+
+            if (!row) {
+                continue;
+            }
+
+            /*
+             * Filtered here rather than in the query.
+             *
+             * A state the reply does not carry is not a state
+             * that was asked about, so it is dropped silently —
+             * that is the normal case for most of the five.
+             */
+            if (
+                normaliseName(row.state) !==
+                wanted
+            ) {
+                continue;
+            }
+
+            rows.push({
+                tradeDate: row.date,
+                state: row.state,
+                district: row.district,
+                market: row.market,
+                commodityGroup: "",
+                commodity: row.commodity,
+                variety: row.variety,
+                minPrice: row.minPrice,
+                maxPrice: row.maxPrice,
+                modalPrice: row.modalPrice,
+                priceUnit: QUINTAL,
+                arrivals: null,
+                arrivalsUnit: "",
+                totalArrivals: null,
+                marketKey:
+                    normaliseName(row.market)
+            });
+
+        }
+
+    }
+
+    if (rows.length) {
+        noteSuccess();
+    }
+
+    return rows;
+}
+
+
+/*
+ * Fetches every collection crop in one walk, grouped by state.
+ *
+ * The sweep needs the whole record set, not one state at a time,
+ * and the reply to a commodity query already spans the states the
+ * mirror holds. Asking per crop and bucketing the result costs one
+ * request per crop for the entire sweep instead of one per
+ * crop-and-state.
+ *
+ * Throttling is worth knowing about. The mirror answers a request
+ * it has no budget for with HTTP 200 and an empty array rather than
+ * an error, which is indistinguishable from a commodity that did
+ * not trade — and probed directly, it will return a few hundred
+ * rows and then empty arrays for everything after. So a crop that
+ * comes back empty is counted, and a walk in which most crops are
+ * empty is reported as throttled rather than as a quiet market,
+ * because the two lead to very different conclusions about
+ * whether the sweep succeeded.
+ */
+async function collectAll() {
+
+    if (isCoolingDown()) {
+        throw new Error(
+            `Mandi mirror is in a rate-limit cooldown for another ${Math.ceil(cooldownRemainingMs() / 1000)}s.`
+        );
+    }
+
+    const crops =
+        Object.keys(COLLECTION_CROPS);
+
+    const rows = [];
+
+    let asked = 0;
+    let empty = 0;
+    let failed = 0;
+
+    for (const crop of crops) {
+
+        const aliases =
+            COLLECTION_CROPS[crop];
+
+        const accepted =
+            aliases.map(normaliseName);
+
+        for (const commodity of aliases) {
+
+            let records;
+
+            try {
+                records =
+                    await requestRows(
+                        commodity
+                    );
+            } catch (error) {
+
+                noteFailure(error);
+
+                failed += 1;
+
+                /*
+                 * Stopped rather than skipped.
+                 *
+                 * A refused request is the mirror declining to be
+                 * asked again, and the rest of this walk would
+                 * only be the same refusal one request at a time.
+                 * Continuing spends a budget that the next sweep
+                 * needs and delays that sweep's cooldown from
+                 * starting.
+                 */
+                if (
+                    error?.response
+                        ?.status === 429 ||
+                    isCoolingDown()
+                ) {
+                    return {
+                        rows,
+                        asked,
+                        empty,
+                        failed,
+                        throttled: true
+                    };
+                }
+
+                continue;
+            }
+
+            asked += 1;
+
+            if (!records.length) {
+                empty += 1;
+                continue;
+            }
+
+            for (const record of records) {
+
+                const row =
+                    toMarketRow(
+                        record,
+                        accepted
+                    );
+
+                if (!row) {
+                    continue;
+                }
+
+                if (
+                    !COLLECTION_STATES.includes(
+                        row.state
+                    )
+                ) {
+                    continue;
+                }
+
+                rows.push({
+                    tradeDate: row.date,
+                    state: row.state,
+                    district: row.district,
+                    market: row.market,
+                    commodityGroup: "",
+                    commodity: row.commodity,
+                    variety: row.variety,
+                    minPrice: row.minPrice,
+                    maxPrice: row.maxPrice,
+                    modalPrice: row.modalPrice,
+                    priceUnit: QUINTAL,
+                    arrivals: null,
+                    arrivalsUnit: "",
+                    totalArrivals: null,
+                    marketKey:
+                        normaliseName(
+                            row.market
+                        )
+                });
+            }
+        }
+    }
+
+    if (rows.length) {
+        noteSuccess();
+    }
+
+    return {
+        rows,
+        asked,
+        empty,
+        failed,
+        /*
+         * Empty replies across the whole walk, after at least one
+         * real one, is the mirror's throttle rather than a market
+         * that did not trade.
+         *
+         * Nothing at all is read the same way: a crop that did not
+         * trade still returns a successful empty array, so no rows
+         * anywhere means the source did not answer rather than
+         * that no mandi in five states reported.
+         */
+        throttled:
+            failed > 0 ||
+            (asked > 0 &&
+             empty === asked) ||
+            (rows.length > 0 &&
+             empty >= Math.ceil(asked / 2))
+    };
+}
+
+
 function state() {
     return {
         coolingDown: isCoolingDown(),
@@ -487,6 +834,10 @@ module.exports = {
     fetchCrop,
     supports,
     state,
+    collectState,
+    collectAll,
+    collectionCrops: COLLECTION_CROPS,
+    collectionStates: COLLECTION_STATES,
     MIRROR_URL,
     MIRROR_SOURCE,
     CROP_ALIASES

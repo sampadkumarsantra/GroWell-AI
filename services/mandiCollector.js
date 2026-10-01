@@ -1,4 +1,5 @@
 const agmarknet = require("./agmarknetService");
+const mirror = require("./mandiMirrorService");
 const store = require("./mandiStore");
 
 
@@ -56,8 +57,30 @@ const STARTUP_DELAY_MS = 45 * 1000;
 // to a few minutes without being the reason it gets blocked.
 const DEFAULT_CONCURRENCY = 3;
 
+// How many of the mirror's own most recent trading days are stored
+// when it holds none of the days the sweep asked for. Small on
+// purpose: this runs only while the official source is down, and
+// the point is to have real rows for the explorer to read rather
+// than to build a full history from the thinner source.
+const FALLBACK_DAYS = 3;
+
 let timer = null;
+
+// The deferred first sweep is tracked separately from the repeat
+// interval so a start/stop pair during the startup delay is a real
+// cancel rather than a no-op.
+let startupTimer = null;
+
 let running = false;
+
+// What the last sweep actually managed, so the status endpoint can
+// say why a panel is empty instead of the panel being simply empty.
+let lastSweep = {
+    ranAt: null,
+    rows: 0,
+    usedMirror: false,
+    error: null
+};
 
 
 function backfillDays() {
@@ -324,6 +347,187 @@ async function pendingDates(depth) {
 }
 
 
+/*
+ * The second way in, used when Agmarknet's own API cannot be
+ * reached at all.
+ *
+ * The official API is the authority and is always tried first.
+ * It is also a government host behind a bot filter, and it has
+ * been observed refusing connections outright. When it refuses,
+ * the primary path collects nothing at all and the whole explorer
+ * sits empty, so the farmer sees "no data" and never learns that
+ * the source is down rather than the market being quiet.
+ *
+ * This falls back to the community mirror, which republishes the
+ * same Agmarknet mandi records. It covers five states rather than
+ * thirty and carries no arrivals figures, so what it produces is
+ * a partial national picture and not a replacement: enough for
+ * every panel to show real published prices instead of nothing,
+ * and it stops the record set being empty while the primary
+ * source is unreachable. Agmarknet resumes as the source as soon
+ * as it answers and fills the rest in.
+ */
+async function collectViaMirror(dates) {
+
+    /*
+     * Rows are grouped by the day they traded, not by whichever
+     * day the sweep asked about. The mirror answers with whatever
+     * it holds, which is often a month of trading days, and the
+     * arrival date on each row is the only thing that says which
+     * day it belongs to.
+     */
+    const byDate = new Map();
+
+    /*
+     * Set when the mirror would not answer, either because its
+     * rate limit stopped the walk outright or because it returned
+     * empty replies across most of it. The second is the common
+     * one and it is silent: the mirror answers a request it has no
+     * budget for with a success and no rows, which reads exactly
+     * like a market that did not trade.
+     */
+    let limited = false;
+    let collected;
+
+    try {
+
+        collected =
+            await mirror.collectAll();
+
+    } catch (error) {
+
+        console.warn(
+            `      mirror unavailable: ${error.message}`
+        );
+
+        return {
+            dates: [],
+            rows: 0,
+            limited: true
+        };
+    }
+
+    const {
+        rows,
+        asked,
+        empty,
+        failed,
+        throttled
+    } = collected;
+
+    if (throttled) {
+        limited = true;
+
+        console.warn(
+            failed > 0
+                ? `      mirror refused ${failed} crop queries, treating as rate limited`
+                : `      mirror returned nothing for ${empty} of ${asked} crop queries, treating as unavailable`
+        );
+    } else {
+        console.log(
+            `      mirror answered ${asked - empty}/${asked} crop queries`
+        );
+    }
+
+    for (const row of rows) {
+
+        if (!row.tradeDate) {
+            continue;
+        }
+
+        if (!byDate.has(row.tradeDate)) {
+            byDate.set(
+                row.tradeDate,
+                []
+            );
+        }
+
+        byDate.get(
+            row.tradeDate
+        ).push(row);
+    }
+
+    /*
+     * Days this sweep is trying to fill, and how many of them the
+     * mirror can actually serve.
+     *
+     * The mirror republishes on its own schedule rather than
+     * Agmarknet's, so the day it happens to hold is often a day or
+     * two behind the window this sweep is asking about. Writing
+     * nothing in that case leaves the explorer exactly as empty as
+     * it was before the fallback ran, which defeats the point of
+     * having one.
+     *
+     * So when the window comes back empty, the most recent days
+     * the mirror does hold are stored instead. Those rows carry
+     * their own trade date and the explorer reports that date as
+     * its as-of, so an older-but-real reading is shown as an older
+     * reading and never as today's.
+     */
+    const wanted = new Set(dates);
+
+    let target = [...wanted];
+
+    const inWindow =
+        [...byDate.keys()].filter(
+            (tradeDate) =>
+                wanted.has(tradeDate)
+        );
+
+    if (inWindow.length === 0) {
+
+        target = [
+            ...byDate.keys()
+        ]
+            .sort()
+            .reverse()
+            .slice(0, FALLBACK_DAYS);
+
+        if (target.length) {
+            console.log(
+                `      mirror holds none of the ${dates.length} requested day(s), using its most recent: ${target.join(", ")}`
+            );
+        }
+    }
+
+    const selected = new Set(target);
+
+    let written = 0;
+
+    for (const [tradeDate, rows] of byDate.entries()) {
+
+        if (!selected.has(tradeDate)) {
+            continue;
+        }
+
+        // The mirror carries no market ids, so there is no place
+        // index to match against. The row keeps the district and
+        // state the mirror published rather than being filed with
+        // blanks and guessed-at geography.
+        const count =
+            await store.saveReportRows(
+                tradeDate,
+                rows,
+                null
+            );
+
+        written += count;
+
+        console.log(
+            `      ${tradeDate}: ${count} records via mirror`
+        );
+    }
+
+    return {
+        dates: target.filter((tradeDate) =>
+            byDate.has(tradeDate)
+        ),
+        rows: written,
+        limited
+    };
+}
+
+
 async function runSweep() {
 
     if (running) {
@@ -339,55 +543,169 @@ async function runSweep() {
 
     try {
 
-        const master =
-            await syncMarketIndex();
-
-        const states =
-            stateIds(master);
-
         const dates =
             await pendingDates(
                 backfillDays()
             );
 
         console.log(
-            `   📅 ${dates.length} day(s) to collect across ${states.length} states`
+            `   📅 ${dates.length} day(s) to collect`
         );
 
-        for (const date of dates) {
+        let collectedTotal = 0;
 
-            const result =
-                await collectDate(
-                    date,
-                    master,
-                    states,
-                    progress => {
-                        console.log(
-                            `      ${progress.state.name}: ${progress.written} records`
-                        );
-                    }
-                );
+        /*
+         * The place index and the state list both come from
+         * Agmarknet, so a source that cannot be reached takes the
+         * entire primary path with it. That failure used to end
+         * the sweep, which is why the record set stayed empty.
+         */
+        let master = null;
+        let states = [];
 
-            if (result.complete) {
-                await store.markDateCollected(
-                    result.date,
-                    result.statesOk,
-                    result.statesTotal,
-                    result.rows
-                );
-            }
+        try {
 
-            console.log(
-                `   ${result.date}: ${result.rows} records from ${result.statesOk}/${result.statesTotal} states${result.complete ? "" : " (incomplete, will retry)"}`
+            master =
+                await syncMarketIndex();
+
+            states = stateIds(master);
+
+        } catch (error) {
+
+            console.warn(
+                "   ⚠️  Agmarknet unreachable, falling back to the community mirror:",
+                error.message
             );
 
         }
 
+        if (master && states.length) {
+
+            console.log(
+                `   📍 ${states.length} states from the place index`
+            );
+
+            let collected = 0;
+
+            for (const date of dates) {
+
+                const result =
+                    await collectDate(
+                        date,
+                        master,
+                        states,
+                        progress => {
+                            console.log(
+                                `      ${progress.state.name}: ${progress.written} records`
+                            );
+                        }
+                    );
+
+                if (result.complete) {
+                    await store.markDateCollected(
+                        result.date,
+                        result.statesOk,
+                        result.statesTotal,
+                        result.rows
+                    );
+                }
+
+                collected += result.rows;
+
+                console.log(
+                    `   ${result.date}: ${result.rows} records from ${result.statesOk}/${result.statesTotal} states${result.complete ? "" : " (incomplete, will retry)"}`
+                );
+            }
+
+            collectedTotal = collected;
+        }
+
+        lastSweep = {
+            ranAt: new Date().toISOString(),
+            rows: collectedTotal,
+            usedMirror: false,
+            error: null
+        };
+
+        /*
+         * No rows from the official source is the one outcome the
+         * record set cannot recover from on its own: every panel
+         * in the explorer reads from those rows and each would
+         * render empty with nothing to say why. The mirror is asked
+         * only in that case, so a normal sweep is never diluted by
+         * a partial second source, and never pays its rate limit.
+         */
+        if (collectedTotal === 0) {
+
+            console.log(
+                "   ↩️  Nothing from Agmarknet, trying the community mirror"
+            );
+
+            const fallback =
+                await collectViaMirror(dates);
+
+            if (fallback.rows > 0) {
+
+                console.log(
+                    `   ✅ Mirror stored ${fallback.rows} records across ${fallback.dates.length} day(s)`
+                );
+
+                /*
+                 * These days are deliberately not marked collected.
+                 *
+                 * Marking them would stop pendingDates asking for
+                 * them again, which would freeze the mirror's five
+                 * states in place forever and leave the other
+                 * thirty-one states permanently empty even after
+                 * Agmarknet started answering. Leaving them
+                 * unlogged means the next sweep retries them, fills
+                 * them properly from the official source when it is
+                 * reachable, and the mirror rows are then superseded
+                 * rather than being the permanent answer.
+                 */
+                console.log(
+                    "   ↻️  Days left unlogged so the official source can supersede them"
+                );
+
+                lastSweep = {
+                    ranAt: lastSweep.ranAt,
+                    rows: fallback.rows,
+                    usedMirror: true,
+                    error: null
+                };
+
+            } else {
+
+                console.warn(
+                    fallback.limited
+                        ? "   ⚠️  Agmarknet was unreachable and the community mirror is rate limited."
+                        : "   ⚠️  Both sources returned nothing for these days"
+                );
+
+                lastSweep = {
+                    ranAt: lastSweep.ranAt,
+                    rows: 0,
+                    usedMirror: true,
+                    error: fallback.limited
+                        ? "Agmarknet could not be reached and the community mirror is rate limited. The next sweep retries."
+                        : "Neither Agmarknet nor the community mirror returned records for these days."
+                };
+            }
+        }
+
     } catch (error) {
+
         console.warn(
             "⚠️  Mandi sweep failed:",
             error.message
         );
+
+        lastSweep = {
+            ranAt: new Date().toISOString(),
+            rows: 0,
+            usedMirror: false,
+            error: error.message
+        };
     }
 
     console.log("======================================");
@@ -397,13 +715,25 @@ async function runSweep() {
 }
 
 
+/**
+ * Starts the sweep, once per process.
+ *
+ * The handle is taken before the delay rather than inside it.
+ * The first sweep is deliberately deferred so it does not compete
+ * with boot for the database, and because the handle was only
+ * claimed once that delay had elapsed, two starts landing in the
+ * same window both passed the guard and queued a second sweep and
+ * a second interval — two walks of the same upstream at once.
+ */
 function start() {
 
-    if (timer) {
+    if (timer || startupTimer) {
         return;
     }
 
-    setTimeout(() => {
+    startupTimer = setTimeout(() => {
+
+        startupTimer = null;
 
         runSweep().catch((error) =>
             console.warn(
@@ -426,10 +756,26 @@ function start() {
         }
 
     }, STARTUP_DELAY_MS);
+
+    if (startupTimer.unref) {
+        startupTimer.unref();
+    }
 }
 
 
+/**
+ * Cancels both the deferred first sweep and the repeat interval.
+ *
+ * Clearing only the interval left the deferred sweep free to fire
+ * after a stop, so a shutdown could still be followed by a full
+ * upstream walk.
+ */
 function stop() {
+
+    if (startupTimer) {
+        clearTimeout(startupTimer);
+        startupTimer = null;
+    }
 
     if (timer) {
         clearInterval(timer);
@@ -448,8 +794,22 @@ function isRunning() {
 }
 
 
+/**
+ * What the sweep last managed, for the status endpoint.
+ *
+ * A record set that is empty because the upstream is down and one
+ * that is empty because no market traded look identical to a
+ * visitor otherwise, and the second reading sends people looking
+ * for a market problem that is not there.
+ */
+function sweepState() {
+    return { ...lastSweep };
+}
+
+
 module.exports = {
     start,
+    sweepState,
     stop,
     runSweep,
     pendingDates,

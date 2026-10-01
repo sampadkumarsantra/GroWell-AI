@@ -194,7 +194,17 @@ const deduped = new Map();
                 row.variety || "",
                 toId(place?.market_id),
                 row.market,
-                place?.district_name || "",
+                /*
+                 * The place index is Agmarknet's, so a row that
+                 * arrived without one — anything collected through
+                 * the community mirror — has no entry to match. The
+                 * district the row itself carries is kept rather
+                 * than dropped, because the explorer groups and
+                 * filters on district and a blank makes every
+                 * district-level panel read as though no district
+                 * traded at all.
+                 */
+                place?.district_name || row.district || "",
                 toId(place?.district_id),
                 place?.state_name || row.state || "",
                 toId(place?.state_id),

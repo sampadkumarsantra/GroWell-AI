@@ -90,9 +90,30 @@ router.get("/status", async (req, res) => {
         const status =
             await store.readStatus();
 
+        /*
+         * The sweep's own account of itself rides along with the
+         * stored record set.
+         *
+         * A record set that is empty because the upstream refused
+         * the connection and one that is empty because no market
+         * traded are the same payload to a visitor otherwise, and
+         * the first reading is the one that matters: it says the
+         * data is missing rather than that the market was quiet.
+         */
+        const sweep =
+            collector.sweepState();
+
         return res.json({
             success: true,
             source: SOURCE,
+            sweep: {
+                running:
+                    collector.isRunning(),
+                ranAt: sweep.ranAt,
+                rows: sweep.rows,
+                usedMirror: sweep.usedMirror,
+                error: sweep.error
+            },
             ...status
         });
 
