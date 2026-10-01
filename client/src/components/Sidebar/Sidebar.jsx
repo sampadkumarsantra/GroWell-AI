@@ -3,7 +3,6 @@ import {
     ScanLine,
     CloudSun,
     Sprout,
-    BarChart3,
     Settings,
     BookOpen
 } from "lucide-react";
@@ -18,7 +17,6 @@ const menu = [
     { icon: CloudSun, label: "Weather" },
     { icon: Sprout, label: "Soil Health" },
     { icon: BookOpen, label: "Library" },
-    { icon: BarChart3, label: "Analytics" },
     { icon: Settings, label: "Settings" }
 ];
 

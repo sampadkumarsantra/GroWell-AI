@@ -8,7 +8,6 @@ import Weather from "../components/Weather/Weather";
 import CropDiagnosis from "./CropDiagnosis";
 import SoilHealth from "./SoilHealth";
 import Library from "./Library";
-import Analytics from "./Analytics";
 import Settings from "./Settings";
 import Premium from "./Premium";
 import GrowthJourney from "../components/GrowthJourney/GrowthJourney";
@@ -46,9 +45,6 @@ function Dashboard({ user, onLogout }) {
 
             case "Library":
                 return <Library />;
-
-            case "Analytics":
-                return <Analytics />;
 
             case "Settings":
                 return (
