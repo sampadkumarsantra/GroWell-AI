@@ -62,6 +62,57 @@ import {
  */
 
 // =====================================================
+// ERRORS
+// =====================================================
+
+/*
+ * The browser's own message for a request that never reached
+ * the server is the flat string "Failed to fetch", which says
+ * nothing about what to do next. The overwhelmingly common cause
+ * here is that the API is not running, so it is spelled out. The
+ * other case worth separating is an HTML or empty body, which
+ * means something answered but not the API: a proxy, or the
+ * client dev server standing in for it.
+ *
+ * Chat.jsx treats the same two conditions as noise and hides
+ * them, which is right for a chat bubble and wrong for a view
+ * whose whole purpose is to show what has been collected.
+ */
+function readableError(error) {
+
+    const detail = String(
+        error?.message || ""
+    ).trim();
+
+    if (
+        !detail ||
+        detail === "Failed to fetch" ||
+        detail.includes(
+            "NetworkError"
+        ) ||
+        detail.includes(
+            "Load failed"
+        )
+    ) {
+        return "Could not reach the GroWell API. The server is not running or is not reachable from this device.";
+    }
+
+    if (
+        detail.includes(
+            "Unexpected token"
+        ) ||
+        detail.includes(
+            "<!DOCTYPE"
+        )
+    ) {
+        return "The server answered with something that is not the API. Check that the client is pointed at the backend.";
+    }
+
+    return detail;
+}
+
+
+// =====================================================
 // FORMATTING
 // =====================================================
 
@@ -1646,8 +1697,7 @@ export default function AgmarknetExplorer() {
 
         } catch (error) {
             setNotice(
-                error.message ||
-                    "The national record set could not be reached."
+                readableError(error)
             );
         } finally {
             setStatusLoading(false);
@@ -1704,8 +1754,7 @@ export default function AgmarknetExplorer() {
             .catch(error => {
                 if (!cancelled) {
                     setNotice(
-                        error.message ||
-                            "The national overview could not be loaded."
+                        readableError(error)
                     );
                 }
             })
@@ -1748,8 +1797,7 @@ export default function AgmarknetExplorer() {
             .catch(error => {
                 if (!cancelled) {
                     setNotice(
-                        error.message ||
-                            "That commodity could not be loaded."
+                        readableError(error)
                     );
                 }
             })
@@ -1801,8 +1849,7 @@ export default function AgmarknetExplorer() {
 
         } catch (error) {
             setNotice(
-                error.message ||
-                    "Collection could not be started."
+                readableError(error)
             );
         } finally {
             setSweeping(false);
