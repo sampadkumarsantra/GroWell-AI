@@ -88,7 +88,6 @@ Farmers may face:
 - Weather uncertainty
 - Fragmented agricultural information
 - Language barriers
-- Market uncertainty
 - Limited digital access
 - Lack of personalized decision support
 
@@ -119,10 +118,6 @@ Identifying potential crop diseases through image-based AI analysis.
 ###  Water
 
 Supporting irrigation-related decisions using environmental information.
-
-###  Markets
-
-Understanding agricultural price and market conditions.
 
 ###  Knowledge
 
@@ -234,23 +229,6 @@ The long-term objective is to create increasingly personalized soil intelligence
 
 ---
 
-# Agricultural Market Analytics
-
-Agricultural markets can change rapidly.
-
-GroWell AI includes a market analytics foundation designed to help users understand:
-
-- Current prices
-- Average prices
-- Highest prices
-- Lowest prices
-- Price volatility
-- Market trends
-
-Future versions aim to introduce more real-time, location-aware and crop-specific market intelligence.
-
----
-
 #  Agricultural Knowledge Library
 
 Not every agricultural question requires an AI conversation.
@@ -352,15 +330,15 @@ GroWell AI follows a client-server architecture.
                     │        Backend API       │
                     └────────────┬─────────────┘
                                  │
-       ┌──────────────┬─────────┼─────────┬──────────────┐
-       │              │         │         │              │
-       ▼              ▼         ▼         ▼              ▼
-   ┌────────┐   ┌──────────┐ ┌───────┐ ┌──────┐   ┌─────────┐
-   │   AI   │   │ Gemini   │ │Weather│ │ Soil │   │ Market  │
-   │ Engine │   │ Vision   │ │Service│ │Engine│   │ Service │
-   └────────┘   └──────────┘ └───────┘ └──────┘   └─────────┘
-       │              │         │         │              │
-       └──────────────┴─────────┴─────────┴──────────────┘
+       ┌──────────────┬──────────┼──────────┬──────────────┐
+       │              │          │          │              │
+       ▼              ▼          ▼          ▼              ▼
+   ┌────────┐   ┌──────────┐ ┌───────┐ ┌──────┐
+   │   AI   │   │ Gemini   │ │Weather│ │ Soil │
+   │ Engine │   │ Vision   │ │Service│ │Engine│
+   └────────┘   └──────────┘ └───────┘ └──────┘
+       │              │          │          │
+       └──────────────┴──────────┴──────────┘
                                   │
                                   ▼
                     ┌──────────────────────────┐
@@ -378,8 +356,7 @@ GroWell AI follows a client-server architecture.
 | AI Chat | Conversational agricultural assistance |
 |  Crop Diagnosis | AI-assisted crop image analysis |
 | Weather | Weather and agricultural weather intelligence |
-|  Soil Health | Soil and nutrient analysis |
-| Analytics | Agricultural market analytics |
+| Soil Health | Soil and nutrient analysis |
 | Library | Agricultural knowledge repository |
 | Settings | Language and user preferences |
 | Authentication | User registration and login |
@@ -449,7 +426,6 @@ GroWell AI/
 │       ├── pages/
 │       │   ├── Auth/
 │       │   ├── Intro/
-│       │   ├── Analytics.jsx
 │       │   ├── CropDiagnosis.jsx
 │       │   ├── Dashboard.jsx
 │       │   ├── Library.jsx
@@ -468,7 +444,6 @@ GroWell AI/
 │   ├── chat.js
 │   ├── decision.js
 │   ├── diagnose.js
-│   ├── market.js
 │   ├── soil.js
 │   ├── translate.js
 │   └── weather.js
@@ -477,12 +452,7 @@ GroWell AI/
 │   ├── agricultureEngine.js
 │   ├── ai.js
 │   ├── geminiVision.js
-│   ├── docaService.js
 │   ├── growellDecision.js
-│   ├── marketRefresher.js
-│   ├── marketResponse.js
-│   ├── marketSources.js
-│   ├── marketStore.js
 │   ├── soilAnalysis.js
 │   └── weatherService.js
 │
@@ -623,150 +593,12 @@ The backend provides multiple service endpoints:
 /api/chat
 /api/diagnose
 /api/decision
-/api/market
 /api/soil
 /api/translate
 /api/weather
 ```
 
 Each route is responsible for a different component of the agricultural intelligence platform.
-
-### Market price sources
-
-`/api/market/analytics` resolves each crop against two independent
-government sources, then a durable stored copy:
-
-| Order | Source | What it is |
-| --- | --- | --- |
-| 1 | Agmarknet (`api.agmarknet.gov.in`) | Market-level mandi prices, read from the Directorate of Marketing & Inspection's own API. The preferred figure, and the only source that covers every crop. |
-| 2 | DOCA wholesale | All-India average wholesale price. Used only when Agmarknet does not answer. |
-| 3 | DOCA retail | All-India average retail price, converted to a quintal. Covers only `Chilli`, which DOCA prices solely at retail. |
-| 4 | Agmarknet mirror | The same Agmarknet mandi records republished by a third-party community mirror. Consulted only when sources 1–3 have all failed, which in practice means Turmeric. |
-| 5 | `market_snapshots` (Postgres) | The last good payload, returned with `stale: true`. |
-| 6 | Unavailable | Only when no source has ever answered for that crop. |
-
-Agmarknet goes down regularly — 502, 503 and outright connection refusals,
-for hours at a time, across every crop. The DOCA figures, the mirror and the
-stored snapshot exist to keep the page useful during an outage.
-
-### Mandi mirror
-
-`services/mandiMirrorService.js` covers the one case the other sources
-cannot: Agmarknet and DOCA down at the same time. In that state
-DOCA alone leaves Maize, Groundnut, Mustard, Soybean, Cotton and Turmeric
-with no honest price, and all twelve crops are blank.
-
-It re-publishes the same Agmarknet mandi records from separate
-infrastructure, and is deliberately placed last so it is never consulted
-while an official host is answering — the moment Agmarknet returns, the
-mirror disappears from the response. It is a third-party service with no
-uptime promise, so it is treated as a gap filler, not a replacement:
-
-- **Every response is labelled.** `source` reads `Agmarknet mirror` and
-  `sourceNote` states that the official feeds are down, names the arrival
-  date the mirror actually recorded, lists the states covered, and tells
-  the farmer to confirm at their mandi.
-- **It is not a current price.** The mirror's records lag by days, so the
-  arrival date is passed through untouched rather than replaced with the
-  fetch time.
-- **Commodity names are matched exactly.** `Soybean` is queried as
-  `Soyabean` because that is the published name. A row whose commodity is
-  not on the crop's explicit alias list is discarded, so a loosely
-  filtered upstream response cannot put a neighbouring commodity's price
-  on the screen. Chilli is not mapped at all, because the mirror does not
-  carry it and source 4 already covers it.
-- **Only the latest trading day is used.** A response is paginated by
-  record rather than by day, so a thinly traded crop arrives spread over a
-  month of trading days — one Turmeric response carried thirty-one distinct
-  dates. Averaging those would compress a month of trading into a single
-  "current" figure. Asking the mirror for a specific date returns the same
-  rows for an extra request, so the latest date is selected locally.
-- **Bad rows are dropped.** Prices are bounds-checked, and a modal price
-  that falls outside its own reported min/max range is treated as a
-  mis-parsed record. At least one such row exists per crop — one Potato
-  record reports `0.01` for min, max and modal alike.
-- **The shared rate limit is respected.** The mirror allows 100 requests
-  per 15 minutes per IP, and every instance behind the same egress address
-  draws on the same budget. Each crop is cached for 30 minutes and
-  concurrent requests for the same crop are collapsed into one, so a
-  twelve-crop page costs one request per crop rather than one per viewer.
-  A 429 opens a cooldown for as long as the server says the window resets.
-
-Set `MANDI_MIRROR_ENABLED=false` to remove the source entirely, or point
-`MANDI_MIRROR_URL` at your own deployment of it.
-
-### Coverage
-
-With all four live sources in the chain, coverage is 12 of 12 crops. During
-an outage where Agmarknet is unreachable, Maize, Groundnut,
-Mustard, Soybean, Cotton and Turmeric come from the mirror rather than
-being blank. None of those six can be served by DOCA, which does not
-publish them in any form: `Bajra` is not maize, `Groundnut Oil (Packed)`
-is a processed product worth many times the seed, and `Turmeric (powder)`
-is not turmeric root.
-
-### Retail fallback
-
-DOCA only prices `Red Chillies (whole)` at retail, not wholesale, so
-Chilli is served from the retail grid and converted from rupees per
-kilogram to a quintal. The response reports
-`basis: "All-India average retail"` and the interface states that retail
-sits above wholesale, so the figure is read as an upper reference rather
-than a mandi rate. The oils and dals are deliberately not used this way:
-they are processed products, not the seed or bean a farmer sells.
-
-### Agmarknet direct API
-
-`services/agmarknetService.js` reads prices from Agmarknet's own API, the
-authority behind every other source here. Two things are worth knowing
-before changing it:
-
-- **It is fail-safe, not fail-open.** Records are discovered by matching
-  field names rather than assuming one response layout, and anything
-  unrecognised is rejected. Unit strings like `"Rs 4,185 /quintal"`,
-  implausible prices, records for a different crop, and records with no
-  market name all throw instead of producing a number. An unexpected
-  response therefore yields no price rather than a wrong one.
-- **It sends a browser User-Agent on purpose.** The host sits behind a
-  Google front end that returns 403 to the default `axios/1.19.0` agent,
-  which would make this source fail permanently with a misleading error.
-
-The endpoint obtains its token by sending an OTP to a mobile number, and
-there is no public API key, so `AGMARKNET_API_TOKEN` is optional. Set it
-to a Bearer token if you have one; without it the call is still
-attempted anonymously and simply fails over to the next source if the
-host requires authentication.
-
-Notes on honesty of the data:
-
-- A DOCA figure is a **national average**, not a local mandi rate. It is
-  labelled as such in the response `basis` and `sourceNote` fields and is
-  shown that way in the interface.
-- DOCA publishes a fixed basket covering only Rice, Wheat, Potato, Onion
-  and Tomato. Crops it does not track are never substituted with a
-  similar commodity — for example `Groundnut Oil (Packed)` is not a
-  groundnut price, `Bajra` is not maize, and `Turmeric (powder)` is not
-  turmeric root.
-- A stored snapshot is served for up to a year, but never as a current
-  price. The response carries `stale: true` and `recordedOn`, and the
-  interface states the date it was recorded and which source it came
-  from. Dropping a dated real price after a few days only replaces it
-  with a blank screen.
-- If no source has ever answered for a crop, the response is
-  `available: false`. GroWell never estimates or invents a price.
-
-Agmarknet sometimes accepts the connection and then hangs rather than
-returning an error, which would otherwise make every crop wait out the
-full timeout. A circuit breaker opens after two consecutive failures and
-stops paying for the same outage for ten minutes, so the fallback chain
-is reached immediately. Measured effect during an Agmarknet outage: all
-twelve crops resolve in ~110ms instead of 25s each.
-
-`services/marketRefresher.js` sweeps every supported crop shortly after
-startup and every two hours, writing the current payload to
-`market_snapshots`. This means an outage is already covered by the time a
-farmer opens the page, rather than the first page view being the one that
-discovers the feed is down.
 
 ---
 
@@ -794,10 +626,6 @@ _Add weather intelligence screenshot here._
 
 _Add soil analysis screenshot here._
 
-## 📊 Agricultural Analytics
-
-_Add analytics screenshot here._
-
 ---
 
 # 🚀 Development Roadmap
@@ -814,7 +642,6 @@ GroWell AI is being developed as a long-term agricultural intelligence platform.
 - [x] Agricultural knowledge library
 - [x] Multilingual foundation
 - [x] Voice input foundation
-- [x] Market analytics foundation
 
 ---
 
@@ -833,7 +660,6 @@ GroWell AI is being developed as a long-term agricultural intelligence platform.
 
 ## Phase 3 — Real-Time Agricultural Intelligence
 
-- [ ] Real-time market intelligence
 - [ ] Location-aware recommendations
 - [ ] Hyperlocal weather intelligence
 - [ ] Pest outbreak alerts
@@ -883,10 +709,6 @@ Imagine a future where a farmer's digital agricultural companion understands:
 ↓
 
 **The surrounding environment**
-
-↓
-
-**The market**
 
 ↓
 
@@ -1014,8 +836,6 @@ The GroWell AI philosophy can be summarized as:
    Soil           Weather        Crop
      │              │              │
      └──────────────┼──────────────┘
-                    │
-                 Market
                     │
                     ▼
             ┌───────────────┐

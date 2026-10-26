@@ -31,7 +31,7 @@ function About() {
                     Agriculture involves hundreds of decisions throughout
                     every growing season. Farmers need to understand soil,
                     weather, crop health, irrigation, nutrients, pests and
-                    market conditions — often at the same time.
+                    field conditions — often at the same time.
                 </p>
 
                 <p>
@@ -42,7 +42,7 @@ function About() {
 
                 <div className="info-highlight">
                     <strong>
-                        Crop + Soil + Weather + Market + AI
+                        Crop + Soil + Weather + AI
                     </strong>
 
                     <span>
@@ -93,15 +93,6 @@ function About() {
                         <p>
                             Helps interpret soil parameters and
                             generate agricultural recommendations.
-                        </p>
-                    </div>
-
-                    <div className="info-card">
-                        <span>📊</span>
-                        <h3>Market Analytics</h3>
-                        <p>
-                            Helps farmers understand agricultural
-                            price information and market trends.
                         </p>
                     </div>
 

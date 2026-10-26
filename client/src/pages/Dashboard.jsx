@@ -8,10 +8,9 @@ import GrowthJourney from "../components/GrowthJourney/GrowthJourney";
 /*
  * Only the chat is in the initial bundle. Every other page is
  * split into its own chunk so the first paint does not wait for
- * the market charts, the 300 KB crop library, or the soil forms.
+ * the 300 KB crop library or the soil forms.
  */
 const Weather = lazy(() => import("../components/Weather/Weather"));
-const Analytics = lazy(() => import("./Analytics"));
 const CropDiagnosis = lazy(() => import("./CropDiagnosis"));
 const SoilHealth = lazy(() => import("./SoilHealth"));
 const Library = lazy(() => import("./Library"));
@@ -37,9 +36,6 @@ function Dashboard({ user, onLogout }) {
 
             case "Weather":
                 return <Weather />;
-
-            case "Market":
-                return <Analytics />;
 
             case "Soil Health":
                 return <SoilHealth />;

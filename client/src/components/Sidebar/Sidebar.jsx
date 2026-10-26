@@ -4,8 +4,7 @@ import {
     CloudSun,
     Sprout,
     Settings,
-    BookOpen,
-    TrendingUp
+    BookOpen
 } from "lucide-react";
 
 import "./Sidebar.css";
@@ -16,7 +15,6 @@ const menu = [
     { icon: MessageSquare, label: "Chat" },
     { icon: ScanLine, label: "Crop Diagnosis" },
     { icon: CloudSun, label: "Weather" },
-    { icon: TrendingUp, label: "Market" },
     { icon: Sprout, label: "Soil Health" },
     { icon: BookOpen, label: "Library" },
     { icon: Settings, label: "Settings" }

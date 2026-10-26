@@ -7,7 +7,7 @@ const slides = [
         eyebrow: "Welcome to",
         title: "GroWell",
         description:
-            "Your AI assistant for the field — soil, weather, yield, and market insight, in plain language.",
+            "Your AI assistant for the field — soil, weather, yield, and crop health, in plain language.",
         duration: 2400,
         type: "brand",
     },
@@ -34,14 +34,6 @@ const slides = [
             "Model yield weeks out, updated automatically as conditions on the ground change.",
         duration: 3200,
         type: "yield",
-    },
-    {
-        eyebrow: "Market prices",
-        title: "Sell at the right moment",
-        description:
-            "Track grain and produce prices, and get a nudge the moment it's time to sell.",
-        duration: 3200,
-        type: "market",
     },
 ];
 
@@ -160,52 +152,6 @@ function YieldIcon() {
     );
 }
 
-function MarketIcon() {
-    return (
-        <svg className="intro-icon" viewBox="0 0 160 160">
-            <path
-                data-draw
-                fill="none"
-                stroke="var(--gw-brass)"
-                strokeWidth="2.4"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                d="M30 42 L30 76 L98 130 L130 98 L78 32 Z"
-            />
-
-            <circle
-                data-draw
-                cx="46"
-                cy="48"
-                r="7"
-                fill="none"
-                stroke="var(--gw-brass)"
-                strokeWidth="2"
-            />
-
-            <path
-                data-draw
-                fill="none"
-                stroke="var(--gw-forest)"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M50 100 L70 80 L92 92 L114 60"
-            />
-
-            <path
-                data-draw
-                fill="none"
-                stroke="var(--gw-forest)"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M100 60 L114 60 L114 74"
-            />
-        </svg>
-    );
-}
-
 function SlideIcon({ type }) {
     if (type === "brand") {
         return (
@@ -218,8 +164,7 @@ function SlideIcon({ type }) {
     }
     if (type === "crop") return <CropIcon />;
     if (type === "weather") return <WeatherIcon />;
-    if (type === "yield") return <YieldIcon />;
-    return <MarketIcon />;
+    return <YieldIcon />;
 }
 
 function Intro({ onFinish }) {
