@@ -1,22 +1,26 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 
 import Header from "../components/Header/Header";
 import Sidebar from "../components/Sidebar/Sidebar";
 import Chat from "../components/Chat/Chat";
-
-import Weather from "../components/Weather/Weather";
-import Analytics from "./Analytics";
-import CropDiagnosis from "./CropDiagnosis";
-import SoilHealth from "./SoilHealth";
-import Library from "./Library";
-import Settings from "./Settings";
-import Premium from "./Premium";
 import GrowthJourney from "../components/GrowthJourney/GrowthJourney";
 
-import About from "./About";
-import Terms from "./Terms";
-import Privacy from "./Privacy";
-import Support from "./Support";
+/*
+ * Only the chat is in the initial bundle. Every other page is
+ * split into its own chunk so the first paint does not wait for
+ * the market charts, the 300 KB crop library, or the soil forms.
+ */
+const Weather = lazy(() => import("../components/Weather/Weather"));
+const Analytics = lazy(() => import("./Analytics"));
+const CropDiagnosis = lazy(() => import("./CropDiagnosis"));
+const SoilHealth = lazy(() => import("./SoilHealth"));
+const Library = lazy(() => import("./Library"));
+const Settings = lazy(() => import("./Settings"));
+const Premium = lazy(() => import("./Premium"));
+const About = lazy(() => import("./About"));
+const Terms = lazy(() => import("./Terms"));
+const Privacy = lazy(() => import("./Privacy"));
+const Support = lazy(() => import("./Support"));
 
 import "./Dashboard.css";
 
@@ -112,7 +116,20 @@ function Dashboard({ user, onLogout }) {
                             : "")
                     }
                 >
-                    {renderPage()}
+                    <Suspense
+                        fallback={
+                            <div
+                                className="page-loader"
+                                role="status"
+                                aria-live="polite"
+                            >
+                                <span className="page-loader-spinner" />
+                                <span>Loading…</span>
+                            </div>
+                        }
+                    >
+                        {renderPage()}
+                    </Suspense>
                 </main>
 
             </div>
