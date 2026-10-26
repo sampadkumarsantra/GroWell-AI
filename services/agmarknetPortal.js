@@ -139,6 +139,21 @@ const historyCache = new Map();
 
 const historyInFlight = new Map();
 
+/*
+ * One shared read of the community mirror.
+ *
+ * Agmarknet's own API now asks for a captcha on the state
+ * report, which fails every request from a server. When that
+ * happens the mirror is the only source left, and the portal,
+ * its history and any concurrent page load must not each walk
+ * the same twelve commodity queries against a shared rate
+ * limit. The result is held for the same stretch as the portal
+ * itself, so one page load costs one walk.
+ */
+let mirrorCache = null;
+
+let mirrorInFlight = null;
+
 
 // =====================================================
 // SMALL HELPERS
@@ -475,7 +490,8 @@ function buildCrop(
         origin: AGMARKNET_ORIGIN,
         mirrorRows: 0
     },
-    feedDown = false
+    feedDown = false,
+    mirrorFallback = false
 ) {
 
     const published = rows.length;
@@ -540,9 +556,11 @@ function buildCrop(
                  */
                 (feedDown
                     ? "The Agmarknet report could not be reached just now, so this crop's figures are not shown. This is a gap in the feed, not a market with no trading."
-                    : published
-                      ? `Published for ${published} mandi row(s), but not in Rs./Quintal, so the figures cannot be compared across mandis.`
-                      : "Agmarknet published no record for this trading day."),
+                    : mirrorFallback
+                      ? "The Agmarknet report could not be reached and the community mirror has no record for this crop just now. This is a gap in the feed, not a market with no trading."
+                      : published
+                        ? `Published for ${published} mandi row(s), but not in Rs./Quintal, so the figures cannot be compared across mandis.`
+                        : "Agmarknet published no record for this trading day."),
             summary: null,
             /*
              * Carried empty rather than absent. The page reads
@@ -636,17 +654,13 @@ function buildCrop(
                 arrivals: entry.arrivals
             })),
         distribution: distribution(points),
-        note: missing || mirrorNote(origin)
+        note:
+            missing ||
+            mirrorNote(origin, crop, asOn)
     };
 }
 
 
-/**
- * Why a crop has no rows, in the portal's own words.
- *
- * Only for the crops Agmarknet genuinely does not publish, so the
- * card can explain itself instead of sitting blank.
- */
 /**
  * Why a crop is answered by the mirror rather than Agmarknet.
  *
@@ -654,13 +668,17 @@ function buildCrop(
  * reader knows which body published the number they are about to
  * act on.
  */
-function mirrorNote(origin) {
+function mirrorNote(origin, crop, asOn) {
 
     if (origin.origin !== MIRROR_ORIGIN) {
         return null;
     }
 
-    return "Agmarknet publishes no turmeric line, so these figures come from a third-party mirror of Agmarknet. It is not an official source, it republishes price only with no arrivals, and it lags the current day, so confirm the rate at your mandi before selling.";
+    if (crop === "Turmeric") {
+        return "Agmarknet publishes no turmeric line, so these figures come from a third-party mirror of Agmarknet. It is not an official source, it republishes price only with no arrivals, and it lags the current day, so confirm the rate at your mandi before selling.";
+    }
+
+    return `The official Agmarknet report could not be reached, so these figures come from a third-party mirror of Agmarknet. It is not an official source, it republishes price only with no arrivals, and its latest record is dated ${asOn || "earlier than today"}; confirm the rate at your mandi before selling.`;
 }
 
 
@@ -734,6 +752,87 @@ async function fillFromMirror(crop) {
 // =====================================================
 // STATE REPORTS
 // =====================================================
+
+
+/**
+ * Reads the community mirror once and shares it until it ages
+ * out. Concurrent callers join the same walk.
+ */
+async function loadMirrorRows() {
+
+    if (
+        mirrorCache &&
+        Date.now() - mirrorCache.fetchedAt <
+            PORTAL_TTL_MS
+    ) {
+        return mirrorCache.result;
+    }
+
+    if (mirrorInFlight) {
+        return mirrorInFlight;
+    }
+
+    const request = mirror
+        .collectAll()
+        .then((result) => {
+
+            if (result?.rows?.length) {
+                mirrorCache = {
+                    result,
+                    fetchedAt: Date.now()
+                };
+            }
+
+            return result;
+
+        })
+        .finally(() => {
+            mirrorInFlight = null;
+        });
+
+    mirrorInFlight = request;
+
+    return request;
+}
+
+
+/**
+ * The latest trading day the mirror holds, in the same shape as
+ * collectDay.
+ *
+ * The mirror republishes records on its own schedule and a
+ * commodity response can span several dates, so rows keep their
+ * `tradeDate` here and the per-crop stage narrows each crop to
+ * its own most recent day. A state with no rows is not treated
+ * as a state that did not trade: the mirror only carries five
+ * states, and the coverage block says which ones answered.
+ */
+async function collectMirrorDay() {
+
+    const result = await loadMirrorRows();
+
+    if (!result?.rows?.length) {
+        return null;
+    }
+
+    const dates = result.rows
+        .map((row) => row.tradeDate)
+        .filter(Boolean)
+        .sort();
+
+    return {
+        date: dates[dates.length - 1] || null,
+        rows: result.rows,
+        statesReported: new Set(
+            result.rows
+                .map((row) => row.state)
+                .filter(Boolean)
+        ).size,
+        statesMissing: 0,
+        feedDown: false,
+        mirror: true
+    };
+}
 
 
 /**
@@ -869,7 +968,9 @@ async function withDistricts(rows) {
                 String(row.market || "")
                     .trim()
                     .toLowerCase()
-            ) || "",
+            ) ||
+            row.district ||
+            "",
         tonnes: toTonnes(row)
     }));
 }
@@ -890,15 +991,18 @@ async function withDistricts(rows) {
  */
 async function buildHistory(crop, days = HISTORY_DAYS) {
 
-    const aliases = agmarknet.CROP_ALIASES[crop];
+    /*
+     * Turmeric has no official aliases at all and is answered
+     * from the mirror's own crop names, so both lists are used.
+     */
+    const wanted = [
+        ...(agmarknet.CROP_ALIASES[crop] || []),
+        ...(mirror.collectionCrops?.[crop] || [])
+    ].map((alias) => alias.toLowerCase());
 
-    if (!aliases || !aliases.length) {
+    if (!wanted.length) {
         return [];
     }
-
-    const wanted = aliases.map((alias) =>
-        alias.toLowerCase()
-    );
 
     const stateIds = agmarknet.configuredStates();
 
@@ -955,7 +1059,82 @@ async function buildHistory(crop, days = HISTORY_DAYS) {
         }
     }
 
-    return history.reverse();
+    /*
+     * No official history at all means the state reports were
+     * refused. The mirror carries a handful of dated rows per
+     * crop, so a short series is built from those rather than
+     * leaving the line chart blank.
+     */
+    if (!history.length) {
+
+        const mirrorRows =
+            await loadMirrorRows().catch(
+                () => null
+            );
+
+        if (mirrorRows?.rows?.length) {
+
+            const byDate = new Map();
+
+            mirrorRows.rows.forEach((row) => {
+
+                if (
+                    !wanted.includes(
+                        String(
+                            row.commodity || ""
+                        ).toLowerCase()
+                    )
+                ) {
+                    return;
+                }
+
+                if (!row.tradeDate) {
+                    return;
+                }
+
+                if (!byDate.has(row.tradeDate)) {
+                    byDate.set(row.tradeDate, []);
+                }
+
+                byDate.get(row.tradeDate).push(row);
+            });
+
+            [...byDate.keys()]
+                .sort()
+                .slice(-days)
+                .forEach((date) => {
+
+                    const stats = summarise(
+                        mandiAverages(
+                            byDate
+                                .get(date)
+                                .filter(
+                                    (row) =>
+                                        isQuintal(row) &&
+                                        isPlausible(
+                                            crop,
+                                            row
+                                        )
+                                )
+                        )
+                    );
+
+                    if (stats) {
+                        history.push({
+                            date,
+                            average: stats.average,
+                            low: stats.low,
+                            high: stats.high,
+                            mandis: stats.mandis
+                        });
+                    }
+                });
+        }
+    }
+
+    return history.sort((a, b) =>
+        a.date.localeCompare(b.date)
+    );
 }
 
 
@@ -1027,7 +1206,30 @@ async function buildPortal() {
 
     const request = (async () => {
 
-        const day = await collectDay();
+        let day = await collectDay();
+
+        /*
+         * The official report now asks for a captcha, so a
+         * refused state is the normal case rather than a rare
+         * outage. When the official day is empty, use the
+         * mirror's latest published records and label them as
+         * such, so the page shows dated prices instead of
+         * twelve blank cards.
+         */
+        let usedMirror = false;
+
+        if (!day.rows.length) {
+
+            const mirrorDay =
+                await collectMirrorDay().catch(
+                    () => null
+                );
+
+            if (mirrorDay) {
+                day = mirrorDay;
+                usedMirror = true;
+            }
+        }
 
         const rows = await withDistricts(day.rows);
 
@@ -1051,9 +1253,39 @@ async function buildPortal() {
 
             let asOn = day.date;
 
+            /*
+             * Mirror rows carry their own arrival date and a
+             * commodity response can span several trading days.
+             * Narrow each crop to its own most recent date so a
+             * month of trading is never averaged into one
+             * "current" figure.
+             */
+            if (usedMirror && cropRows.length) {
+
+                const cropDates = cropRows
+                    .map((row) => row.tradeDate)
+                    .filter(Boolean)
+                    .sort();
+
+                if (cropDates.length) {
+
+                    asOn = cropDates[cropDates.length - 1];
+
+                    cropRows = cropRows.filter(
+                        (row) =>
+                            (row.tradeDate || asOn) ===
+                            asOn
+                    );
+                }
+            }
+
             let publishedBy = {
-                origin: AGMARKNET_ORIGIN,
-                mirrorRows: 0
+                origin: usedMirror
+                    ? MIRROR_ORIGIN
+                    : AGMARKNET_ORIGIN,
+                mirrorRows: usedMirror
+                    ? cropRows.length
+                    : 0
             };
 
             /*
@@ -1089,14 +1321,20 @@ async function buildPortal() {
                     cropRows,
                     asOn,
                     publishedBy,
-                    day.feedDown
+                    day.feedDown,
+                    usedMirror
                 )
             );
         }
 
         const payload = {
-            source: SOURCE,
-            basis: BASIS,
+            source: usedMirror
+                ? mirror.MIRROR_SOURCE
+                : SOURCE,
+            basis: usedMirror
+                ? "Community republication of the Agmarknet mandi report"
+                : BASIS,
+            mirror: usedMirror,
             unit: "Rs. per quintal",
             asOn: day.date,
             /*
@@ -1111,6 +1349,7 @@ async function buildPortal() {
                 statesReported: day.statesReported,
                 statesMissing: day.statesMissing,
                 feedDown: day.feedDown,
+                mirror: usedMirror,
                 rows: rows.length,
                 mandis: new Set(
                     rows.map((row) => row.market)

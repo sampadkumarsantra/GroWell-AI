@@ -396,9 +396,8 @@ function Analytics() {
                         className="gw-spin"
                     />
                     <p>
-                        Reading the daily mandi report from
-                        Agmarknet. This usually takes a few
-                        seconds.
+                        Reading the latest mandi report. This
+                        can take up to 20 seconds.
                     </p>
                 </div>
             </div>
@@ -482,6 +481,30 @@ function Analytics() {
                         no trading. The per-crop prices in chat
                         come from a separate feed and may still
                         be current.
+                    </p>
+                </div>
+            )}
+
+
+            {/* The official feed now refuses server requests
+                with a captcha, so the mirror is labelled in
+                place rather than passed off as official. */}
+            {payload.mirror && (
+                <div className="gw-an-alert">
+                    <AlertTriangle size={18} />
+                    <p>
+                        The official Agmarknet report requires
+                        a captcha and is unavailable to this
+                        app right now, so these figures come
+                        from a third-party mirror of the same
+                        mandi records. The latest record is
+                        dated{" "}
+                        <strong>
+                            {prettyDate(payload.asOn)}
+                        </strong>
+                        , arrivals are not published, and some
+                        states are not covered. Confirm the
+                        rate at your mandi before selling.
                     </p>
                 </div>
             )}
