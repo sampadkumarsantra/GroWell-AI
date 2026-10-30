@@ -272,43 +272,40 @@ function Premium() {
             // CHECKOUT (modal)
             // -----------------------------------------
 
-            if (data.hostedUrl || data.shortUrl) {
-                if (checkoutWindow) {
-                    checkoutWindow.close();
-                    checkoutWindow = null;
-                }
-
-                try {
-                    const Razorpay = await loadCheckout();
-                    const rzp = new Razorpay({
-                        key: data.keyId || keyId
-                    });
-                    rzp.openSubscription(data.subscriptionId);
-                    return;
-                } catch (e) {
-                    // Fall through to fallback
-                }
-            }
-
-            // -----------------------------------------
-            // IN-APP CHECKOUT (fallback)
-            // -----------------------------------------
-
             if (checkoutWindow) {
                 checkoutWindow.close();
                 checkoutWindow = null;
             }
 
-            const Razorpay =
-                await loadCheckout();
+            try {
+                const Razorpay = await loadCheckout();
 
-            const rzp = new Razorpay({
-                key: data.keyId || keyId
-            });
+                const options = {
+                    key: data.keyId || keyId,
+                    subscription_id: data.subscriptionId,
+                    name: "GroWell AI",
+                    description: "GroWell Premium",
+                    theme: {
+                        color: "#22c55e"
+                    },
+                    handler: async function () {
+                        setNotice("Payment received. Activating your plan...");
+                        await pollForActivation();
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            setLoading(false);
+                        }
+                    }
+                };
 
-            rzp.openSubscription(
-                data.subscriptionId
-            );
+                const rzp = new Razorpay(options);
+                rzp.open();
+                return;
+            } catch (e) {
+                console.error(e);
+                throw new Error("Could not open checkout.");
+            }
 
         } catch (subscribeError) {
 
