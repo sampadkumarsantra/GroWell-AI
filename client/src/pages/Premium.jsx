@@ -284,18 +284,25 @@ function Premium() {
                     key: data.keyId || keyId,
                     subscription_id: data.subscriptionId,
                     name: "GroWell AI",
-                    description: "GroWell Premium",
+                    description: "GroWell Premium - Monthly Plan",
                     theme: {
                         color: "#22c55e"
                     },
-                    handler: async function () {
+                    handler: async function (response) {
+                        console.log("Razorpay payment response:", response);
                         setNotice("Payment received. Activating your plan...");
-                        await pollForActivation();
+                        try {
+                            setLoading(true);
+                            await pollForActivation();
+                        } finally {
+                            setLoading(false);
+                        }
                     },
                     modal: {
                         ondismiss: function () {
                             setLoading(false);
-                        }
+                        },
+                        escape: true
                     }
                 };
 
