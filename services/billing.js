@@ -353,6 +353,8 @@ async function cancelSubscription(userId) {
 
     const razorpay = getClient();
 
+    let immediate = false;
+
     try {
 
         await razorpay.subscriptions.cancel(
@@ -364,7 +366,8 @@ async function cancelSubscription(userId) {
 
         // Razorpay rejects cycle-end cancellation before the first
         // billing cycle starts. Nothing has been charged in that
-        // state, so canceling immediately is safe.
+        // state, so canceling immediately is safe. Razorpay only
+        // accepts this when no options are passed at all.
         const description = String(
             error?.error?.description ||
             error?.message ||
@@ -376,18 +379,19 @@ async function cancelSubscription(userId) {
         }
 
         await razorpay.subscriptions.cancel(
-            row.razorpay_subscription_id,
-            { cancel_at_cycle_end: false }
+            row.razorpay_subscription_id
         );
+
+        immediate = true;
 
     }
 
     await db.run(
         `UPDATE subscriptions
-         SET cancel_at_period_end = TRUE,
+         SET cancel_at_period_end = $2,
              updated_at = NOW()
          WHERE user_id = $1`,
-        [userId]
+        [userId, !immediate]
     );
 
     return true;
