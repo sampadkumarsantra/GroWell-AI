@@ -269,43 +269,25 @@ function Premium() {
             }
 
             // -----------------------------------------
-            // HOSTED CHECKOUT (primary)
+            // CHECKOUT (modal)
             // -----------------------------------------
 
             if (data.hostedUrl || data.shortUrl) {
-
-                const hostedUrl =
-                    data.hostedUrl || data.shortUrl;
-
-                setNotice(
-                    "Payment page opened in a new tab. Finish the payment there — your plan activates automatically within about a minute."
-                );
-
                 if (checkoutWindow) {
-
-                    checkoutWindow.location.href =
-                        hostedUrl;
-
-                    const activated =
-                        await pollForActivation();
-
-                    if (!activated) {
-                        setNotice(
-                            "We are waiting for payment confirmation. If you have paid, your plan will activate within a minute — if not, please try again."
-                        );
-                    }
-
-                } else {
-
-                    // Pop-up blocked — navigate the app itself
-                    // to the secure payment page. Returning to
-                    // the app re-checks the plan.
-                    window.location.assign(
-                        hostedUrl
-                    );
+                    checkoutWindow.close();
+                    checkoutWindow = null;
                 }
 
-                return;
+                try {
+                    const Razorpay = await loadCheckout();
+                    const rzp = new Razorpay({
+                        key: data.keyId || keyId
+                    });
+                    rzp.openSubscription(data.subscriptionId);
+                    return;
+                } catch (e) {
+                    // Fall through to fallback
+                }
             }
 
             // -----------------------------------------
