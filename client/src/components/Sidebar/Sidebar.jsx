@@ -10,6 +10,7 @@ import {
 import "./Sidebar.css";
 import logo from "../../assets/logo.png";
 import GrowthJourney from "../GrowthJourney/GrowthJourney";
+import { usePremium } from "../../context/PremiumContext";
 
 const menu = [
     { icon: MessageSquare, label: "Chat" },
@@ -21,9 +22,17 @@ const menu = [
 ];
 
 function Sidebar({ activePage, setActivePage }) {
+    const { isPremium } = usePremium();
+
     function handleMenuClick(label) {
         setActivePage(label);
     }
+
+    // Soil Health is a GroWell Premium feature — free users only
+    // get the surfaces that are available on their plan.
+    const visibleMenu = menu.filter(
+        (item) => item.label !== "Soil Health" || isPremium
+    );
 
     return (
         <aside className="sidebar">
@@ -52,7 +61,7 @@ function Sidebar({ activePage, setActivePage }) {
             ========================= */}
             <nav className="gw-nav">
 
-                {menu.map((item) => {
+                {visibleMenu.map((item) => {
                     const Icon = item.icon;
 
                     return (

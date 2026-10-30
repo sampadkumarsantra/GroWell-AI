@@ -4,6 +4,7 @@ import Header from "../components/Header/Header";
 import Sidebar from "../components/Sidebar/Sidebar";
 import Chat from "../components/Chat/Chat";
 import GrowthJourney from "../components/GrowthJourney/GrowthJourney";
+import { usePremium } from "../context/PremiumContext";
 
 /*
  * Only the chat is in the initial bundle. Every other page is
@@ -25,6 +26,7 @@ import "./Dashboard.css";
 
 function Dashboard({ user, onLogout }) {
     const [activePage, setActivePage] = useState("Chat");
+    const { isPremium } = usePremium();
 
     function renderPage() {
         switch (activePage) {
@@ -38,6 +40,10 @@ function Dashboard({ user, onLogout }) {
                 return <Weather />;
 
             case "Soil Health":
+                if (isPremium !== true) {
+                    // Soil Intelligence is a GroWell Premium feature.
+                    return <Premium />;
+                }
                 return <SoilHealth />;
 
             case "Journey":
