@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "cd client && npm install && npm run build"
+    "build": "cd client && npm install && npm run build",
+    "setup:billing": "node scripts/setup-razorpay.js"
   },
   "dependencies": {
     "@google/genai": "^2.15.0",

@@ -168,12 +168,12 @@ async function createSubscription(user) {
             customer_id: customerId,
             total_count: 12,
             quantity: 1,
-            start_at: Math.floor(Date.now() / 1000),
+            customer_notify: true,
             notes: {
                 growell_user_id: String(user.id)
             },
-            notify: {
-                email: user.email
+            notify_info: {
+                notify_email: user.email
             }
         });
 
@@ -353,9 +353,34 @@ async function cancelSubscription(userId) {
 
     const razorpay = getClient();
 
-    await razorpay.subscriptions.cancel(
-        row.razorpay_subscription_id
-    );
+    try {
+
+        await razorpay.subscriptions.cancel(
+            row.razorpay_subscription_id,
+            { cancel_at_cycle_end: true }
+        );
+
+    } catch (error) {
+
+        // Razorpay rejects cycle-end cancellation before the first
+        // billing cycle starts. Nothing has been charged in that
+        // state, so canceling immediately is safe.
+        const description = String(
+            error?.error?.description ||
+            error?.message ||
+            ""
+        );
+
+        if (!/no billing cycle/i.test(description)) {
+            throw error;
+        }
+
+        await razorpay.subscriptions.cancel(
+            row.razorpay_subscription_id,
+            { cancel_at_cycle_end: false }
+        );
+
+    }
 
     await db.run(
         `UPDATE subscriptions
