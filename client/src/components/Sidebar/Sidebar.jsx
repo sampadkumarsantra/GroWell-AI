@@ -4,7 +4,8 @@ import {
     CloudSun,
     Sprout,
     Settings,
-    BookOpen
+    BookOpen,
+    Lock
 } from "lucide-react";
 
 import "./Sidebar.css";
@@ -28,11 +29,12 @@ function Sidebar({ activePage, setActivePage }) {
         setActivePage(label);
     }
 
-    // Soil Health is a GroWell Premium feature — free users only
-    // get the surfaces that are available on their plan.
-    const visibleMenu = menu.filter(
-        (item) => item.label !== "Soil Health" || isPremium
-    );
+    // Soil Health is a GroWell Premium feature. Free users still see the
+    // entry, but it renders as locked until they have an active premium.
+    const visibleMenu = menu.map((item) => ({
+        ...item,
+        locked: item.label === "Soil Health" && !isPremium,
+    }));
 
     return (
         <aside className="sidebar">
@@ -62,7 +64,7 @@ function Sidebar({ activePage, setActivePage }) {
             <nav className="gw-nav">
 
                 {visibleMenu.map((item) => {
-                    const Icon = item.icon;
+                    const Icon = item.locked ? Lock : item.icon;
 
                     return (
                         <button
@@ -76,9 +78,15 @@ function Sidebar({ activePage, setActivePage }) {
                                     ? "gw-nav-hide-mobile"
                                     : ""
                             ].filter(Boolean).join(" ")}
-                            onClick={() =>
-                                handleMenuClick(item.label)
-                            }
+                            onClick={() => {
+                                if (item.locked) {
+                                    // Soil Health is premium-only: send the
+                                    // farmer to the upgrade surface.
+                                    setActivePage("Premium");
+                                    return;
+                                }
+                                handleMenuClick(item.label);
+                            }}
                         >
                             <Icon size={20} />
 
