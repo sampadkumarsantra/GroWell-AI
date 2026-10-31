@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path");
 const axios = require("axios");
 
 const DATA_GOV_API_URL =
@@ -5,6 +7,8 @@ const DATA_GOV_API_URL =
 
 const DATA_GOV_API_KEY =
     process.env.DATA_GOV_API_KEY || "579b464db66ec23bdd0000015b3d75ad377f48fe78b631c30652d5ac";
+
+const CACHE_FILE_PATH = path.join(__dirname, "mandi_cache.json");
 
 // Mandi records cache TTL: 30 minutes
 const CACHE_TTL_MS = 1000 * 60 * 30;
@@ -15,6 +19,32 @@ let cachedRecords = null;
 let cacheTimestamp = 0;
 let cacheMeta = null;
 let inFlightFetch = null;
+
+// Immediately hydrate cache from disk if available
+function loadDiskCache() {
+    try {
+        if (fs.existsSync(CACHE_FILE_PATH)) {
+            const raw = fs.readFileSync(CACHE_FILE_PATH, "utf8");
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed.records) && parsed.records.length > 0) {
+                const normalized = parsed.records
+                    .map(normalizeRecord)
+                    .filter((r) => r.commodity && r.price != null && r.price > 0);
+
+                if (normalized.length > 0) {
+                    cachedRecords = normalized;
+                    cacheTimestamp = parsed.timestamp || Date.now();
+                    cacheMeta = computeCacheMeta(normalized);
+                    console.log(`[MarketService] Hydrated ${normalized.length} live records from mandi_cache.json.`);
+                    return true;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("[MarketService] Disk cache hydration note:", e.message);
+    }
+    return false;
+}
 
 // Categorization helper for all 220+ Indian agricultural commodities
 function categorizeCommodity(name = "") {
@@ -353,6 +383,17 @@ async function fetchAgmarknetRecords(forceRefresh = false) {
                     console.log(
                         `Successfully ingested ${normalized.length} records straight from data.gov.in across ${cacheMeta.totalCommodities} commodities and ${cacheMeta.totalStates} states.`
                     );
+
+                    // Persist to disk cache asynchronously
+                    try {
+                        fs.writeFile(
+                            CACHE_FILE_PATH,
+                            JSON.stringify({ timestamp: cacheTimestamp, total: combined.length, records: combined }),
+                            "utf8",
+                            () => {}
+                        );
+                    } catch {}
+
                     return normalized;
                 }
             }
@@ -900,6 +941,9 @@ async function getNationalStats({ commodity, days = 30 } = {}) {
         ...stats
     };
 }
+
+// Initialize disk cache immediately
+loadDiskCache();
 
 module.exports = {
     fetchAgmarknetRecords,

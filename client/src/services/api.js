@@ -76,7 +76,12 @@ export async function apiRequest(path, options = {}) {
                 `${base}${target}`,
                 authorized
             );
-            return response;
+            // If a candidate returns 404/502/503 (e.g. un-deployed route on Render),
+            // keep trying the next candidate (e.g. local backend)!
+            if (response.ok || (response.status !== 404 && response.status !== 502 && response.status !== 503)) {
+                return response;
+            }
+            lastError = new Error(`Request to ${base}${target} returned ${response.status}`);
         } catch (error) {
             lastError = error;
         }
