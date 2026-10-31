@@ -9,7 +9,30 @@ const DEFAULT_RESOURCE_ID =
 
 const CACHE_TTL_MS = 1000 * 60 * 60 * 24;
 
+const MAX_RETRIES = 3;
+const RETRY_BASE_DELAY_MS = 1000;
+
 const cache = new Map();
+
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function getWithRetry(url, config, attempt = 1) {
+    try {
+        return await axios.get(url, config);
+    } catch (error) {
+        if (attempt < MAX_RETRIES) {
+            const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
+
+            await sleep(delay);
+
+            return getWithRetry(url, config, attempt + 1);
+        }
+
+        throw error;
+    }
+}
 
 function buildCacheKey(filters, limit) {
     return JSON.stringify({ filters, limit });
@@ -27,7 +50,7 @@ async function getRecords(filters = {}, limit = 1000) {
         return cached.records;
     }
 
-    const response = await axios.get(
+    const response = await getWithRetry(
         DATA_GOV_SEARCH_URL,
         {
             params: {
