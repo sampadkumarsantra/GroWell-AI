@@ -25,18 +25,14 @@ import {
     ArrowUpDown,
     Table,
     ChevronLeft,
-    ChevronRight,
-    Key,
-    CheckCircle2,
-    ShieldCheck
+    ChevronRight
 } from "lucide-react";
 
 import "./Market.css";
 import { apiRequest } from "../services/api";
 
 const DEFAULT_DATA_GOV_KEY =
-    import.meta.env.VITE_DATA_GOV_API_KEY ||
-    "579b464db66ec23bdd0000015b3d75ad377f48fe78b631c30652d5ac";
+    import.meta.env.VITE_DATA_GOV_API_KEY || "";
 
 const DATA_GOV_API_URL =
     "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070";
@@ -183,12 +179,8 @@ function Market() {
     // Active View Mode: "analysis" (Commodity intelligence + Days in Month graph) or "all-records" (Direct data.gov.in registry)
     const [viewMode, setViewMode] = useState("analysis");
 
-    // API Key config (user can provide their own key or use built-in)
-    const [apiKey, setApiKey] = useState(() => {
-        return localStorage.getItem("growell_data_gov_key") || DEFAULT_DATA_GOV_KEY;
-    });
-    const [showKeyModal, setShowKeyModal] = useState(false);
-    const [customKeyInput, setCustomKeyInput] = useState("");
+    // Internal data.gov.in key reference
+    const apiKey = DEFAULT_DATA_GOV_KEY;
 
     // Overview & Commodity state
     const [overview, setOverview] = useState(null);
@@ -687,23 +679,7 @@ function Market() {
         apiKey
     ]);
 
-    // Handle Custom API Key Save
-    function handleSaveApiKey(e) {
-        e.preventDefault();
-        const key = customKeyInput.trim();
-        if (key) {
-            localStorage.setItem("growell_data_gov_key", key);
-            setApiKey(key);
-            setShowKeyModal(false);
-        }
-    }
 
-    function handleResetApiKey() {
-        localStorage.removeItem("growell_data_gov_key");
-        setApiKey(DEFAULT_DATA_GOV_KEY);
-        setCustomKeyInput("");
-        setShowKeyModal(false);
-    }
 
     // Filter commodities for selector
     const filteredCommodities = useMemo(() => {
@@ -812,19 +788,6 @@ function Market() {
                 <div className="market-header-actions">
                     <button
                         type="button"
-                        className="market-key-btn"
-                        onClick={() => {
-                            setCustomKeyInput(apiKey);
-                            setShowKeyModal(true);
-                        }}
-                        title="Configure data.gov.in API Key"
-                    >
-                        <Key size={14} />
-                        <span>API Key: {apiKey.slice(0, 6)}...{apiKey.slice(-4)}</span>
-                    </button>
-
-                    <button
-                        type="button"
                         className="market-refresh-btn"
                         onClick={() => loadMarketSummary(true)}
                         disabled={loading || refreshing}
@@ -835,59 +798,6 @@ function Market() {
                     </button>
                 </div>
             </div>
-
-            {/* API Key Modal */}
-            {showKeyModal && (
-                <div className="key-modal-overlay" onClick={() => setShowKeyModal(false)}>
-                    <div className="key-modal-card" onClick={(e) => e.stopPropagation()}>
-                        <div className="key-modal-header">
-                            <div className="key-modal-title">
-                                <ShieldCheck size={20} className="key-icon" />
-                                <h3>data.gov.in API Key Configuration</h3>
-                            </div>
-                            <button
-                                type="button"
-                                className="close-modal-btn"
-                                onClick={() => setShowKeyModal(false)}
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        <p className="key-modal-desc">
-                            GroWell AI connects directly to the Open Government Data Platform (data.gov.in) using your registered API Key.
-                        </p>
-
-                        <div className="key-status-box">
-                            <CheckCircle2 size={16} />
-                            <span>Active API Key: <code>{apiKey}</code></span>
-                        </div>
-
-                        <form onSubmit={handleSaveApiKey} className="key-modal-form">
-                            <label>Enter Custom data.gov.in API Key</label>
-                            <input
-                                type="text"
-                                placeholder="Paste your 56-character data.gov.in API Key..."
-                                value={customKeyInput}
-                                onChange={(e) => setCustomKeyInput(e.target.value)}
-                            />
-
-                            <div className="key-modal-actions">
-                                <button
-                                    type="button"
-                                    className="reset-key-btn"
-                                    onClick={handleResetApiKey}
-                                >
-                                    Reset to Default
-                                </button>
-                                <button type="submit" className="save-key-btn">
-                                    Save &amp; Connect Live
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
 
             {/* National KPI Strip straight from data.gov.in */}
             <div className="market-kpi-strip">

@@ -6,7 +6,7 @@ const DATA_GOV_API_URL =
     "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070";
 
 const DATA_GOV_API_KEY =
-    process.env.DATA_GOV_API_KEY || "579b464db66ec23bdd0000015b3d75ad377f48fe78b631c30652d5ac";
+    process.env.DATA_GOV_API_KEY || "";
 
 const CACHE_FILE_PATH = path.join(__dirname, "mandi_cache.json");
 
