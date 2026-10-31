@@ -32,7 +32,7 @@ import "./Market.css";
 import { apiRequest } from "../services/api";
 
 const DEFAULT_DATA_GOV_KEY =
-    import.meta.env.VITE_DATA_GOV_API_KEY || "";
+    import.meta.env.VITE_DATA_GOV_API_KEY || "579b464db66ec23bdd0000015b3d75ad377f48fe78b631c30652d5ac";
 
 const DATA_GOV_API_URL =
     "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070";
