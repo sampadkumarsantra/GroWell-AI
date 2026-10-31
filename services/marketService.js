@@ -1,11 +1,10 @@
 const axios = require("axios");
 
-const DATA_GOV_SEARCH_URL =
-    "https://api.data.gov.in/api/3/action/datastore_search";
+const DATA_GOV_API_URL =
+    "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070";
 
-const DEFAULT_RESOURCE_ID =
-    process.env.DATAGOV_AGMARKNET_RESOURCE_ID ||
-    "9ef84268-d588-465a-a308-a864a43d0070";
+const DATA_GOV_API_KEY =
+    process.env.DATA_GOV_API_KEY || "";
 
 const CACHE_TTL_MS = 1000 * 60 * 60 * 24;
 
@@ -24,57 +23,35 @@ async function getWithRetry(url, config, attempt = 1) {
     } catch (error) {
         if (attempt < MAX_RETRIES) {
             const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1);
-
             await sleep(delay);
-
             return getWithRetry(url, config, attempt + 1);
         }
-
         throw error;
     }
 }
 
-function buildCacheKey(filters, limit) {
-    return JSON.stringify({ filters, limit });
-}
-
-async function getRecords(filters = {}, limit = 1000) {
-    const key = buildCacheKey(filters, limit);
-
-    const cached = cache.get(key);
-
-    if (
-        cached &&
-        Date.now() - cached.fetchedAt < CACHE_TTL_MS
-    ) {
-        return cached.records;
-    }
-
+async function getRecords(commodity = "") {
     const response = await getWithRetry(
-        DATA_GOV_SEARCH_URL,
+        DATA_GOV_API_URL,
         {
             params: {
-                resource_id: DEFAULT_RESOURCE_ID,
-                limit,
-                filters: JSON.stringify(filters)
+                "api-key": DATA_GOV_API_KEY,
+                format: "json",
+                limit: 1000
             }
         }
     );
 
-    const result = response.data?.result;
+    const records =
+        response.data?.records || [];
 
-    if (!result) {
-        throw new Error(
-            "Invalid response from data.gov.in."
+    if (commodity) {
+        return records.filter(
+            (record) =>
+                (record.commodity || "").trim() ===
+                commodity
         );
     }
-
-    const records = result.records || [];
-
-    cache.set(key, {
-        fetchedAt: Date.now(),
-        records
-    });
 
     return records;
 }
@@ -91,7 +68,6 @@ function toIsoDate(value) {
 
     const raw = String(value).trim();
 
-    // AGMARKNET sends dates like "31/10/2026" (dd/mm/yyyy).
     const slashParts = raw.split("/");
 
     if (slashParts.length === 3) {
@@ -164,34 +140,28 @@ async function getHistory({
     state = "",
     mandi = ""
 } = {}) {
-    const filters = { commodity };
-
-    if (state) {
-        filters.state = state;
-    }
-
-    if (mandi) {
-        filters.market = mandi;
-    }
-
-    const rawRecords = await getRecords(
-        filters,
-        1000
+    const records = await getRecords(
+        commodity
     );
 
-    const records = sortByDateAsc(
-        rawRecords
-            .map(normalizeRecord)
-            .filter(
-                (record) =>
-                    record.date && record.price != null
-            )
-    );
+    const filtered = records
+        .map(normalizeRecord)
+        .filter(
+            (record) =>
+                record.date && record.price != null
+        );
+
+    const filteredByStateMandi = filtered
+        .filter(
+            (record) =>
+                (!state || record.state === state) &&
+                (!mandi || record.mandi === mandi)
+        );
 
     const windowed =
         days > 0
-            ? records.slice(-days)
-            : records;
+            ? filteredByStateMandi.slice(-days)
+            : filteredByStateMandi;
 
     return {
         success: true,
