@@ -5,24 +5,30 @@ const marketService = require("../services/marketService");
 
 // Curated commodity list shown on the GroWell Market section.
 router.get("/commodities", async (req, res) => {
-
     try {
-
         const result = await marketService.getCommodityList();
-
         res.json(result);
-
     } catch (err) {
-
-        console.error(err);
-
+        console.error("Market commodities error:", err);
         res.status(500).json({
             success: false,
             message: err.message
         });
-
     }
+});
 
+// Complete market summary with precalculated stats in a single fast call.
+router.get("/summary", async (req, res) => {
+    try {
+        const result = await marketService.getMarketSummary();
+        res.json(result);
+    } catch (err) {
+        console.error("Market summary error:", err);
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
 });
 
 // Daily mandi price series for a commodity.
@@ -32,15 +38,10 @@ router.get("/commodities", async (req, res) => {
 //   state     - optional state filter
 //   market    - optional mandi filter
 router.get("/history", async (req, res) => {
-
     try {
-
         const commodity = (req.query.commodity || "").trim();
-
         const days = parseInt(req.query.days, 10) || 30;
-
         const state = (req.query.state || "").trim();
-
         const market = (req.query.market || "").trim();
 
         if (!commodity) {
@@ -58,27 +59,19 @@ router.get("/history", async (req, res) => {
         });
 
         res.json(result);
-
     } catch (err) {
-
-        console.error(err);
-
+        console.error("Market history error:", err);
         res.status(500).json({
             success: false,
             message: err.message
         });
-
     }
-
 });
 
 // All India (national) market statistics for a commodity.
 router.get("/national", async (req, res) => {
-
     try {
-
         const commodity = (req.query.commodity || "").trim();
-
         const days = parseInt(req.query.days, 10) || 30;
 
         if (!commodity) {
@@ -94,18 +87,13 @@ router.get("/national", async (req, res) => {
         });
 
         res.json(result);
-
     } catch (err) {
-
-        console.error(err);
-
+        console.error("Market national stats error:", err);
         res.status(500).json({
             success: false,
             message: err.message
         });
-
     }
-
 });
 
 module.exports = router;
