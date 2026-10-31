@@ -11,6 +11,7 @@ const cors = require("cors");
 // =========================
 
 const weatherRoute = require("./routes/weather");
+const marketRoute = require("./routes/market");
 const chatRoute = require("./routes/chat");
 const diagnoseRoute = require("./routes/diagnose");
 const soilRoutes = require("./routes/soil");
@@ -69,6 +70,8 @@ app.use(express.urlencoded({ extended: true }));
 // =========================
 
 app.use("/api/weather", weatherRoute);
+
+app.use("/api/market", marketRoute);
 
 app.use("/api/chat", chatRoute);
 

@@ -596,6 +596,7 @@ The backend provides multiple service endpoints:
 /api/soil
 /api/translate
 /api/weather
+/api/market
 ```
 
 Each route is responsible for a different component of the agricultural intelligence platform.

@@ -12,6 +12,7 @@ import { usePremium } from "../context/PremiumContext";
  * the 300 KB crop library or the soil forms.
  */
 const Weather = lazy(() => import("../components/Weather/Weather"));
+const Market = lazy(() => import("../pages/Market"));
 const CropDiagnosis = lazy(() => import("./CropDiagnosis"));
 const SoilHealth = lazy(() => import("./SoilHealth"));
 const Library = lazy(() => import("./Library"));
@@ -38,6 +39,9 @@ function Dashboard({ user, onLogout }) {
 
             case "Weather":
                 return <Weather />;
+
+            case "Market":
+                return <Market />;
 
             case "Soil Health":
                 if (isPremium !== true) {
