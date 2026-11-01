@@ -269,12 +269,42 @@ function Premium() {
             }
 
             // -----------------------------------------
-            // CHECKOUT (modal)
+            // CHECKOUT
+            //
+            // Prefer the hosted Razorpay checkout page for the
+            // subscription authorisation. It renders the full
+            // payment interface (UPI / cards / netbanking / wallets)
+            // and returns the customer back to the app with the
+            // standard razorpay_* return params once the payment
+            // lands. The in-app Razorpay modal is the fallback for
+            // when no hosted link is available.
             // -----------------------------------------
+
+            const hostedUrl =
+                data.hostedUrl || data.shortUrl;
 
             if (checkoutWindow) {
                 checkoutWindow.close();
                 checkoutWindow = null;
+            }
+
+            if (hostedUrl) {
+                try {
+                    checkoutWindow = window.open(
+                        hostedUrl,
+                        "_blank",
+                        "noopener,noreferrer"
+                    );
+
+                    if (checkoutWindow) {
+                        return;
+                    }
+                } catch (hostedError) {
+                    console.error(
+                        "Hosted checkout could not be opened:",
+                        hostedError
+                    );
+                }
             }
 
             try {
@@ -290,10 +320,31 @@ function Premium() {
                     },
                     handler: async function (response) {
                         console.log("Razorpay payment response:", response);
+
+                        if (!response || !response.razorpay_payment_id) {
+                            setError(
+                                "The payment did not complete. Please try again."
+                            );
+                            return;
+                        }
+
                         setNotice("Payment received. Activating your plan...");
+
                         try {
                             setLoading(true);
-                            await pollForActivation();
+                            const activated =
+                                await pollForActivation();
+
+                            if (!activated) {
+                                setError(
+                                    "Payment received but your plan could not be activated. Please contact support."
+                                );
+                            }
+                        } catch (handlerError) {
+                            console.error(handlerError);
+                            setError(
+                                "Payment received but activation failed. Please contact support."
+                            );
                         } finally {
                             setLoading(false);
                         }
