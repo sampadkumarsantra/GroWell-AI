@@ -32,7 +32,8 @@ router.post(
 
             if (!message || !message.trim()) {
                 return res.status(400).json({
-                    reply: "Please enter a message."
+                    success: false,
+                    message: "Please enter a message."
                 });
             }
 
@@ -133,8 +134,9 @@ router.post(
             );
 
             res.status(500).json({
-                reply:
-                    "❌ GroWell AI could not generate a response. Please check that the backend and Groq API are running."
+                success: false,
+                message:
+                    "GroWell AI could not generate a response. Please check that the backend and Groq API are running."
             });
 
         }

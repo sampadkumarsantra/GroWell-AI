@@ -1,6 +1,6 @@
 const axios = require("axios");
 
-const OPENWEATHER_KEY = process.env.OPENWEATHER_API_KEY || "76a1f3529fd35c171af3bbfc487d3b3d";
+const OPENWEATHER_KEY = process.env.OPENWEATHER_API_KEY;
 
 function wmoDescription(code) {
     const map = {

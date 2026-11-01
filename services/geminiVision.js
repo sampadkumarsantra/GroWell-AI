@@ -9,9 +9,9 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // You can change this later from .env
 // Example:
-// GEMINI_VISION_MODEL=gemini-3.8-flash
+// GEMINI_VISION_MODEL=gemini-1.5-flash
 const GEMINI_VISION_MODEL =
-    process.env.GEMINI_VISION_MODEL || "gemini-3.8-flash";
+    process.env.GEMINI_VISION_MODEL || "gemini-1.5-flash";
 
 if (!GEMINI_API_KEY) {
     console.error("❌ GEMINI_API_KEY is missing from .env");
@@ -86,10 +86,9 @@ function isAvailabilityError(error) {
 // =====================================================
 
 const FALLBACK_MODELS = [
-    "gemini-3.5-flash",
-    "gemini-3.6-flash",
-    "gemini-3.5-flash-lite",
-    "gemini-3.7-flash"
+    "gemini-1.5-pro",
+    "gemini-1.5-flash-8b",
+    "gemini-1.0-pro-vision"
 ];
 
 function buildModelChain() {

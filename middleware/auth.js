@@ -8,8 +8,11 @@ const {
 } = require("../services/entitlements");
 
 const JWT_SECRET =
-    process.env.JWT_SECRET ||
-    "growell-development-secret";
+    process.env.JWT_SECRET;
+
+if (process.env.NODE_ENV === "production" && !JWT_SECRET) {
+    throw new Error("JWT_SECRET must be set in production");
+}
 
 
 // =====================================================

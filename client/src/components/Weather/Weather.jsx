@@ -84,6 +84,10 @@ export default function Weather() {
     const [aiLoading, setAiLoading] = useState(false);
     const [aiError, setAiError] = useState("");
 
+    const [decision, setDecision] = useState(null);
+    const [decisionLoading, setDecisionLoading] = useState(false);
+    const [decisionError, setDecisionError] = useState("");
+
     const searchRef = useRef(null);
     const suggestTimer = useRef(null);
 
@@ -91,6 +95,48 @@ export default function Weather() {
     useEffect(() => {
         autoDetectLocation();
     }, []);
+
+    // Fetch agricultural decision from backend when weather/farm context changes
+    useEffect(() => {
+        if (!weather) return;
+        let active = true;
+        async function fetchDecision() {
+            setDecisionLoading(true);
+            setDecisionError("");
+            try {
+                const res = await apiRequest("/api/decision", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        crop,
+                        growthStage: stage,
+                        soilType: soil,
+                        soil: {},
+                        weather: {
+                            temperature: weather.current?.temperature,
+                            humidity: weather.current?.humidity,
+                            rainfall: weather.current?.rainfall ?? weather.current?.rain ?? 0,
+                            condition: weather.current?.condition
+                        }
+                    })
+                });
+                const data = await res.json();
+                if (active) {
+                    if (data.success && data.decision) {
+                        setDecision(data.decision);
+                    } else {
+                        setDecisionError(data.message || "Failed to get decision");
+                    }
+                }
+            } catch (err) {
+                if (active) setDecisionError("Could not fetch agricultural decision");
+            } finally {
+                if (active) setDecisionLoading(false);
+            }
+        }
+        fetchDecision();
+        return () => { active = false; };
+    }, [weather, crop, stage, soil]);
 
     // Geocode suggestions
     useEffect(() => {
@@ -245,28 +291,6 @@ export default function Weather() {
         }
     }
 
-    // Disease and irrigation logic
-    function diseaseInfo() {
-        if (!weather) return null;
-        const { humidity, weatherCode } = weather.current || {};
-        const rain7 = weather.daily?.slice(0, 7).reduce((s, d) => s + (d.rainProbability || 0), 0) / 7;
-        if (crop === "Rice" && humidity > 80) return { risk: "HIGH", problem: "Rice Blast", reason: "High humidity + warm conditions favour fungal disease.", action: "Monitor leaves, reduce nitrogen, improve aeration." };
-        if (crop === "Tomato" && humidity > 75) return { risk: "HIGH", problem: "Early Blight", reason: "Warm humid conditions increase fungal pressure.", action: "Remove infected foliage, avoid leaf wetness." };
-        if (crop === "Potato" && weather.current.temperature < 25 && humidity > 80) return { risk: "HIGH", problem: "Late Blight", reason: "Cool humid conditions favour late blight.", action: "Improve drainage and airflow, scout canopy." };
-        if (crop === "Wheat" && humidity > 78 && rain7 > 40) return { risk: "MEDIUM", problem: "Rust", reason: "Moderate to high humidity over sustained period.", action: "Scout for rust symptoms, consider preventive fungicide." };
-        return { risk: "LOW", problem: "No major threat detected", reason: "Current conditions are not strongly favourable for major diseases.", action: "Continue regular scouting." };
-    }
-
-    function irrigationInfo() {
-        if (!weather) return null;
-        const { rain, temperature } = weather.current || {};
-        if (rain > 5) return { decision: "Delay Irrigation", reason: "Recent rainfall has supplied water to the field.", action: "Check soil moisture before irrigating." };
-        if (temperature > 35) return { decision: "Increase Irrigation", reason: "High temp increases crop water loss.", action: "Irrigate during cooler hours, check soil frequently." };
-        if (soil === "Sandy") return { decision: "Frequent Light Irrigation", reason: "Sandy soil has low water retention.", action: "Use shorter intervals, avoid over-watering." };
-        if (soil === "Clay" || soil === "Black Cotton") return { decision: "Irrigate Carefully", reason: "Clay retains water longer.", action: "Check soil before irrigating, avoid waterlogging." };
-        return { decision: "Normal Schedule", reason: "Conditions don't indicate immediate adjustment needed.", action: "Maintain schedule, monitor actual soil moisture." };
-    }
-
     async function generateAIReport() {
         if (!weather) { setAiError("Fetch weather data first."); return; }
         setAiLoading(true);
@@ -333,9 +357,15 @@ Be specific, practical and actionable for a small to medium Indian farmer.`.trim
     }
 
     const w = weather?.current;
-    const disease = diseaseInfo();
-    const irrigation = irrigationInfo();
     const heroCls = weather ? `wth-hero wth-hero--${heroBg(w?.weatherCode, w?.temperature)}` : "wth-hero";
+
+    // Use backend decision data for agricultural intelligence
+    const diseaseRisk = decision?.disease?.risk || weather?.risk?.disease || "Unknown";
+    const diseaseAction = decision?.disease?.action || "";
+    const irrigationDecision = decision?.irrigation?.status || "";
+    const irrigationReason = decision?.irrigation?.reason || "";
+    const soilMoisture = decision?.nutrition?.status || "";
+    const soilMoistureAction = decision?.nutrition?.action || "";
 
     return (
         <div className="wth-page">
@@ -589,34 +619,31 @@ Be specific, practical and actionable for a small to medium Indian farmer.`.trim
                         <h2 className="wth-section-title">🌾 Agricultural Intelligence — {crop}</h2>
                         <div className="wth-agri-grid">
                             {/* Disease Risk */}
-                            {disease && (
+                            {decision && (
                                 <div className="wth-agri-card">
                                     <div className="wth-agri-head">
                                         <span className="wth-agri-icon">🦠</span>
                                         <span className="wth-agri-title">Disease Risk</span>
-                                        <span className="wth-risk-badge" style={{ color: riskColor(disease.risk), background: riskColor(disease.risk) + "18" }}>
-                                            {disease.risk}
+                                        <span className="wth-risk-badge" style={{ color: riskColor(diseaseRisk), background: riskColor(diseaseRisk) + "18" }}>
+                                            {diseaseRisk}
                                         </span>
                                     </div>
                                     <div className="wth-agri-body">
-                                        <p><strong>{disease.problem}</strong></p>
-                                        <p className="wth-agri-why">{disease.reason}</p>
-                                        <p className="wth-agri-action">✅ {disease.action}</p>
+                                        {diseaseAction && <p className="wth-agri-action">✅ {diseaseAction}</p>}
                                     </div>
                                 </div>
                             )}
 
                             {/* Irrigation */}
-                            {irrigation && (
+                            {decision && (
                                 <div className="wth-agri-card">
                                     <div className="wth-agri-head">
                                         <span className="wth-agri-icon">💧</span>
                                         <span className="wth-agri-title">Irrigation</span>
                                     </div>
                                     <div className="wth-agri-body">
-                                        <p><strong>{irrigation.decision}</strong></p>
-                                        <p className="wth-agri-why">{irrigation.reason}</p>
-                                        <p className="wth-agri-action">✅ {irrigation.action}</p>
+                                        {irrigationDecision && <p><strong>{irrigationDecision}</strong></p>}
+                                        {irrigationReason && <p className="wth-agri-why">{irrigationReason}</p>}
                                     </div>
                                 </div>
                             )}
@@ -674,29 +701,18 @@ Be specific, practical and actionable for a small to medium Indian farmer.`.trim
                             </div>
 
                             {/* Soil Moisture Estimate */}
-                            <div className="wth-agri-card">
-                                <div className="wth-agri-head">
-                                    <span className="wth-agri-icon">🪱</span>
-                                    <span className="wth-agri-title">Soil Moisture Est.</span>
+                            {decision && soilMoisture && (
+                                <div className="wth-agri-card">
+                                    <div className="wth-agri-head">
+                                        <span className="wth-agri-icon">🪱</span>
+                                        <span className="wth-agri-title">Soil Moisture Est.</span>
+                                    </div>
+                                    <div className="wth-agri-body">
+                                        <p>Status: <strong style={{ color: soilMoisture === "Dry" ? "#ef4444" : soilMoisture === "Saturated" ? "#3b82f6" : "#22c55e" }}>{soilMoisture}</strong></p>
+                                        {soilMoistureAction && <p className="wth-agri-why">{soilMoistureAction}</p>}
+                                    </div>
                                 </div>
-                                <div className="wth-agri-body">
-                                    {(() => {
-                                        const rain3 = weather.daily?.slice(0, 3).reduce((s, d) => s + (d.rainfall || 0), 0) || 0;
-                                        const temp = w?.temperature;
-                                        let status = "Adequate";
-                                        let note = "Soil moisture appears adequate for most crops.";
-                                        if (rain3 > 30) { status = "Saturated"; note = "Risk of waterlogging. Ensure field drainage is open."; }
-                                        else if (rain3 < 2 && temp > 35) { status = "Dry"; note = "Low rainfall + high temp. Irrigate soon to prevent stress."; }
-                                        else if (rain3 < 5) { status = "Low"; note = "Low recent rainfall. Monitor crop for moisture stress signs."; }
-                                        return (
-                                            <>
-                                                <p>3-day rain: <strong>{rain3.toFixed(1)} mm</strong> · Status: <strong style={{ color: status === "Dry" ? "#ef4444" : status === "Saturated" ? "#3b82f6" : "#22c55e" }}>{status}</strong></p>
-                                                <p className="wth-agri-why">{note}</p>
-                                            </>
-                                        );
-                                    })()}
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
 

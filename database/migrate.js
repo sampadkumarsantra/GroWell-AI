@@ -18,6 +18,9 @@ const MIGRATIONS = [
                 google_id      TEXT UNIQUE,
                 created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
+        `,
+        down: `
+            DROP TABLE IF EXISTS users
         `
     },
 
@@ -52,6 +55,9 @@ const MIGRATIONS = [
                 updated_at              TIMESTAMPTZ
                                         NOT NULL DEFAULT NOW()
             )
+        `,
+        down: `
+            DROP TABLE IF EXISTS subscriptions
         `
     },
 
@@ -63,6 +69,10 @@ const MIGRATIONS = [
 
             CREATE INDEX IF NOT EXISTS idx_subscriptions_status
                 ON subscriptions (status)
+        `,
+        down: `
+            DROP INDEX IF EXISTS idx_subscriptions_razorpay_sub_id;
+            DROP INDEX IF EXISTS idx_subscriptions_status;
         `
     },
 
@@ -79,6 +89,9 @@ const MIGRATIONS = [
 
                 created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
+        `,
+        down: `
+            DROP TABLE IF EXISTS usage_events
         `
     },
 
@@ -87,6 +100,9 @@ const MIGRATIONS = [
         up: `
             CREATE INDEX IF NOT EXISTS idx_usage_user_kind_time
                 ON usage_events (user_id, kind, created_at)
+        `,
+        down: `
+            DROP INDEX IF EXISTS idx_usage_user_kind_time;
         `
     },
 
@@ -102,6 +118,9 @@ const MIGRATIONS = [
             DROP TABLE IF EXISTS mandi_markets;
             DROP TABLE IF EXISTS mandi_collection_log;
             DROP TABLE IF EXISTS market_snapshots
+        `,
+        down: `
+            -- No DOWN migration for dropping tables (data loss)
         `
     }
 ];
@@ -158,5 +177,6 @@ async function migrate() {
 }
 
 module.exports = {
-    migrate
+    migrate,
+    MIGRATIONS
 };

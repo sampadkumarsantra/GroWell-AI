@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const { OAuth2Client } = require("google-auth-library");
+const rateLimit = require("express-rate-limit");
 
 const db = require("../database/pool");
 const {
@@ -15,24 +16,47 @@ const router = express.Router();
 
 
 // =====================================================
+// RATE LIMITING
+// =====================================================
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // limit each IP to 10 requests per windowMs
+    message: {
+        success: false,
+        message: "Too many requests from this IP, please try again after 15 minutes."
+    },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+const strictAuthLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: {
+        success: false,
+        message: "Too many attempts, please try again after 15 minutes."
+    },
+    standardHeaders: true,
+    legacyHeaders: false
+});
+
+
+// =====================================================
 // CONFIGURATION
 // =====================================================
 
 const JWT_SECRET =
-    process.env.JWT_SECRET ||
-    "growell-development-secret";
+    process.env.JWT_SECRET;
+
+if (process.env.NODE_ENV === "production" && !JWT_SECRET) {
+    throw new Error("JWT_SECRET must be set in production");
+}
 
 const GOOGLE_CLIENT_ID =
     process.env.GOOGLE_CLIENT_ID || "";
 
 const googleClient = new OAuth2Client();
-
-
-if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
-    console.warn(
-        "🚨 JWT_SECRET is not set. Sessions are signed with a publicly known value. Set it before taking payments."
-    );
-}
 
 
 // =====================================================
@@ -41,6 +65,7 @@ if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
 
 router.post(
     "/register",
+    strictAuthLimiter,
     async (req, res) => {
 
         try {
@@ -142,6 +167,7 @@ router.post(
 
 router.post(
     "/login",
+    strictAuthLimiter,
     async (req, res) => {
 
         try {
@@ -228,6 +254,7 @@ router.post(
 
 router.post(
     "/google",
+    authLimiter,
     async (req, res) => {
 
         try {

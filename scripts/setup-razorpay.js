@@ -28,8 +28,7 @@ const {
 
 const PREMIUM_PRICE_IN_PAISE = PLANS[PREMIUM].priceInPaise;
 
-const DEFAULT_WEBHOOK_BASE =
-    "https://growell-ai-2.onrender.com";
+const DEFAULT_WEBHOOK_BASE = "";
 
 const WEBHOOK_EVENTS = [
     "subscription.authenticated",
@@ -234,11 +233,18 @@ async function main() {
 
     const webhookBase = (
         argValue("url") ||
-        process.env.PUBLIC_BASE_URL ||
-        DEFAULT_WEBHOOK_BASE
-    ).replace(/\/+$/, "");
+        process.env.PUBLIC_BASE_URL
+    );
 
-    const webhookUrl = `${webhookBase}/api/billing/webhook`;
+    if (!webhookBase) {
+        fail(
+            "PUBLIC_BASE_URL must be set in .env or passed via --url=<your-app-url>.\n" +
+            "   This is the public URL where your app is accessible (e.g., https://your-app.onrender.com)."
+        );
+    }
+
+    const cleanBase = webhookBase.replace(/\/+$/, "");
+    const webhookUrl = `${cleanBase}/api/billing/webhook`;
 
     let webhookSecret = (
         process.env.RAZORPAY_WEBHOOK_SECRET || ""

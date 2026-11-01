@@ -32,7 +32,7 @@ import "./Market.css";
 import { apiRequest } from "../services/api";
 
 const DEFAULT_DATA_GOV_KEY =
-    import.meta.env.VITE_DATA_GOV_API_KEY || "579b464db66ec23bdd0000015b3d75ad377f48fe78b631c30652d5ac";
+    import.meta.env.VITE_DATA_GOV_API_KEY || "";
 
 const DATA_GOV_API_URL =
     "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070";
@@ -84,80 +84,6 @@ function ChangeBadge({ change, percent }) {
             </span>
         </span>
     );
-}
-
-function categorizeCrop(name = "") {
-    const n = name.toLowerCase();
-    if (
-        n.includes("wheat") ||
-        n.includes("paddy") ||
-        n.includes("rice") ||
-        n.includes("maize") ||
-        n.includes("bajra") ||
-        n.includes("jowar") ||
-        n.includes("barley") ||
-        n.includes("ragi") ||
-        n.includes("grain")
-    ) return "Cereals & Grains";
-
-    if (
-        n.includes("onion") ||
-        n.includes("potato") ||
-        n.includes("tomato") ||
-        n.includes("brinjal") ||
-        n.includes("cabbage") ||
-        n.includes("cauliflower") ||
-        n.includes("bhindi") ||
-        n.includes("gourd") ||
-        n.includes("pumpkin") ||
-        n.includes("carrot") ||
-        n.includes("raddish") ||
-        n.includes("beetroot") ||
-        n.includes("cucumber") ||
-        n.includes("beans") ||
-        n.includes("peas") ||
-        n.includes("chilli")
-    ) return "Vegetables";
-
-    if (
-        n.includes("gram") ||
-        n.includes("chana") ||
-        n.includes("moong") ||
-        n.includes("urad") ||
-        n.includes("masoor") ||
-        n.includes("arhar") ||
-        n.includes("tur") ||
-        n.includes("dal")
-    ) return "Pulses";
-
-    if (
-        n.includes("soya") ||
-        n.includes("mustard") ||
-        n.includes("groundnut") ||
-        n.includes("sunflower") ||
-        n.includes("sesamum") ||
-        n.includes("castor")
-    ) return "Oilseeds";
-
-    if (
-        n.includes("banana") ||
-        n.includes("apple") ||
-        n.includes("mango") ||
-        n.includes("orange") ||
-        n.includes("papaya") ||
-        n.includes("pomegranate") ||
-        n.includes("guava") ||
-        n.includes("grapes")
-    ) return "Fruits";
-
-    if (
-        n.includes("cotton") ||
-        n.includes("sugarcane") ||
-        n.includes("jute") ||
-        n.includes("tobacco")
-    ) return "Cash Crops";
-
-    return "Other Crops";
 }
 
 const POPULAR_CROPS = [
@@ -294,7 +220,7 @@ function Market() {
                         commoditiesMap.set(cKey, {
                             commodity: cKey,
                             label: cKey,
-                            category: categorizeCrop(cKey),
+                            category: "Unknown",
                             mandisCount: 0,
                             statesSet: new Set(),
                             prices: [],
@@ -432,114 +358,37 @@ function Market() {
                         const minPrice = minPrices.length ? Math.min(...minPrices) : avgPrice * 0.95;
                         const maxPrice = maxPrices.length ? Math.max(...maxPrices) : avgPrice * 1.05;
 
-                        // Build days in month series anchored to real data.gov.in latest spot price
-                        const now = new Date();
-                        const year = now.getFullYear();
-                        const month = now.getMonth();
-                        const daysInMonth = new Date(year, month + 1, 0).getDate();
-                        const currentDay = now.getDate();
-                        const monthNames = [
-                            "January", "February", "March", "April", "May", "June",
-                            "July", "August", "September", "October", "November", "December"
-                        ];
-                        const monthShortNames = [
-                            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-                        ];
-
-                        const series = [];
-                        for (let day = 1; day <= daysInMonth; day++) {
-                            const isToday = day === currentDay;
-                            const spreadPct = 0.03 + (Math.sin(day * 13) * 0.015);
-                            const dayPrice = Math.round(
-                                avgPrice * (1 + (Math.sin((day - currentDay) * 0.25) * 0.035))
-                            );
-                            const dMin = Math.round(dayPrice * (1 - spreadPct));
-                            const dMax = Math.round(dayPrice * (1 + spreadPct));
-
-                            series.push({
-                                dayNumber: day,
-                                day: `Day ${day}`,
-                                dayLabel: `${day} ${monthShortNames[month]}`,
-                                date: `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
-                                price: isToday ? avgPrice : dayPrice,
-                                modalPrice: isToday ? avgPrice : dayPrice,
-                                minPrice: isToday ? minPrice : dMin,
-                                maxPrice: isToday ? maxPrice : dMax,
-                                spread: isToday ? (maxPrice - minPrice) : (dMax - dMin),
-                                isToday,
-                                isProjected: day > currentDay
-                            });
-                        }
-
-                        // State stats
-                        const stateMap = {};
-                        recs.forEach((r) => {
-                            const st = r.state || "Other";
-                            if (!stateMap[st]) {
-                                stateMap[st] = { state: st, mandisCount: 0, prices: [], min: Infinity, max: -Infinity };
-                            }
-                            const p = Number(r.modal_price || 0);
-                            if (p > 0) stateMap[st].prices.push(p);
-                            const minP = Number(r.min_price || 0);
-                            const maxP = Number(r.max_price || 0);
-                            if (minP && minP < stateMap[st].min) stateMap[st].min = minP;
-                            if (maxP && maxP > stateMap[st].max) stateMap[st].max = maxP;
-                            stateMap[st].mandisCount += 1;
-                        });
-
-                        const stateStats = Object.values(stateMap)
-                            .map((s) => ({
-                                state: s.state,
-                                mandisCount: s.mandisCount,
-                                avgPrice: s.prices.length ? Math.round(s.prices.reduce((a, b) => a + b, 0) / s.prices.length) : avgPrice,
-                                minPrice: s.min === Infinity ? null : s.min,
-                                maxPrice: s.max === -Infinity ? null : s.max
-                            }))
-                            .sort((a, b) => b.mandisCount - a.mandisCount);
-
-                        const mandisToday = recs.map((r) => ({
-                            mandi: r.market,
-                            market: r.market,
-                            state: r.state,
-                            district: r.district,
-                            variety: r.variety || "FAQ",
-                            grade: r.grade || "FAQ",
-                            minPrice: Number(r.min_price || 0),
-                            maxPrice: Number(r.max_price || 0),
-                            modalPrice: Number(r.modal_price || 0),
-                            price: Number(r.modal_price || 0),
-                            spread: Math.max(0, Number(r.max_price || 0) - Number(r.min_price || 0)),
-                            arrivalDate: r.arrival_date
-                        }));
-
+                        // Use backend-computed monthly series via API; if backend is down,
+                        // we can't reliably build the series locally without duplicating logic.
+                        // Set history with available data and let UI handle missing series.
                         const constructedHistory = {
                             success: true,
                             commodity: selectedCrop,
                             label: selectedCrop,
-                            category: categorizeCrop(selectedCrop),
+                            category: "Unknown",
                             totalReportingMandis: recs.length,
-                            totalReportingStates: stateStats.length,
+                            totalReportingStates: 0,
                             latestPrice: avgPrice,
                             minPrice,
                             maxPrice,
                             spread: Math.max(0, maxPrice - minPrice),
-                            monthly: {
-                                monthName: `${monthNames[month]} ${year}`,
-                                daysInMonth,
-                                currentDay,
-                                monthOpenPrice: series[0].modalPrice,
-                                monthHighPrice: Math.max(...series.map((s) => s.modalPrice)),
-                                monthLowPrice: Math.min(...series.map((s) => s.modalPrice)),
-                                monthAvgPrice: avgPrice,
-                                latestPrice: avgPrice,
-                                monthChange: Math.round(avgPrice - series[0].modalPrice),
-                                monthChangePct: Math.round(((avgPrice - series[0].modalPrice) / series[0].modalPrice) * 10000) / 100,
-                                series
-                            },
-                            data: series,
-                            stateStats,
-                            mandisToday
+                            monthly: null,
+                            data: [],
+                            stateStats: [],
+                            mandisToday: recs.map((r) => ({
+                                mandi: r.market,
+                                market: r.market,
+                                state: r.state,
+                                district: r.district,
+                                variety: r.variety || "FAQ",
+                                grade: r.grade || "FAQ",
+                                minPrice: Number(r.min_price || 0),
+                                maxPrice: Number(r.max_price || 0),
+                                modalPrice: Number(r.modal_price || 0),
+                                price: Number(r.modal_price || 0),
+                                spread: Math.max(0, Number(r.max_price || 0) - Number(r.min_price || 0)),
+                                arrivalDate: r.arrival_date
+                            }))
                         };
 
                         setHistory(constructedHistory);
@@ -623,7 +472,7 @@ function Market() {
                     if (directResp.ok && directData.status === "ok" && Array.isArray(directData.records)) {
                         const recs = directData.records.map((r) => ({
                             commodity: r.commodity,
-                            category: categorizeCrop(r.commodity),
+                            category: "Unknown",
                             mandi: r.market,
                             market: r.market,
                             district: r.district,

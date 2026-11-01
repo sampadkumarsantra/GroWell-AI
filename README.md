@@ -395,7 +395,7 @@ GroWell AI follows a client-server architecture.
 
 ## Database
 
-- SQLite
+- PostgreSQL
 
 ## Development
 
