@@ -120,7 +120,7 @@ function Market() {
     // Historical & Monthly Price Graph State
     const [history, setHistory] = useState(null);
     const [historyLoading, setHistoryLoading] = useState(false);
-    const [chartMode, setChartMode] = useState("daysInMonth"); // "daysInMonth" or "stateCompare"
+    const [chartMode, setChartMode] = useState("last30Days"); // "last30Days", "daysInMonth", "stateCompare"
 
     // Today's Mandis table filters
     const [mandiSearch, setMandiSearch] = useState("");
@@ -557,6 +557,55 @@ function Market() {
         return history.monthly.series;
     }, [history]);
 
+    // Last 30 Days price series (rolling 30 calendar days)
+    const last30DaysSeries = useMemo(() => {
+        if (!history?.mandisToday || !Array.isArray(history.mandisToday)) {
+            return [];
+        }
+        const now = new Date();
+        const series = [];
+        
+        // Get unique dates from mandisToday records, sort descending, take last 30
+        const datePriceMap = new Map();
+        history.mandisToday.forEach((record) => {
+            if (record.arrivalDate && record.modalPrice > 0) {
+                const date = record.arrivalDate;
+                if (!datePriceMap.has(date) || record.modalPrice > datePriceMap.get(date).price) {
+                    datePriceMap.set(date, {
+                        price: record.modalPrice,
+                        minPrice: record.minPrice || record.modalPrice,
+                        maxPrice: record.maxPrice || record.modalPrice
+                    });
+                }
+            }
+        });
+        
+        // Sort dates and take last 30
+        const sortedDates = Array.from(datePriceMap.keys())
+            .sort((a, b) => new Date(a) - new Date(b))
+            .slice(-30);
+        
+        sortedDates.forEach((date, index) => {
+            const data = datePriceMap.get(date);
+            const d = new Date(date);
+            const dayLabel = d.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+            series.push({
+                dayNumber: index + 1,
+                day: `Day ${index + 1}`,
+                dayLabel,
+                date,
+                price: data.price,
+                modalPrice: data.price,
+                minPrice: data.minPrice,
+                maxPrice: data.maxPrice,
+                spread: Math.round((data.maxPrice - data.minPrice) * 100) / 100,
+                isToday: date === now.toISOString().split("T")[0]
+            });
+        });
+        
+        return series;
+    }, [history]);
+
     // State comparison chart data for selected commodity
     const stateChartData = useMemo(() => {
         if (!history?.stateStats || !Array.isArray(history.stateStats)) {
@@ -964,21 +1013,35 @@ function Market() {
                                 </div>
                             </div>
 
-                            {/* GRAPHICAL REPRESENTATION OF PRICE WITH DAYS IN MONTH */}
+                            {/* GRAPHICAL REPRESENTATION OF PRICE */}
                             <div className="chart-card">
                                 <div className="chart-header">
                                     <div>
                                         <span className="chart-label">
-                                            📈 Graphical Representation: Price vs Days in Month
+                                            {chartMode === "last30Days" ? "📈 Last 30 Days Price Trend" :
+                                             chartMode === "daysInMonth" ? "📈 Graphical Representation: Price vs Days in Month" :
+                                             "📊 State-Wise Price Comparison"}
                                         </span>
                                         <span className="chart-subtitle">
                                             <Calendar size={13} />
-                                            {history?.monthly?.monthName || "Current Month"} · Day 1 to Day {history?.monthly?.daysInMonth || 31} Timeline (₹ / Quintal)
+                                            {chartMode === "last30Days" ? "Rolling 30 Calendar Days from data.gov.in Mandi Records (₹ / Quintal)" :
+                                             chartMode === "daysInMonth" ? `${history?.monthly?.monthName || "Current Month"} · Day 1 to Day ${history?.monthly?.daysInMonth || 31} Timeline (₹ / Quintal)` :
+                                             `Average mandi prices across top reporting states for ${history?.label || selectedCrop} (₹ / Quintal)`}
                                         </span>
                                     </div>
 
                                     {/* Chart Mode Toggles */}
                                     <div className="chart-mode-toggles">
+                                        <button
+                                            type="button"
+                                            className={
+                                                "chart-mode-btn" +
+                                                (chartMode === "last30Days" ? " active" : "")
+                                            }
+                                            onClick={() => setChartMode("last30Days")}
+                                        >
+                                            Last 30 Days
+                                        </button>
                                         <button
                                             type="button"
                                             className={
@@ -1006,8 +1069,134 @@ function Market() {
                                     {historyLoading ? (
                                         <div className="chart-loading">
                                             <RefreshCw size={24} className="spin" />
-                                            <span>Plotting price graph across days in month...</span>
+                                            <span>Plotting price graph...</span>
                                         </div>
+                                    ) : chartMode === "last30Days" ? (
+                                        last30DaysSeries.length > 0 ? (
+                                            <div>
+                                                <ResponsiveContainer width="100%" height={360}>
+                                                    <AreaChart
+                                                        data={last30DaysSeries}
+                                                        margin={{ top: 20, right: 30, left: 15, bottom: 10 }}
+                                                    >
+                                                        <defs>
+                                                            <linearGradient id="priceGradient30" x1="0" y1="0" x2="0" y2="1">
+                                                                <stop offset="5%" stopColor="#1e513b" stopOpacity={0.4} />
+                                                                <stop offset="95%" stopColor="#1e513b" stopOpacity={0.02} />
+                                                            </linearGradient>
+                                                        </defs>
+                                                        <CartesianGrid
+                                                            strokeDasharray="3 3"
+                                                            stroke="#e6dec9"
+                                                            vertical={false}
+                                                        />
+                                                        <XAxis
+                                                            dataKey="dayLabel"
+                                                            tick={{ fontSize: 11, fill: "#5c6b54" }}
+                                                            stroke="#8b9982"
+                                                            tickLine={false}
+                                                            interval="preserveStartEnd"
+                                                        />
+                                                        <YAxis
+                                                            domain={["auto", "auto"]}
+                                                            tickFormatter={(val) => `₹${Number(val).toLocaleString("en-IN")}`}
+                                                            tick={{ fontSize: 11, fill: "#5c6b54" }}
+                                                            stroke="#8b9982"
+                                                            tickLine={false}
+                                                            axisLine={false}
+                                                            width={82}
+                                                        />
+                                                        <Tooltip
+                                                            content={({ active, payload }) => {
+                                                                if (!active || !payload || !payload.length) return null;
+                                                                const d = payload[0].payload;
+                                                                return (
+                                                                    <div className="chart-custom-tooltip">
+                                                                        <div className="tooltip-head">
+                                                                            <strong>{d.dayLabel}</strong>
+                                                                            {d.isToday && <span className="today-chip">Today (Live)</span>}
+                                                                        </div>
+                                                                        <div className="tooltip-body">
+                                                                            <div className="tooltip-row modal-row">
+                                                                                <span>Modal Price:</span>
+                                                                                <strong>{formatPrice(d.modalPrice)}/qtl</strong>
+                                                                            </div>
+                                                                            <div className="tooltip-row">
+                                                                                <span>Max Price:</span>
+                                                                                <span>{formatPrice(d.maxPrice)}</span>
+                                                                            </div>
+                                                                            <div className="tooltip-row">
+                                                                                <span>Min Price:</span>
+                                                                                <span>{formatPrice(d.minPrice)}</span>
+                                                                            </div>
+                                                                            <div className="tooltip-row spread-row">
+                                                                                <span>Daily Spread:</span>
+                                                                                <span>{formatPrice(d.spread)}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            }}
+                                                        />
+                                                        <Area
+                                                            type="monotone"
+                                                            dataKey="modalPrice"
+                                                            name="Modal Price"
+                                                            stroke="#1e513b"
+                                                            strokeWidth={3}
+                                                            fill="url(#priceGradient30)"
+                                                            dot={{ r: 3, fill: "#1e513b", strokeWidth: 0 }}
+                                                            activeDot={{ r: 6, fill: "#b08d57", stroke: "#1e513b", strokeWidth: 2 }}
+                                                        />
+                                                        <Line
+                                                            type="monotone"
+                                                            dataKey="maxPrice"
+                                                            name="Max Price Band"
+                                                            stroke="#b08d57"
+                                                            strokeWidth={1.5}
+                                                            strokeDasharray="4 4"
+                                                            dot={false}
+                                                        />
+                                                        <Line
+                                                            type="monotone"
+                                                            dataKey="minPrice"
+                                                            name="Min Price Band"
+                                                            stroke="#4a7a86"
+                                                            strokeWidth={1.5}
+                                                            strokeDasharray="4 4"
+                                                            dot={false}
+                                                        />
+                                                    </AreaChart>
+                                                </ResponsiveContainer>
+
+                                                <div className="chart-legend-bar">
+                                                    <div className="legend-items">
+                                                        <span className="legend-item">
+                                                            <span className="legend-dot modal-dot"></span> Average Modal Price
+                                                        </span>
+                                                        <span className="legend-item">
+                                                            <span className="legend-dot max-dot"></span> Max Price Band
+                                                        </span>
+                                                        <span className="legend-item">
+                                                            <span className="legend-dot min-dot"></span> Min Price Band
+                                                        </span>
+                                                    </div>
+                                                    <div className="month-performance-chips">
+                                                        <span>
+                                                            30-Day Avg: <strong>{last30DaysSeries.length > 0 ? formatPrice(Math.round(last30DaysSeries.reduce((a, b) => a + b.modalPrice, 0) / last30DaysSeries.length)) : "—"}</strong>
+                                                        </span>
+                                                        <span>
+                                                            30-Day High: <strong>{last30DaysSeries.length > 0 ? formatPrice(Math.max(...last30DaysSeries.map(d => d.maxPrice))) : "—"}</strong>
+                                                        </span>
+                                                        <span>
+                                                            30-Day Low: <strong>{last30DaysSeries.length > 0 ? formatPrice(Math.min(...last30DaysSeries.map(d => d.minPrice))) : "—"}</strong>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="chart-loading">No price data for last 30 days.</div>
+                                        )
                                     ) : chartMode === "daysInMonth" ? (
                                         monthlySeries.length > 0 ? (
                                             <div>
