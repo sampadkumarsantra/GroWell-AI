@@ -5,14 +5,12 @@ import {
     TrendingUp,
     Sprout,
     Settings,
-    BookOpen,
-    Lock
+    BookOpen
 } from "lucide-react";
 
 import "./Sidebar.css";
 import logo from "../../assets/logo.png";
 import GrowthJourney from "../GrowthJourney/GrowthJourney";
-import { usePremium } from "../../context/PremiumContext";
 
 const menu = [
     { icon: MessageSquare, label: "Chat" },
@@ -25,18 +23,10 @@ const menu = [
 ];
 
 function Sidebar({ activePage, setActivePage }) {
-    const { isPremium } = usePremium();
 
     function handleMenuClick(label) {
         setActivePage(label);
     }
-
-    // Soil Health is a GroWell Premium feature. Free users still see the
-    // entry, but it renders as locked until they have an active premium.
-    const visibleMenu = menu.map((item) => ({
-        ...item,
-        locked: item.label === "Soil Health" && !isPremium,
-    }));
 
     return (
         <aside className="sidebar">
@@ -65,8 +55,8 @@ function Sidebar({ activePage, setActivePage }) {
             ========================= */}
             <nav className="gw-nav">
 
-                {visibleMenu.map((item) => {
-                    const Icon = item.locked ? Lock : item.icon;
+                {menu.map((item) => {
+                    const Icon = item.icon;
 
                     return (
                         <button
@@ -81,12 +71,6 @@ function Sidebar({ activePage, setActivePage }) {
                                     : ""
                             ].filter(Boolean).join(" ")}
                             onClick={() => {
-                                if (item.locked) {
-                                    // Soil Health is premium-only: send the
-                                    // farmer to the upgrade surface.
-                                    setActivePage("Premium");
-                                    return;
-                                }
                                 handleMenuClick(item.label);
                             }}
                         >

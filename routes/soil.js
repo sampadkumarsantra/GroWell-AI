@@ -2,22 +2,14 @@ const express = require("express");
 const router = express.Router();
 
 const { analyzeSoil } = require("../services/soilAnalysis");
-const {
-    authenticateToken,
-    requirePremium
-} = require("../middleware/auth");
+const { authenticateToken } = require("../middleware/auth");
 
 /*
- * Soil Intelligence is a GroWell Premium feature.
- *
- * The premium check runs server-side through requirePremium, so the
- * gate cannot be bypassed from the client. Unauthenticated callers get a
- * 401; authenticated free-tier callers get a 403 PREMIUM_REQUIRED.
+ * Soil Intelligence is now available for all users.
  */
 router.post(
     "/analyze",
     authenticateToken,
-    requirePremium,
     (req, res) => {
         try {
             const result = analyzeSoil(req.body);
