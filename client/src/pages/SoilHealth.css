@@ -1,773 +1,1122 @@
 /* =====================================================
-   GROWELL — SOIL HEALTH (light editorial)
+   GROWELL — SOIL TESTING LABORATORY
+   Light editorial · forest + brass · printable report
    ===================================================== */
 
 .soil-page {
     width: 100%;
     min-height: 100vh;
-    padding: 32px;
+    padding: 28px 32px 48px;
     box-sizing: border-box;
     color: var(--gw-ink-soft);
     background:
-        radial-gradient(circle at 10% 0%, rgba(176, 141, 87, 0.09), transparent 30%),
-        radial-gradient(circle at 90% 10%, rgba(30, 81, 59, 0.05), transparent 32%);
+        radial-gradient(circle at 8% 0%, rgba(176, 141, 87, 0.10), transparent 32%),
+        radial-gradient(circle at 92% 8%, rgba(30, 81, 59, 0.06), transparent 34%);
 }
 
 /* =====================================================
-   HEADER
+   HERO / MASTHEAD
    ===================================================== */
 
-.soil-header {
+.soil-hero {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    margin-bottom: 28px;
+    gap: 28px;
+    padding: 24px 26px;
+    border-radius: 18px;
+    margin-bottom: 22px;
+    border: 1px solid var(--gw-line);
+    background:
+        linear-gradient(135deg, rgba(30, 81, 59, 0.97) 0%, rgba(20, 43, 33, 0.97) 100%);
+    color: #f6f2e8;
+    box-shadow: var(--shadow-medium);
 }
 
 .soil-eyebrow {
-    color: var(--gw-brass);
+    color: var(--gw-brass-2);
     font-family: var(--font-heading);
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
     font-style: italic;
-    letter-spacing: 0.5px;
-    margin-bottom: 12px;
-    display: block;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
 }
 
-.soil-header h1 {
+.soil-hero h1 {
     margin: 0;
-    font-size: 32px;
+    font-size: 30px;
     font-weight: 600;
     letter-spacing: -0.02em;
-    color: var(--gw-ink);
+    color: #fdfcf7;
+    font-family: var(--font-heading);
 }
 
-.soil-header p {
-    margin: 9px 0 0;
-    color: var(--gw-muted);
+.soil-hero p {
+    margin: 8px 0 0;
+    color: rgba(246, 242, 232, 0.75);
     font-size: 13px;
+    max-width: 560px;
+    line-height: 1.55;
 }
 
-.soil-live {
+.soil-hero-meta {
+    display: grid;
+    gap: 10px;
+    min-width: 260px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.soil-hero-meta-row {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 9px 14px;
-    border-radius: 999px;
-    border: 1px solid rgba(79, 122, 90, 0.32);
-    background: var(--gw-paper);
-    color: var(--gw-ok);
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    white-space: nowrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 14px;
+    font-size: 12px;
 }
 
-.soil-live span {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--gw-ok);
-    box-shadow: 0 0 0 4px rgba(79, 122, 90, 0.13);
+.soil-hero-meta-row span {
+    color: rgba(246, 242, 232, 0.55);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-size: 10px;
+}
+
+.soil-hero-meta-row strong {
+    color: #fdfcf7;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.soil-hero-meta-row strong.ok {
+    color: #8fd0a8;
+}
+
+.soil-hero-meta-row strong.pending {
+    color: #e6c878;
 }
 
 /* =====================================================
-   INPUTS
+   FORM PANELS
    ===================================================== */
 
-.soil-input-grid {
+.soil-form {
     display: grid;
-    grid-template-columns: 1fr 1.2fr;
-    gap: 18px;
+    gap: 16px;
 }
 
-.soil-card {
-    padding: 23px;
-}
-
-.soil-card,
-.soil-result-card,
-.soil-fingerprint,
-.action-card,
-.regeneration-card {
+.soil-panel {
     background: var(--gw-paper);
     border: 1px solid var(--gw-line);
-    border-radius: 20px;
+    border-radius: 18px;
+    padding: 20px 22px;
     box-shadow: var(--shadow-soft);
-    box-sizing: border-box;
 }
 
-.soil-card-header {
+.soil-panel-head {
     display: flex;
-    align-items: center;
-    gap: 13px;
-    margin-bottom: 20px;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--gw-line);
 }
 
-.soil-card-icon {
-    width: 42px;
-    height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 13px;
-    background: rgba(176, 141, 87, 0.12);
+.soil-step {
+    font-family: var(--font-code);
+    font-size: 12px;
+    font-weight: 600;
     color: var(--gw-brass);
-    font-size: 20px;
+    background: rgba(176, 141, 87, 0.12);
+    border: 1px solid rgba(176, 141, 87, 0.35);
+    border-radius: 8px;
+    padding: 6px 9px;
+    line-height: 1;
+    margin-top: 2px;
 }
 
-.soil-card-header h2 {
+.soil-panel-head h2 {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
     color: var(--gw-ink);
+    letter-spacing: -0.01em;
 }
 
-.soil-card-header p {
-    margin: 4px 0 0;
+.soil-panel-head h2 em {
+    font-style: italic;
+    font-weight: 400;
     color: var(--gw-muted);
-    font-size: 11px;
+    font-size: 12px;
 }
 
-.soil-fields {
+.soil-panel-head p {
+    margin: 3px 0 0;
+    font-size: 12px;
+    color: var(--gw-muted);
+}
+
+.soil-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
+    gap: 14px;
+    margin-top: 12px;
+}
+
+.soil-grid:first-of-type {
+    margin-top: 0;
+}
+
+.soil-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.soil-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.soil-grid-5 { grid-template-columns: repeat(5, 1fr); }
+
+@media (max-width: 1100px) {
+    .soil-grid-4, .soil-grid-5 { grid-template-columns: repeat(2, 1fr); }
+    .soil-grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 720px) {
+    .soil-grid-3, .soil-grid-4, .soil-grid-5 { grid-template-columns: 1fr; }
+    .soil-hero { flex-direction: column; align-items: flex-start; }
+    .soil-hero-meta { width: 100%; box-sizing: border-box; }
 }
 
 .soil-field {
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 6px;
 }
 
 .soil-field label {
-    color: var(--gw-ink);
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--gw-muted);
+}
+
+.soil-field label em {
+    text-transform: none;
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--gw-faint);
+    font-size: 11px;
 }
 
 .soil-field input,
 .soil-field select {
-    width: 100%;
-    height: 44px;
-    padding: 0 12px;
-    box-sizing: border-box;
-    border-radius: 10px;
-    border: 1px solid var(--gw-line-2);
-    background: var(--gw-paper-2);
-    color: var(--gw-ink);
-    outline: none;
+    font-family: var(--font-body);
     font-size: 14px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    color: var(--gw-ink);
+    background: var(--gw-paper-2);
+    border: 1px solid var(--gw-line-2);
+    border-radius: 10px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .soil-field input:focus,
 .soil-field select:focus {
-    border-color: var(--gw-brass);
+    border-color: var(--gw-forest);
     box-shadow: var(--shadow-glow);
+    background: #fff;
 }
 
-/* =====================================================
-   ANALYZE BUTTON
-   ===================================================== */
-
-.soil-analyze {
-    width: 100%;
-    height: 50px;
-    margin-top: 18px;
-    border: none;
-    border-radius: 12px;
-    background: var(--gw-forest);
-    color: var(--gw-paper);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 10px 24px rgba(30, 81, 59, 0.22);
-    transition: background 0.2s ease, transform 0.2s ease;
+.soil-field-hint {
+    font-size: 11px;
+    color: var(--gw-faint);
 }
 
-.soil-analyze:hover {
-    background: var(--gw-forest-2);
-    transform: translateY(-1px);
-}
-
-.soil-analyze:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* =====================================================
-   RESULTS
-   ===================================================== */
-
-.soil-results {
+.soil-input-suffix {
+    position: relative;
     display: flex;
-    flex-direction: column;
-    gap: 18px;
-    margin-top: 20px;
-}
-
-.section-label {
-    display: block;
-    color: var(--gw-brass);
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-}
-
-.soil-fingerprint {
-    padding: 25px;
-}
-
-.section-top {
-    display: flex;
-    justify-content: space-between;
     align-items: center;
 }
 
-.section-top h2,
-.soil-result-card h2,
-.action-card h2,
-.regeneration-card h2 {
-    margin: 0;
-    font-size: 19px;
+.soil-input-suffix input {
+    padding-right: 64px;
+}
+
+.soil-input-suffix span {
+    position: absolute;
+    right: 12px;
+    font-size: 11px;
     font-weight: 600;
-    color: var(--gw-ink);
+    color: var(--gw-faint);
+    letter-spacing: 0.4px;
+    pointer-events: none;
 }
 
-.section-top p {
-    margin: 7px 0 0;
-    color: var(--gw-muted);
-    font-size: 12px;
-}
+/* Segmented controls */
 
-.soil-score {
-    text-align: right;
-}
-
-.soil-score strong {
-    font-size: 42px;
-    font-weight: 700;
-    color: var(--gw-forest);
-    line-height: 1;
-}
-
-.soil-score span {
-    color: var(--gw-muted);
-    font-size: 13px;
-}
-
-.soil-score small {
-    display: block;
-    margin-top: 4px;
-    color: var(--gw-forest);
-    font-size: 9px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    font-weight: 600;
-}
-
-/* =====================================================
-   FINGERPRINT
-   ===================================================== */
-
-.fingerprint-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-top: 22px;
-}
-
-.fingerprint-grid > div {
-    padding: 17px;
-    border-radius: 14px;
-    background: var(--gw-paper-2);
+.soil-panel-toolbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--gw-cream);
     border: 1px solid var(--gw-line);
 }
 
-.fingerprint-grid span {
-    display: block;
-    color: var(--gw-faint);
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.6px;
-    text-transform: uppercase;
+.soil-seg {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 10px;
+    background: #e9e4d4;
 }
 
-.fingerprint-grid strong {
-    display: block;
-    margin-top: 8px;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--gw-ink);
-}
-
-/* =====================================================
-   INTELLIGENCE
-   ===================================================== */
-
-.intelligence-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-}
-
-.soil-result-card {
-    padding: 24px;
-}
-
-.constraint {
-    display: flex;
-    gap: 14px;
-    padding: 16px 0;
-    border-top: 1px solid var(--gw-line);
-}
-
-.constraint.primary {
-    margin-top: 20px;
-}
-
-.constraint-number {
-    color: var(--gw-faint);
+.soil-seg button {
+    border: none;
+    background: transparent;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-family: var(--font-body);
     font-size: 12px;
-    font-weight: 700;
-}
-
-.constraint small {
-    display: block;
-    color: var(--gw-faint);
-    font-size: 9px;
-    letter-spacing: 1.2px;
-    text-transform: uppercase;
     font-weight: 600;
-}
-
-.constraint strong {
-    display: block;
-    margin-top: 5px;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--gw-ink);
-}
-
-.constraint p {
-    margin: 7px 0 0;
     color: var(--gw-muted);
-    font-size: 12px;
-    line-height: 1.6;
+    cursor: pointer;
+    transition: background var(--transition), color var(--transition);
 }
 
-/* =====================================================
-   CROP FIT
-   ===================================================== */
-
-.fit-score {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    margin: 24px 0;
-}
-
-.fit-score strong {
-    font-size: 38px;
-    font-weight: 700;
+.soil-seg button.active {
+    background: var(--gw-paper);
     color: var(--gw-forest);
-    line-height: 1;
+    box-shadow: var(--shadow-soft);
 }
 
-.fit-score span {
-    color: var(--gw-muted);
-    font-size: 13px;
-}
+/* Run bar */
 
-.fit-row {
+.soil-run-bar {
     display: flex;
-    justify-content: space-between;
-    padding: 13px 0;
-    border-top: 1px solid var(--gw-line);
-    font-size: 12.5px;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 18px 20px;
+    border-radius: 16px;
+    border: 1px dashed var(--gw-line-2);
+    background: rgba(176, 141, 87, 0.06);
 }
 
-.fit-row span {
-    color: var(--gw-muted);
-}
-
-.fit-row strong {
+.soil-run-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: none;
+    cursor: pointer;
+    padding: 14px 26px;
+    border-radius: 12px;
+    font-family: var(--font-body);
+    font-size: 15px;
     font-weight: 600;
-    color: var(--gw-ink);
+    color: #fdfcf7;
+    background: linear-gradient(135deg, var(--gw-forest) 0%, var(--gw-forest-deep) 100%);
+    box-shadow: var(--shadow-medium);
+    transition: transform var(--transition), box-shadow var(--transition);
 }
 
-/* =====================================================
-   NUTRIENTS
-   ===================================================== */
-
-.nutrient-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 18px;
-    margin-top: 23px;
+.soil-run-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 28px rgba(20, 43, 33, 0.28);
 }
 
-.nutrient-item > div:first-child {
-    display: flex;
-    justify-content: space-between;
+.soil-run-primary:disabled {
+    opacity: 0.7;
+    cursor: progress;
+}
+
+.soil-run-secondary {
+    display: inline-flex;
     align-items: center;
     gap: 8px;
-}
-
-.nutrient-item span {
-    color: var(--gw-faint);
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.6px;
-}
-
-.nutrient-item strong {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--gw-ink);
-}
-
-.nutrient-bar {
-    height: 6px;
-    margin-top: 10px;
-    overflow: hidden;
-    border-radius: 10px;
-    background: rgba(30, 81, 59, 0.10);
-}
-
-.nutrient-bar i {
-    display: block;
-    height: 100%;
-    border-radius: 10px;
-    background: var(--gw-forest-2);
-}
-
-/* =====================================================
-   RISK
-   ===================================================== */
-
-.risk-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-top: 22px;
-}
-
-.risk-grid > div {
-    padding: 16px;
-    border-radius: 13px;
-    background: var(--gw-paper-2);
-    border: 1px solid var(--gw-line);
-}
-
-.risk-grid span {
-    display: block;
-    color: var(--gw-muted);
-    font-size: 11px;
-}
-
-.risk-grid strong {
-    display: block;
-    margin-top: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--gw-ink);
-}
-
-/* =====================================================
-   ACTION
-   ===================================================== */
-
-.action-card {
-    padding: 25px;
-    border-color: rgba(176, 141, 87, 0.35);
-    background:
-        linear-gradient(135deg, rgba(176, 141, 87, 0.08), var(--gw-paper));
-}
-
-.action-list {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-    margin-top: 22px;
-}
-
-.action-list > div {
-    display: flex;
-    gap: 13px;
-    padding: 17px;
-    border-radius: 14px;
-    background: var(--gw-cream-2);
-    border: 1px solid var(--gw-line);
-}
-
-.action-list b {
-    color: var(--gw-brass);
+    cursor: pointer;
+    padding: 12px 18px;
+    border-radius: 12px;
+    border: 1px solid var(--gw-line-2);
+    background: var(--gw-paper);
+    color: var(--gw-ink-soft);
+    font-family: var(--font-body);
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 600;
+    transition: border-color var(--transition);
 }
 
-.action-list p {
+.soil-run-secondary:hover:not(:disabled) {
+    border-color: var(--gw-forest);
+}
+
+.soil-run-hint {
     margin: 0;
-    color: var(--gw-muted);
     font-size: 12px;
-    line-height: 1.6;
+    color: var(--gw-muted);
+    flex: 1 1 240px;
 }
 
-.action-list strong {
-    display: block;
-    color: var(--gw-ink);
-    margin-bottom: 4px;
+.soil-error {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(179, 74, 63, 0.4);
+    background: rgba(179, 74, 63, 0.08);
+    color: var(--gw-danger);
     font-size: 13px;
+    font-weight: 500;
 }
 
 /* =====================================================
-   REGENERATION
+   REPORT (PRINT-GRADE)
    ===================================================== */
 
-.regeneration-card {
+.soil-report {
+    margin-top: 26px;
+    background: #ffffff;
+    color: #1c2a22;
+    border: 1px solid var(--gw-line-2);
+    border-radius: 6px;
+    box-shadow: var(--shadow-medium);
+    padding: 34px 38px;
+    font-family: var(--font-body);
+}
+
+/* Letterhead */
+
+.report-letterhead {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 26px;
-    border-color: rgba(176, 141, 87, 0.32);
+    align-items: flex-end;
+    gap: 24px;
+    padding-bottom: 18px;
+    border-bottom: 3px double var(--gw-forest);
 }
 
-.regeneration-card p {
-    margin: 8px 0 0;
-    color: var(--gw-muted);
-    font-size: 12px;
-}
-
-.regeneration-score {
-    text-align: center;
-}
-
-.regeneration-score strong {
-    font-size: 42px;
-    font-weight: 700;
-    color: var(--gw-forest);
-    line-height: 1;
-}
-
-.regeneration-score span {
-    color: var(--gw-muted);
-    font-size: 13px;
-}
-
-/* =====================================================
-   STATUS HIGHLIGHTS (scoped to soil page)
-   ===================================================== */
-
-.soil-page .good {
-    display: inline-block;
-    color: var(--gw-ok) !important;
-    background: rgba(79, 122, 90, 0.10);
-    border: 1px solid rgba(79, 122, 90, 0.28);
-    padding: 5px 11px;
-    border-radius: 999px;
-    font-weight: 600;
-    font-size: 12px;
-}
-
-.soil-page .warning {
-    display: inline-block;
-    color: var(--gw-warn) !important;
-    background: rgba(168, 128, 60, 0.10);
-    border: 1px solid rgba(168, 128, 60, 0.30);
-    padding: 5px 11px;
-    border-radius: 999px;
-    font-weight: 600;
-    font-size: 12px;
-}
-
-.soil-page .danger {
-    display: inline-block;
-    color: var(--gw-danger) !important;
-    background: rgba(179, 74, 63, 0.09);
-    border: 1px solid rgba(179, 74, 63, 0.28);
-    padding: 5px 11px;
-    border-radius: 999px;
-    font-weight: 600;
-    font-size: 12px;
-}
-
-/* =====================================================
-   GROWELL RECOMMENDATION CARD
-   ===================================================== */
-
-.growell-recommendation {
-    position: relative;
-    overflow: hidden;
-    margin-top: 18px;
-    padding: 24px;
-    background: var(--gw-paper);
-    border: 1px solid var(--gw-line);
-    border-radius: 20px;
-}
-
-.growell-recommendation .recommendation-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-top: 20px;
-    margin-bottom: 4px;
-}
-
-.growell-recommendation .recommendation-item {
-    min-width: 0;
-    padding: 16px;
-    border: 1px solid var(--gw-line);
-    border-radius: 14px;
-    background: var(--gw-paper-2);
-}
-
-.growell-recommendation .recommendation-item span {
-    display: block;
-    margin-bottom: 7px;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--gw-faint);
-}
-
-.growell-recommendation .recommendation-item strong {
-    display: block;
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 1.45;
-    color: var(--gw-ink);
-}
-
-.recommendation-box {
+.report-letterhead-left {
     display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 18px;
-    margin-top: 12px;
-    border: 1px solid var(--gw-line);
-    border-radius: 14px;
-    background: var(--gw-paper-2);
-    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    align-items: center;
+    gap: 14px;
 }
 
-.recommendation-box:hover {
-    transform: translateY(-1px);
-    border-color: var(--gw-brass);
-}
-
-.recommendation-box-icon {
-    flex: 0 0 34px;
-    width: 34px;
-    height: 34px;
+.report-lab-badge {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 10px;
-    background: rgba(176, 141, 87, 0.14);
-    color: var(--gw-brass);
-    font-size: 15px;
+    background: var(--gw-forest);
+    color: #f6f2e8;
 }
 
-.recommendation-box > div:last-child {
-    min-width: 0;
-}
-
-.recommendation-box span {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 9px;
+.report-lab-name {
+    font-family: var(--font-heading);
+    font-size: 17px;
     font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--gw-faint);
+    letter-spacing: 1.6px;
+    color: var(--gw-forest-deep);
 }
 
-.recommendation-box p {
+.report-lab-tag {
+    font-size: 11px;
+    color: var(--gw-muted);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-top: 3px;
+}
+
+.report-letterhead-right {
+    text-align: right;
+}
+
+.report-doc-title {
+    font-family: var(--font-heading);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--gw-brass);
+}
+
+.report-doc-meta {
+    display: grid;
+    gap: 2px;
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--gw-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.report-doc-meta strong {
+    color: var(--gw-ink);
+}
+
+/* Sample register strip */
+
+.report-register {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    margin: 16px 0 6px;
+    padding: 12px 14px;
+    background: var(--gw-cream);
+    border: 1px solid var(--gw-line);
+    border-radius: 8px;
+    font-size: 10px;
+}
+
+.report-register div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-left: 1px solid var(--gw-line-2);
+    padding-left: 10px;
+}
+
+.report-register div:first-child {
+    border-left: none;
+    padding-left: 0;
+}
+
+.report-register span {
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-size: 9px;
+    color: var(--gw-muted);
+}
+
+.report-register strong {
+    font-size: 11px;
+    color: var(--gw-ink);
+    word-break: break-word;
+}
+
+@media (max-width: 900px) {
+    .report-register { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Sections */
+
+.report-section {
+    margin-top: 24px;
+    break-inside: avoid;
+}
+
+.report-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--gw-line-2);
+    font-family: var(--font-heading);
+    font-size: 15px;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--gw-forest);
+}
+
+.report-section-title span {
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-code);
+    font-size: 12px;
+    border-radius: 5px;
+    background: var(--gw-forest);
+    color: #f6f2e8;
+}
+
+/* Summary */
+
+.report-summary {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 28px;
+    align-items: center;
+}
+
+@media (max-width: 720px) {
+    .report-summary { grid-template-columns: 1fr; }
+}
+
+.report-score-wrap {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.report-score-ring {
+    width: 128px;
+    height: 128px;
+}
+
+.ring-track {
+    fill: none;
+    stroke: var(--gw-cream-2);
+    stroke-width: 10;
+}
+
+.ring-value {
+    fill: none;
+    stroke: var(--gw-forest);
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.8s ease;
+}
+
+.ring-number {
+    font-family: var(--font-heading);
+    font-size: 30px;
+    font-weight: 700;
+    fill: var(--gw-ink);
+}
+
+.ring-caption {
+    font-size: 10px;
+    fill: var(--gw-muted);
+}
+
+.report-score-status {
+    font-family: var(--font-heading);
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--gw-forest);
+}
+
+.report-score-sub {
+    font-size: 11px;
+    color: var(--gw-muted);
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.report-summary-right {
+    display: grid;
+    gap: 12px;
+}
+
+.report-verdict-line {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-left: 4px solid var(--gw-forest);
+    background: rgba(30, 81, 59, 0.06);
+    border-radius: 6px;
+}
+
+.report-verdict-line span {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--gw-muted);
+}
+
+.report-verdict-line strong {
+    font-size: 14px;
+    color: var(--gw-forest-deep);
+}
+
+.report-index-line {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 12px;
+}
+
+.report-index-line > div {
+    padding: 10px 12px;
+    border: 1px solid var(--gw-line);
+    border-radius: 8px;
+    background: var(--gw-paper-2);
+    display: grid;
+    gap: 4px;
+}
+
+.report-index-line span {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--gw-muted);
+}
+
+.report-index-line strong {
+    font-size: 13px;
+    color: var(--gw-ink);
+}
+
+.report-index-line small {
+    font-size: 10px;
+    color: var(--gw-faint);
+    line-height: 1.4;
+}
+
+/* Test results table */
+
+.report-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--gw-line-2);
+    border-radius: 8px;
+}
+
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.report-table thead th {
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: #fdfcf7;
+    background: var(--gw-forest-deep);
+    padding: 9px 12px;
+    white-space: nowrap;
+}
+
+.report-table tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--gw-cream-2);
+    color: var(--gw-ink-soft);
+}
+
+.report-table tbody tr:nth-child(even) td {
+    background: #faf8ef;
+}
+
+.report-table tbody tr.untested td {
+    color: var(--gw-faint);
+    font-style: italic;
+}
+
+.report-table .num {
+    text-align: right;
+    font-weight: 600;
+    color: var(--gw-ink);
+    white-space: nowrap;
+}
+
+.report-table .method {
+    font-size: 10.5px;
+    color: var(--gw-muted);
+}
+
+.report-table td.sources div {
+    font-weight: 500;
+    color: var(--gw-ink-soft);
+}
+
+.report-table td.sources small {
+    display: block;
+    font-size: 10.5px;
+    color: var(--gw-muted);
+    margin-top: 3px;
+    line-height: 1.45;
+}
+
+.report-footnote {
+    margin: 8px 2px 0;
+    font-size: 10.5px;
+    color: var(--gw-muted);
+    font-style: italic;
+}
+
+/* Rating pills */
+
+.rating-pill {
+    display: inline-block;
+    min-width: 78px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.rating-pill.good {
+    color: #2e5d43;
+    background: rgba(79, 122, 90, 0.12);
+    border-color: rgba(79, 122, 90, 0.4);
+}
+
+.rating-pill.warning {
+    color: #7a5a1d;
+    background: rgba(168, 128, 60, 0.14);
+    border-color: rgba(168, 128, 60, 0.45);
+}
+
+.rating-pill.danger {
+    color: #7c2d24;
+    background: rgba(179, 74, 63, 0.12);
+    border-color: rgba(179, 74, 63, 0.45);
+}
+
+.rating-pill.untested {
+    color: var(--gw-faint);
+    background: var(--gw-cream);
+    border-color: var(--gw-line);
+}
+
+/* Interpretation */
+
+.report-interpretation {
+    list-style: none;
     margin: 0;
-    font-size: 13.5px;
-    line-height: 1.65;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.report-interpretation li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    line-height: 1.55;
+    border: 1px solid transparent;
+}
+
+.report-interpretation li svg {
+    flex: 0 0 auto;
+    margin-top: 2px;
+}
+
+.report-interpretation li.ok {
+    background: rgba(79, 122, 90, 0.08);
+    border-color: rgba(79, 122, 90, 0.3);
+    color: #2e5d43;
+}
+
+.report-interpretation li.warn {
+    background: rgba(168, 128, 60, 0.10);
+    border-color: rgba(168, 128, 60, 0.35);
+    color: #6d5314;
+}
+
+.report-interpretation li.bad {
+    background: rgba(179, 74, 63, 0.08);
+    border-color: rgba(179, 74, 63, 0.35);
+    color: #7c2d24;
+}
+
+/* Amendments */
+
+.report-amendments {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--gw-line-2);
+    border-radius: 8px;
+    background: #fbfaf4;
+}
+
+.report-amendments h4 {
+    margin: 0 0 8px;
+    font-size: 11px;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--gw-forest);
+}
+
+.report-amendments ul {
+    margin: 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 6px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--gw-ink-soft);
+}
+
+/* Risk radar */
+
+.report-risk-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+}
+
+@media (max-width: 900px) {
+    .report-risk-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.report-risk-item {
+    border: 1px solid var(--gw-line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: grid;
+    gap: 6px;
+    background: var(--gw-paper-2);
+}
+
+.report-risk-item span {
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--gw-muted);
+}
+
+.report-risk-item strong {
+    font-size: 13px;
+}
+
+.report-risk-item strong.good { color: var(--gw-ok); }
+.report-risk-item strong.warning { color: var(--gw-warn); }
+.report-risk-item strong.danger { color: var(--gw-danger); }
+
+/* Action plan */
+
+.report-actions {
+    list-style: none;
+    margin: 14px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+    counter-reset: action;
+}
+
+.report-actions li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border: 1px solid var(--gw-line);
+    border-left: 3px solid var(--gw-brass);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.report-action-num {
+    font-family: var(--font-code);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gw-brass);
+    min-width: 24px;
+    padding-top: 2px;
+}
+
+.report-actions small {
+    display: block;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--gw-brass);
+    margin-bottom: 2px;
+}
+
+.report-actions p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--gw-ink-soft);
+}
+
+/* Methods list */
+
+.report-methods {
+    display: grid;
+    gap: 4px;
+    border: 1px solid var(--gw-line);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.report-method-row {
+    display: grid;
+    grid-template-columns: 180px 1fr auto;
+    gap: 12px;
+    padding: 7px 12px;
+    font-size: 10.5px;
+    background: #fff;
+    border-bottom: 1px solid var(--gw-cream-2);
+    align-items: baseline;
+}
+
+.report-method-row:nth-child(even) {
+    background: #faf8ef;
+}
+
+.report-method-row:last-child {
+    border-bottom: none;
+}
+
+.report-method-row strong {
+    color: var(--gw-ink);
+    font-size: 10.5px;
+}
+
+.report-method-row span {
+    color: var(--gw-ink-soft);
+}
+
+.report-method-row em {
+    color: var(--gw-faint);
+    font-size: 10px;
+}
+
+@media (max-width: 720px) {
+    .report-method-row { grid-template-columns: 1fr; gap: 2px; }
+}
+
+.report-disclaimer {
+    margin: 12px 0 0;
+    font-size: 10px;
+    line-height: 1.6;
+    color: var(--gw-muted);
+    font-style: italic;
+    padding: 10px 12px;
+    border: 1px dashed var(--gw-line-2);
+    border-radius: 8px;
+    background: #fffdf5;
+}
+
+/* Signatures */
+
+.report-signatures {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    margin-top: 28px;
+}
+
+.report-signature-block {
+    display: grid;
+    gap: 6px;
+}
+
+.report-signature-line {
+    border-top: 1px solid var(--gw-ink);
+    padding-top: 6px;
+}
+
+.report-signature-block small {
+    font-size: 9.5px;
+    color: var(--gw-muted);
+    letter-spacing: 0.4px;
+}
+
+/* Report action bar */
+
+.report-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-top: 26px;
+    padding-top: 18px;
+    border-top: 1px solid var(--gw-line);
+}
+
+.report-actions-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
     color: var(--gw-muted);
 }
 
 /* =====================================================
-   RESPONSIVE
+   PRINT — A4 soil test report
    ===================================================== */
 
-@media (max-width: 1000px) {
-    .soil-input-grid,
-    .intelligence-grid {
-        grid-template-columns: 1fr;
+@media print {
+    @page {
+        size: A4;
+        margin: 13mm 12mm;
     }
 
-    .fingerprint-grid,
-    .risk-grid {
-        grid-template-columns: repeat(2, 1fr);
+    html, body {
+        background: #ffffff !important;
     }
 
-    .nutrient-grid,
-    .action-list {
-        grid-template-columns: 1fr;
+    /* Hide the entire application chrome; show only the report. */
+    .sidebar,
+    .gw-header,
+    .soil-hero,
+    .soil-form,
+    .no-print,
+    .page-loader {
+        display: none !important;
     }
 
-    .growell-recommendation .recommendation-grid {
-        grid-template-columns: repeat(2, 1fr);
+    .dashboard-layout,
+    .dashboard-main,
+    .page-container {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        width: 100% !important;
+        min-height: auto !important;
     }
-}
 
-@media (max-width: 650px) {
     .soil-page {
-        padding: 18px;
+        padding: 0 !important;
+        background: #ffffff !important;
+        min-height: auto !important;
     }
 
-    .soil-header {
-        display: block;
+    .soil-report {
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        font-size: 10pt;
     }
 
-    .soil-live {
-        display: inline-flex;
-        margin-top: 15px;
+    .report-section {
+        break-inside: avoid;
+        page-break-inside: avoid;
     }
 
-    .soil-fields {
-        grid-template-columns: 1fr;
+    .report-table-wrap {
+        overflow: visible !important;
+        border: 1px solid #999 !important;
     }
 
-    .fingerprint-grid,
-    .risk-grid {
-        grid-template-columns: 1fr;
+    .report-table thead th {
+        background: #ece7d8 !important;
+        color: #1c2a22 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
-    .section-top {
-        align-items: flex-start;
+    .report-table tbody tr:nth-child(even) td {
+        background: #f7f6ef !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
-    .soil-score strong {
-        font-size: 30px;
+    .rating-pill,
+    .report-verdict-line,
+    .report-interpretation li {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
-    .regeneration-card {
-        display: block;
-    }
-
-    .regeneration-score {
-        margin-top: 20px;
-        text-align: left;
-    }
-}
-
-@media (max-width: 600px) {
-    .growell-recommendation .recommendation-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .recommendation-box {
-        padding: 15px;
+    .report-score-ring {
+        width: 96px;
+        height: 96px;
     }
 }

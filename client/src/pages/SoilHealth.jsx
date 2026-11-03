@@ -2,6 +2,153 @@ import { useState } from "react";
 import "./SoilHealth.css";
 import { useFarm } from "../context/FarmContext";
 import { apiRequest } from "../services/api";
+import {
+    Printer,
+    RotateCcw,
+    FlaskConical,
+    CheckCircle2,
+    AlertTriangle,
+    XCircle,
+    ShieldCheck,
+    FileText
+} from "lucide-react";
+
+/* =================================================
+   HELPERS
+   ================================================= */
+
+function makeReportId() {
+    const now = new Date();
+    const ymd =
+        String(now.getFullYear()) +
+        String(now.getMonth() + 1).padStart(2, "0") +
+        String(now.getDate()).padStart(2, "0");
+    const random = Math.random()
+        .toString(36)
+        .slice(2, 6)
+        .toUpperCase();
+    return `GW-${ymd}-${random}`;
+}
+
+function todayISO() {
+    const now = new Date();
+    return (
+        now.getFullYear() +
+        "-" +
+        String(now.getMonth() + 1).padStart(2, "0") +
+        "-" +
+        String(now.getDate()).padStart(2, "0")
+    );
+}
+
+function scoreValue(value) {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return 0;
+    }
+    return Math.max(0, Math.min(100, Math.round(Number(value))));
+}
+
+function fmt(value, digits = 1) {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    return Number(value).toFixed(digits);
+}
+
+function getStatusClass(status) {
+    if (!status) {
+        return "warning";
+    }
+    const normalized = String(status).toLowerCase();
+    if (
+        normalized.includes("critical") ||
+        normalized.includes("very low") ||
+        normalized.includes("high risk") ||
+        normalized.includes("strongly") ||
+        normalized.includes("sodic") ||
+        normalized.includes("low")
+    ) {
+        return "danger";
+    }
+    if (
+        normalized.includes("moderate") ||
+        normalized.includes("medium") ||
+        normalized.includes("marginal") ||
+        normalized.includes("fair") ||
+        normalized.includes("slight") ||
+        normalized.includes("attention")
+    ) {
+        return "warning";
+    }
+    return "good";
+}
+
+function ratingClass(level) {
+    if (level === "low") return "danger";
+    if (level === "medium") return "warning";
+    if (level === "high") return "good";
+    return "untested";
+}
+
+const PPM_TO_KGHA = 2.24;
+
+const MACRO_FIELDS = [
+    ["nitrogen", "Available N", "kg N/ha"],
+    ["phosphorus", "Available P (P₂O₅)", "kg P₂O₅/ha"],
+    ["potassium", "Available K (K₂O)", "kg K₂O/ha"],
+    ["calcium", "Exchangeable Ca", "kg Ca/ha"],
+    ["magnesium", "Exchangeable Mg", "kg Mg/ha"],
+    ["sulphur", "Available S", "kg S/ha"]
+];
+
+const MICRO_FIELDS = [
+    ["zinc", "Zinc (Zn)", "DTPA · ppm"],
+    ["iron", "Iron (Fe)", "DTPA · ppm"],
+    ["manganese", "Manganese (Mn)", "DTPA · ppm"],
+    ["copper", "Copper (Cu)", "DTPA · ppm"],
+    ["boron", "Boron (B)", "Hot water · ppm"]
+];
+
+const INITIAL_FORM = {
+    reportId: makeReportId(),
+    farmName: "",
+    fieldName: "",
+    sampleDepth: "0–15 cm",
+    sampleDate: todayISO(),
+
+    crop: "",
+    growthStage: "",
+    soilType: "",
+    bulkDensity: "",
+
+    ph: "",
+    ec: "",
+    organicCarbon: "",
+
+    cec: "",
+    baseSaturation: "",
+    esp: "",
+    bufferPh: "",
+
+    nutrientUnit: "kgha",
+    phosphorusMethod: "Olsen",
+    nitrogen: "",
+    phosphorus: "",
+    potassium: "",
+    calcium: "",
+    magnesium: "",
+    sulphur: "",
+
+    zinc: "",
+    iron: "",
+    manganese: "",
+    copper: "",
+    boron: ""
+};
+
+/* =================================================
+   COMPONENT
+   ================================================= */
 
 function SoilHealth() {
     const {
@@ -9,81 +156,101 @@ function SoilHealth() {
         updateSoilData
     } = useFarm();
 
-    const [form, setForm] = useState({
-        crop: "",
-        stage: "",
-        soilType: "",
-        ph: "",
-        ec: "",
-        organicCarbon: "",
-        nitrogen: "",
-        phosphorus: "",
-        potassium: ""
-    });
-
+    const [form, setForm] = useState(INITIAL_FORM);
     const [analyzing, setAnalyzing] = useState(false);
     const [analyzed, setAnalyzed] = useState(false);
     const [result, setResult] = useState(null);
+    const [error, setError] = useState("");
 
     /* ================================
-       HANDLE INPUT
+       INPUT HANDLING
     ================================= */
 
     function handleChange(event) {
         const { name, value } = event.target;
 
-        setForm((previous) => ({
+        setForm(previous => ({
             ...previous,
             [name]: value
         }));
 
-        /*
-         * IMPORTANT:
-         * Save the soil information immediately
-         * into the shared FarmContext.
-         */
-
         if (name === "crop") {
-            updateFarmData({
-                crop: value
-            });
+            updateFarmData({ crop: value });
         }
 
-        if (name === "stage") {
-            updateFarmData({
-                growthStage: value
-            });
+        if (name === "growthStage") {
+            updateFarmData({ growthStage: value });
         }
 
         if (
             [
-                "soilType",
-                "ph",
-                "ec",
-                "organicCarbon",
-                "nitrogen",
-                "phosphorus",
-                "potassium"
+                "soilType", "ph", "ec", "organicCarbon",
+                "nitrogen", "phosphorus", "potassium",
+                "sulphur", "zinc", "iron", "manganese",
+                "copper", "boron", "calcium", "magnesium",
+                "cec", "esp"
             ].includes(name)
         ) {
-            updateSoilData({
-                [name]: value
-            });
+            updateSoilData({ [name]: value });
         }
+
+        setAnalyzed(false);
+        setResult(null);
+        setError("");
+    }
+
+    /*
+     * Switching the macro-nutrient unit converts the
+     * values already typed, so nothing is silently
+     * reinterpreted.
+     */
+    function handleNutrientUnit(nextUnit) {
+        setForm(previous => {
+            if (previous.nutrientUnit === nextUnit) {
+                return previous;
+            }
+
+            const converted = { ...previous, nutrientUnit: nextUnit };
+
+            for (const [key] of MACRO_FIELDS) {
+                const raw = String(previous[key] ?? "").trim();
+                if (raw === "" || Number.isNaN(Number(raw))) {
+                    continue;
+                }
+                const num = Number(raw);
+                converted[key] =
+                    nextUnit === "ppm"
+                        ? String(Math.round((num / PPM_TO_KGHA) * 100) / 100)
+                        : String(Math.round(num * PPM_TO_KGHA * 10) / 10);
+            }
+
+            return converted;
+        });
 
         setAnalyzed(false);
         setResult(null);
     }
 
+    function resetForm() {
+        setForm({
+            ...INITIAL_FORM,
+            reportId: makeReportId(),
+            sampleDate: todayISO()
+        });
+        setAnalyzed(false);
+        setResult(null);
+        setError("");
+    }
 
     /* ================================
-       ANALYZE SOIL
+       ANALYSIS
     ================================= */
 
     async function analyzeSoil() {
         setAnalyzing(true);
         setAnalyzed(false);
         setResult(null);
+        setError("");
 
         try {
             const response = await apiRequest(
@@ -94,15 +261,40 @@ function SoilHealth() {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
+                        reportId: form.reportId,
+                        farmName: form.farmName,
+                        fieldName: form.fieldName,
+                        sampleDepth: form.sampleDepth,
+                        sampleDate: form.sampleDate,
+
                         crop: form.crop,
-                        growthStage: form.stage,
+                        growthStage: form.growthStage,
                         soilType: form.soilType,
+                        bulkDensity: form.bulkDensity,
+
                         ph: form.ph,
                         ec: form.ec,
                         organicCarbon: form.organicCarbon,
+
+                        cec: form.cec,
+                        baseSaturation: form.baseSaturation,
+                        esp: form.esp,
+                        bufferPh: form.bufferPh,
+
+                        nutrientUnit: form.nutrientUnit,
+                        phosphorusMethod: form.phosphorusMethod,
                         nitrogen: form.nitrogen,
                         phosphorus: form.phosphorus,
-                        potassium: form.potassium
+                        potassium: form.potassium,
+                        calcium: form.calcium,
+                        magnesium: form.magnesium,
+                        sulphur: form.sulphur,
+
+                        zinc: form.zinc,
+                        iron: form.iron,
+                        manganese: form.manganese,
+                        copper: form.copper,
+                        boron: form.boron
                     })
                 }
             );
@@ -115,457 +307,203 @@ function SoilHealth() {
                 );
             }
 
-            console.log(
-                "🌱 GroWell Soil Intelligence:",
-                data
-            );
-
             setResult(data);
             setAnalyzed(true);
 
-
-            /* =================================
-               SAVE FARM CONTEXT
-            ================================= */
-
             updateFarmData({
                 crop: data.crop || form.crop,
-                growthStage:
-                    data.growthStage || form.stage
+                growthStage: data.growthStage || form.growthStage
             });
-
-
-            /* =================================
-               SAVE SOIL DATA
-            ================================= */
 
             updateSoilData({
-                soilType:
-                    data.soilType || form.soilType,
-
+                soilType: data.soilType || form.soilType,
                 ph: form.ph,
                 ec: form.ec,
-                organicCarbon:
-                    form.organicCarbon,
-
-                nitrogen:
-                    form.nitrogen,
-
-                phosphorus:
-                    form.phosphorus,
-
-                potassium:
-                    form.potassium,
-
-                /*
-                 * Store useful analysis results
-                 * inside the soil object as well.
-                 */
-
+                organicCarbon: form.organicCarbon,
+                nitrogen: form.nitrogen,
+                phosphorus: form.phosphorus,
+                potassium: form.potassium,
+                sulphur: form.sulphur,
+                zinc: form.zinc,
+                iron: form.iron,
+                manganese: form.manganese,
+                copper: form.copper,
+                boron: form.boron,
                 score: data.score || "",
-                overallStatus:
-                    data.overallStatus || "",
-
-                cropFit:
-                    data.cropFit || "",
-
-                cropFitStatus:
-                    data.cropFitStatus || "",
-
-                risks:
-                    data.risks || {},
-
-                parameters:
-                    data.parameters || {},
-
-                constraints:
-                    data.constraints || [],
-
-                actions:
-                    data.actions || []
+                overallStatus: data.overallStatus || "",
+                cropFit: data.cropFit || "",
+                cropFitStatus: data.cropFitStatus || "",
+                risks: data.risks || {},
+                classifications: data.classifications || {},
+                constraints: data.constraints || [],
+                actions: data.actions || []
             });
 
-        } catch (error) {
-            console.error(
-                "Soil Intelligence Error:",
-                error
+        } catch (err) {
+            console.error("Soil Lab Error:", err);
+            setError(
+                err.message || "Unable to analyze soil."
             );
-
-            alert(
-                error.message ||
-                "Unable to analyze soil."
-            );
-
         } finally {
             setAnalyzing(false);
         }
     }
 
+    function printReport() {
+        window.print();
+    }
 
     /* ================================
-       HELPERS
+       REPORT ROWS
     ================================= */
 
-    function scoreValue(value) {
-        if (
-            value === null ||
-            value === undefined ||
-            Number.isNaN(Number(value))
-        ) {
-            return 0;
-        }
-
-        return Math.max(
-            0,
-            Math.min(
-                100,
-                Math.round(Number(value))
-            )
-        );
-    }
-
-
-    function getParameter(name) {
-        if (!result?.parameters) {
-            return null;
-        }
-
-        return result.parameters[name] || null;
-    }
-
-
-    function getRisk(name) {
-        if (!result?.risks) {
-            return "Unknown";
-        }
-
-        return result.risks[name] || "Unknown";
-    }
-
-
-    function getStatusClass(status) {
-        if (!status) {
-            return "warning";
-        }
-
-        const normalized =
-            String(status).toLowerCase();
-
-        if (
-            normalized.includes("critical") ||
-            normalized.includes("very low") ||
-            normalized.includes("high") ||
-            normalized.includes("danger")
-        ) {
-            return "danger";
-        }
-
-        if (
-            normalized.includes("moderate") ||
-            normalized.includes("low") ||
-            normalized.includes("fair") ||
-            normalized.includes("attention")
-        ) {
-            return "warning";
-        }
-
-        return "good";
-    }
-
-
-    function getParameterScore(name) {
-        const parameter =
-            getParameter(name);
-
-        if (!parameter) {
-            return 0;
-        }
-
-        if (
-            parameter.score !== undefined &&
-            parameter.score !== null
-        ) {
-            return scoreValue(
-                parameter.score
-            );
-        }
-
-        return 0;
-    }
-
-
-    function getPrimaryConstraint() {
-        if (
-            result?.constraints &&
-            result.constraints.length > 0
-        ) {
-            return result.constraints[0];
-        }
-
-        return null;
-    }
-
-
-    function getSecondaryConstraint() {
-        if (
-            result?.constraints &&
-            result.constraints.length > 1
-        ) {
-            return result.constraints[1];
-        }
-
-        return null;
-    }
-
-
-    /* ================================
-       CROP PRIORITY
-    ================================= */
-
-    function getCropPriority() {
+    function buildResultRows() {
         if (!result) {
-            return null;
+            return [];
         }
 
-        const crop = (
-            result.crop ||
-            form.crop ||
-            ""
-        ).toLowerCase();
+        const c = result.classifications || {};
+        const unit = result.nutrientUnit === "ppm" ? "ppm → kg/ha" : "kg/ha";
 
-        const stage = (
-            result.growthStage ||
-            form.stage ||
-            ""
-        ).toLowerCase();
+        const row = (label, method, cls, unitLabel, digits = 1) => ({
+            label,
+            method,
+            unit: unitLabel,
+            value: cls?.value ?? null,
+            rating: cls?.label ?? "Not tested",
+            level: cls?.level ?? null,
+            digits
+        });
 
-        if (crop === "rice") {
-            if (
-                stage === "seedling" ||
-                stage === "vegetative"
-            ) {
-                return {
-                    priority:
-                        "Vegetative nutrient development",
-                    reason:
-                        "Rice requires strong early vegetative development and balanced nutrient availability during this stage."
-                };
+        return [
+            {
+                label: "Soil reaction (pH)",
+                method: "1:2.5 soil : water",
+                unit: "",
+                value: c.ph?.value ?? null,
+                rating: c.ph?.label ?? "Not tested",
+                level: c.ph?.level ?? null,
+                digits: 1
+            },
+            {
+                label: "Electrical conductivity",
+                method: "1:2 extract · conductivity bridge",
+                unit: "dS/m",
+                value: c.ec?.value ?? null,
+                rating: c.ec?.label ?? "Not tested",
+                level: c.ec?.level ?? null,
+                digits: 2
+            },
+            {
+                label: "Organic carbon",
+                method: "Walkley & Black",
+                unit: "%",
+                value: c.organicCarbon?.value ?? null,
+                rating: c.organicCarbon?.label ?? "Not tested",
+                level: c.organicCarbon?.level ?? null,
+                digits: 2
+            },
+            row("Available nitrogen", "Alkaline KMnO₄ (Subbiah & Asija)", c.nitrogen, unit, 0),
+            {
+                label: `Available phosphorus (P₂O₅)`,
+                method: result.phosphorusMethod === "Bray-1"
+                    ? "Bray & Kurtz No. 1"
+                    : "Olsen (0.5 M NaHCO₃)",
+                unit,
+                value: c.phosphorus?.value ?? null,
+                rating: c.phosphorus?.label ?? "Not tested",
+                level: c.phosphorus?.level ?? null,
+                digits: 1
+            },
+            row("Available potash (K₂O)", "Neutral N NH₄OAc · flame photometry", c.potassium, unit, 1),
+            row("Available sulphur", "CaCl₂ extractable · turbidimetric", c.sulphur, unit, 1),
+            row("Exchangeable calcium", "Neutral N NH₄OAc", c.calcium, unit, 0),
+            row("Exchangeable magnesium", "Neutral N NH₄OAc", c.magnesium, unit, 0),
+            {
+                label: "Zinc (Zn)",
+                method: "DTPA extraction · AAS",
+                unit: "ppm",
+                value: c.zinc?.value ?? null,
+                rating: c.zinc?.label ?? "Not tested",
+                level: c.zinc?.level ?? null,
+                digits: 2
+            },
+            {
+                label: "Iron (Fe)",
+                method: "DTPA extraction · AAS",
+                unit: "ppm",
+                value: c.iron?.value ?? null,
+                rating: c.iron?.label ?? "Not tested",
+                level: c.iron?.level ?? null,
+                digits: 2
+            },
+            {
+                label: "Manganese (Mn)",
+                method: "DTPA extraction · AAS",
+                unit: "ppm",
+                value: c.manganese?.value ?? null,
+                rating: c.manganese?.label ?? "Not tested",
+                level: c.manganese?.level ?? null,
+                digits: 2
+            },
+            {
+                label: "Copper (Cu)",
+                method: "DTPA extraction · AAS",
+                unit: "ppm",
+                value: c.copper?.value ?? null,
+                rating: c.copper?.label ?? "Not tested",
+                level: c.copper?.level ?? null,
+                digits: 2
+            },
+            {
+                label: "Boron (B)",
+                method: "Hot water · Azomethine-H",
+                unit: "ppm",
+                value: c.boron?.value ?? null,
+                rating: c.boron?.label ?? "Not tested",
+                level: c.boron?.level ?? null,
+                digits: 2
+            },
+            {
+                label: "Cation exchange capacity",
+                method: "NH₄OAc saturation",
+                unit: "cmol(+)/kg",
+                value: c.cec?.value ?? null,
+                rating: c.cec?.label ?? "Not tested",
+                level: c.cec?.level ?? null,
+                digits: 1
+            },
+            {
+                label: "Exchangeable sodium (ESP)",
+                method: "ESP = (Na / CEC) × 100",
+                unit: "%",
+                value: c.esp?.value ?? null,
+                rating: c.esp?.label ?? "Not tested",
+                level: c.esp?.level ?? null,
+                digits: 1
+            },
+            {
+                label: "Base saturation",
+                method: "NH₄OAc",
+                unit: "%",
+                value: c.baseSaturation?.value ?? null,
+                rating: c.baseSaturation?.label ?? "Not tested",
+                level: c.baseSaturation?.level ?? null,
+                digits: 0
+            },
+            {
+                label: "Bulk density",
+                method: "Core method",
+                unit: "g/cm³",
+                value: c.bulkDensity?.value ?? null,
+                rating: c.bulkDensity?.label ?? "Not tested",
+                level: c.bulkDensity?.level ?? null,
+                digits: 2
             }
-
-            if (
-                stage === "flowering" ||
-                stage === "grain filling"
-            ) {
-                return {
-                    priority:
-                        "Reproductive-stage nutrition",
-                    reason:
-                        "Balanced nutrition becomes important for panicle development and grain formation."
-                };
-            }
-        }
-
-
-        if (crop === "wheat") {
-            if (
-                stage === "seedling" ||
-                stage === "vegetative"
-            ) {
-                return {
-                    priority:
-                        "Vegetative growth",
-                    reason:
-                        "Early wheat growth depends on adequate nutrient availability and healthy root development."
-                };
-            }
-
-            if (
-                stage === "flowering" ||
-                stage === "grain filling"
-            ) {
-                return {
-                    priority:
-                        "Grain development",
-                    reason:
-                        "Balanced nutrition supports grain formation and crop performance."
-                };
-            }
-        }
-
-
-        if (crop === "maize") {
-            if (stage === "vegetative") {
-                return {
-                    priority:
-                        "Rapid vegetative growth",
-                    reason:
-                        "Maize has strong nutrient demand during vegetative growth."
-                };
-            }
-
-            if (
-                stage === "flowering" ||
-                stage === "grain filling"
-            ) {
-                return {
-                    priority:
-                        "Reproductive development",
-                    reason:
-                        "Nutrient balance during reproductive development is important for kernel formation."
-                };
-            }
-        }
-
-
-        if (crop === "potato") {
-            if (stage === "vegetative") {
-                return {
-                    priority:
-                        "Canopy development",
-                    reason:
-                        "Healthy canopy development is important before strong tuber development."
-                };
-            }
-
-            if (
-                stage === "flowering" ||
-                stage === "fruiting"
-            ) {
-                return {
-                    priority:
-                        "Tuber development",
-                    reason:
-                        "Balanced potassium and overall nutrient availability become particularly important."
-                };
-            }
-        }
-
-
-        if (crop === "tomato") {
-            if (stage === "vegetative") {
-                return {
-                    priority:
-                        "Canopy and root development",
-                    reason:
-                        "Healthy vegetative growth establishes the crop for later flowering and fruit production."
-                };
-            }
-
-            if (
-                stage === "flowering" ||
-                stage === "fruiting"
-            ) {
-                return {
-                    priority:
-                        "Fruit development",
-                    reason:
-                        "Balanced nutrition and adequate potassium availability are important."
-                };
-            }
-        }
-
-
-        return {
-            priority:
-                "Balanced crop nutrition",
-            reason:
-                "Maintain balanced nutrition according to the soil test and crop stage."
-        };
+        ];
     }
 
-
-    /* ================================
-       SOIL ADVICE
-    ================================= */
-
-    function getSoilAdvice() {
-        const soilType = (
-            result?.soilType ||
-            form.soilType ||
-            ""
-        ).toLowerCase();
-
-        if (soilType === "sandy") {
-            return "Sandy soil generally drains quickly and has lower nutrient-holding capacity. Monitor moisture frequently.";
-        }
-
-        if (soilType === "sandy loam") {
-            return "Sandy loam generally provides good drainage but can lose water and mobile nutrients relatively quickly.";
-        }
-
-        if (soilType === "clay") {
-            return "Clay soil generally holds nutrients and water strongly but can drain slowly. Monitor for waterlogging.";
-        }
-
-        if (soilType === "clay loam") {
-            return "Clay loam generally provides good nutrient retention with moderate drainage. Maintain balanced moisture.";
-        }
-
-        if (soilType === "loam") {
-            return "Loam generally provides a balanced combination of drainage, water retention and nutrient-holding capacity.";
-        }
-
-        if (soilType === "silty loam") {
-            return "Silty loam can provide good water and nutrient availability but may be vulnerable to compaction.";
-        }
-
-        return "Continue monitoring soil moisture, nutrient availability and crop response.";
-    }
-
-
-    /* ================================
-       DYNAMIC RECOMMENDATION
-    ================================= */
-
-    function getDynamicRecommendation() {
-        if (!result) {
-            return null;
-        }
-
-        const nitrogen =
-            getParameter("nitrogen")?.status || "";
-
-        const phosphorus =
-            getParameter("phosphorus")?.status || "";
-
-        const potassium =
-            getParameter("potassium")?.status || "";
-
-        let nutritionalMessage =
-            "No major NPK deficiency is identified by the current screening thresholds.";
-
-        if (
-            nitrogen.toLowerCase().includes("low")
-        ) {
-            nutritionalMessage =
-                "Nitrogen is currently the main nutritional concern. Review the soil-test recommendation before applying fertilizer.";
-        } else if (
-            phosphorus.toLowerCase().includes("low")
-        ) {
-            nutritionalMessage =
-                "Phosphorus is currently the main nutritional concern. Review the soil-test recommendation.";
-        } else if (
-            potassium.toLowerCase().includes("low")
-        ) {
-            nutritionalMessage =
-                "Potassium is currently the main nutritional concern. Review the soil-test recommendation.";
-        }
-
-        return {
-            cropPriority:
-                getCropPriority(),
-
-            nutritionalMessage,
-
-            soilAdvice:
-                getSoilAdvice()
-        };
-    }
-
-
-    const recommendation =
-        getDynamicRecommendation();
-
+    const resultRows = buildResultRows();
 
     /* ================================
        RENDER
@@ -574,75 +512,123 @@ function SoilHealth() {
     return (
         <div className="soil-page">
 
-            <div className="soil-header">
+            {/* ================= HERO ================= */}
 
-                <div>
+            <div className="soil-hero">
+
+                <div className="soil-hero-text">
                     <div className="soil-eyebrow">
-                        GroWell INTELLIGENCE
+                        GROWELL AGRICULTURAL LABORATORY
                     </div>
 
                     <h1>
-                        Soil Intelligence
+                        Professional Soil Testing
                     </h1>
 
                     <p>
-                        Go beyond laboratory numbers.
-                        Understand what your soil means
-                        for your crop.
+                        A laboratory-grade soil analysis workflow —
+                        sample registration, standardised test methods,
+                        rated results and a printable agronomy report.
                     </p>
                 </div>
 
-                <div className="soil-live">
-                    <span></span>
-                    SOIL INTELLIGENCE
+                <div className="soil-hero-meta">
+                    <div className="soil-hero-meta-row">
+                        <span>Report No.</span>
+                        <strong>{result?.reportId || form.reportId}</strong>
+                    </div>
+                    <div className="soil-hero-meta-row">
+                        <span>Date</span>
+                        <strong>{form.sampleDate}</strong>
+                    </div>
+                    <div className="soil-hero-meta-row">
+                        <span>Status</span>
+                        <strong className={analyzed ? "ok" : "pending"}>
+                            {analyzed ? "Report generated" : "Awaiting analysis"}
+                        </strong>
+                    </div>
                 </div>
 
             </div>
 
+            {/* ================= FORM ================= */}
 
-            {/* ================================
-                INPUT AREA
-            ================================= */}
+            <div className="soil-form">
 
-            <div className="soil-input-grid">
+                {/* 01 — SAMPLE & FIELD DETAILS */}
 
-                <div className="soil-card">
-
-                    <div className="soil-card-header">
-
-                        <div className="soil-card-icon">
-                            🌱
-                        </div>
-
+                <section className="soil-panel">
+                    <header className="soil-panel-head">
+                        <span className="soil-step">01</span>
                         <div>
-                            <h2>Farm Context</h2>
-
-                            <p>
-                                Tell GroWell what is growing
-                                in your field.
-                            </p>
+                            <h2>Sample &amp; Field Details</h2>
+                            <p>Register the sample exactly as a laboratory would.</p>
                         </div>
+                    </header>
 
-                    </div>
-
-
-                    <div className="soil-fields">
+                    <div className="soil-grid soil-grid-4">
+                        <div className="soil-field">
+                            <label htmlFor="farmName">Farm / Grower</label>
+                            <input
+                                id="farmName"
+                                name="farmName"
+                                type="text"
+                                placeholder="e.g. Ramesh Patil Farm"
+                                value={form.farmName}
+                                onChange={handleChange}
+                                maxLength={80}
+                            />
+                        </div>
 
                         <div className="soil-field">
+                            <label htmlFor="fieldName">Field / Plot</label>
+                            <input
+                                id="fieldName"
+                                name="fieldName"
+                                type="text"
+                                placeholder="e.g. North Block · Plot 4"
+                                value={form.fieldName}
+                                onChange={handleChange}
+                                maxLength={80}
+                            />
+                        </div>
 
-                            <label>
-                                Crop
-                            </label>
-
+                        <div className="soil-field">
+                            <label htmlFor="sampleDepth">Sampling Depth</label>
                             <select
+                                id="sampleDepth"
+                                name="sampleDepth"
+                                value={form.sampleDepth}
+                                onChange={handleChange}
+                            >
+                                <option>0–15 cm</option>
+                                <option>15–30 cm</option>
+                                <option>30–60 cm</option>
+                            </select>
+                        </div>
+
+                        <div className="soil-field">
+                            <label htmlFor="sampleDate">Sample Collection Date</label>
+                            <input
+                                id="sampleDate"
+                                name="sampleDate"
+                                type="date"
+                                value={form.sampleDate}
+                                onChange={handleChange}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="soil-grid soil-grid-4">
+                        <div className="soil-field">
+                            <label htmlFor="crop">Crop</label>
+                            <select
+                                id="crop"
                                 name="crop"
                                 value={form.crop}
                                 onChange={handleChange}
                             >
-                                <option value="">
-                                    Select crop
-                                </option>
-
+                                <option value="">Select crop</option>
                                 <option>Rice</option>
                                 <option>Wheat</option>
                                 <option>Maize</option>
@@ -653,25 +639,17 @@ function SoilHealth() {
                                 <option>Groundnut</option>
                                 <option>Other</option>
                             </select>
-
                         </div>
 
-
                         <div className="soil-field">
-
-                            <label>
-                                Growth Stage
-                            </label>
-
+                            <label htmlFor="growthStage">Growth Stage</label>
                             <select
-                                name="stage"
-                                value={form.stage}
+                                id="growthStage"
+                                name="growthStage"
+                                value={form.growthStage}
                                 onChange={handleChange}
                             >
-                                <option value="">
-                                    Select stage
-                                </option>
-
+                                <option value="">Select stage</option>
                                 <option>Seedling</option>
                                 <option>Vegetative</option>
                                 <option>Flowering</option>
@@ -679,25 +657,17 @@ function SoilHealth() {
                                 <option>Grain Filling</option>
                                 <option>Maturity</option>
                             </select>
-
                         </div>
 
-
                         <div className="soil-field">
-
-                            <label>
-                                Soil Type
-                            </label>
-
+                            <label htmlFor="soilType">Soil Texture / Type</label>
                             <select
+                                id="soilType"
                                 name="soilType"
                                 value={form.soilType}
                                 onChange={handleChange}
                             >
-                                <option value="">
-                                    Select soil type
-                                </option>
-
+                                <option value="">Select soil type</option>
                                 <option>Clay</option>
                                 <option>Clay Loam</option>
                                 <option>Loam</option>
@@ -705,880 +675,726 @@ function SoilHealth() {
                                 <option>Sandy</option>
                                 <option>Silty Loam</option>
                             </select>
-
                         </div>
-
-                    </div>
-
-                </div>
-
-
-                {/* ================================
-                    SOIL PARAMETERS
-                ================================= */}
-
-                <div className="soil-card">
-
-                    <div className="soil-card-header">
-
-                        <div className="soil-card-icon">
-                            ◈
-                        </div>
-
-                        <div>
-                            <h2>
-                                Soil Parameters
-                            </h2>
-
-                            <p>
-                                Enter values from your
-                                soil test.
-                            </p>
-                        </div>
-
-                    </div>
-
-
-                    <div className="soil-fields">
 
                         <div className="soil-field">
-                            <label>pH</label>
+                            <label htmlFor="bulkDensity">
+                                Bulk Density <em>(optional)</em>
+                            </label>
+                            <div className="soil-input-suffix">
+                                <input
+                                    id="bulkDensity"
+                                    name="bulkDensity"
+                                    type="number"
+                                    min="0.5"
+                                    max="2.5"
+                                    step="0.01"
+                                    placeholder="1.28"
+                                    value={form.bulkDensity}
+                                    onChange={handleChange}
+                                />
+                                <span>g/cm³</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
+                {/* 02 — CHEMICAL PROPERTIES */}
+
+                <section className="soil-panel">
+                    <header className="soil-panel-head">
+                        <span className="soil-step">02</span>
+                        <div>
+                            <h2>Chemical Properties</h2>
+                            <p>Fundamental soil reaction, salinity and organic matter.</p>
+                        </div>
+                    </header>
+
+                    <div className="soil-grid soil-grid-3">
+                        <div className="soil-field">
+                            <label htmlFor="ph">pH (1:2.5)</label>
                             <input
-                                type="number"
-                                min="0"
-                                max="14"
-                                step="0.1"
+                                id="ph"
                                 name="ph"
+                                type="number"
+                                min="3"
+                                max="10"
+                                step="0.1"
                                 placeholder="6.8"
                                 value={form.ph}
                                 onChange={handleChange}
                             />
                         </div>
 
-
                         <div className="soil-field">
-                            <label>EC</label>
-
-                            <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                name="ec"
-                                placeholder="dS/m"
-                                value={form.ec}
-                                onChange={handleChange}
-                            />
+                            <label htmlFor="ec">EC</label>
+                            <div className="soil-input-suffix">
+                                <input
+                                    id="ec"
+                                    name="ec"
+                                    type="number"
+                                    min="0"
+                                    max="20"
+                                    step="0.01"
+                                    placeholder="0.35"
+                                    value={form.ec}
+                                    onChange={handleChange}
+                                />
+                                <span>dS/m</span>
+                            </div>
                         </div>
 
-
                         <div className="soil-field">
-                            <label>
-                                Organic Carbon
-                            </label>
+                            <label htmlFor="organicCarbon">Organic Carbon</label>
+                            <div className="soil-input-suffix">
+                                <input
+                                    id="organicCarbon"
+                                    name="organicCarbon"
+                                    type="number"
+                                    min="0"
+                                    max="10"
+                                    step="0.01"
+                                    placeholder="0.55"
+                                    value={form.organicCarbon}
+                                    onChange={handleChange}
+                                />
+                                <span>%</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
-                            <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                name="organicCarbon"
-                                placeholder="%"
-                                value={form.organicCarbon}
-                                onChange={handleChange}
-                            />
+                {/* 03 — EXCHANGEABLE & BUFFER PROPERTIES */}
+
+                <section className="soil-panel">
+                    <header className="soil-panel-head">
+                        <span className="soil-step">03</span>
+                        <div>
+                            <h2>Exchangeable &amp; Buffer Properties <em>(optional)</em></h2>
+                            <p>
+                                Unlocks lime / gypsum requirement and sodicity diagnosis.
+                                Leave blank if not tested.
+                            </p>
+                        </div>
+                    </header>
+
+                    <div className="soil-grid soil-grid-4">
+                        <div className="soil-field">
+                            <label htmlFor="cec">CEC</label>
+                            <div className="soil-input-suffix">
+                                <input
+                                    id="cec"
+                                    name="cec"
+                                    type="number"
+                                    min="0"
+                                    max="150"
+                                    step="0.1"
+                                    placeholder="18"
+                                    value={form.cec}
+                                    onChange={handleChange}
+                                />
+                                <span>cmol(+)/kg</span>
+                            </div>
                         </div>
 
-
                         <div className="soil-field">
-                            <label>Nitrogen</label>
-
-                            <input
-                                type="number"
-                                min="0"
-                                step="1"
-                                name="nitrogen"
-                                placeholder="kg/ha"
-                                value={form.nitrogen}
-                                onChange={handleChange}
-                            />
+                            <label htmlFor="baseSaturation">Base Saturation</label>
+                            <div className="soil-input-suffix">
+                                <input
+                                    id="baseSaturation"
+                                    name="baseSaturation"
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="1"
+                                    placeholder="72"
+                                    value={form.baseSaturation}
+                                    onChange={handleChange}
+                                />
+                                <span>%</span>
+                            </div>
                         </div>
 
-
                         <div className="soil-field">
-                            <label>Phosphorus</label>
-
-                            <input
-                                type="number"
-                                min="0"
-                                step="1"
-                                name="phosphorus"
-                                placeholder="kg/ha"
-                                value={form.phosphorus}
-                                onChange={handleChange}
-                            />
+                            <label htmlFor="esp">ESP (exchangeable Na)</label>
+                            <div className="soil-input-suffix">
+                                <input
+                                    id="esp"
+                                    name="esp"
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.1"
+                                    placeholder="8"
+                                    value={form.esp}
+                                    onChange={handleChange}
+                                />
+                                <span>%</span>
+                            </div>
                         </div>
 
-
                         <div className="soil-field">
-                            <label>Potassium</label>
-
+                            <label htmlFor="bufferPh">Buffer pH (SMP)</label>
                             <input
+                                id="bufferPh"
+                                name="bufferPh"
                                 type="number"
-                                min="0"
-                                step="1"
-                                name="potassium"
-                                placeholder="kg/ha"
-                                value={form.potassium}
+                                min="4"
+                                max="9"
+                                step="0.1"
+                                placeholder="7.2"
+                                value={form.bufferPh}
                                 onChange={handleChange}
                             />
+                            <small className="soil-field-hint">
+                                Only used to compute lime requirement when acidic.
+                            </small>
+                        </div>
+                    </div>
+                </section>
+
+                {/* 04 — MACRONUTRIENTS */}
+
+                <section className="soil-panel">
+                    <header className="soil-panel-head">
+                        <span className="soil-step">04</span>
+                        <div>
+                            <h2>Macronutrients</h2>
+                            <p>Available N, P, K, Ca, Mg and S — laboratory test values.</p>
+                        </div>
+                    </header>
+
+                    <div className="soil-panel-toolbar">
+                        <div className="soil-seg" role="group" aria-label="Nutrient unit">
+                            <button
+                                type="button"
+                                className={form.nutrientUnit === "kgha" ? "active" : ""}
+                                onClick={() => handleNutrientUnit("kgha")}
+                            >
+                                kg / hectare
+                            </button>
+                            <button
+                                type="button"
+                                className={form.nutrientUnit === "ppm" ? "active" : ""}
+                                onClick={() => handleNutrientUnit("ppm")}
+                            >
+                                ppm (mg/kg)
+                            </button>
                         </div>
 
+                        <div className="soil-seg" role="group" aria-label="Phosphorus extraction method">
+                            <button
+                                type="button"
+                                className={form.phosphorusMethod === "Olsen" ? "active" : ""}
+                                onClick={() => handleChange({ target: { name: "phosphorusMethod", value: "Olsen" } })}
+                            >
+                                P · Olsen
+                            </button>
+                            <button
+                                type="button"
+                                className={form.phosphorusMethod === "Bray-1" ? "active" : ""}
+                                onClick={() => handleChange({ target: { name: "phosphorusMethod", value: "Bray-1" } })}
+                            >
+                                P · Bray-1
+                            </button>
+                        </div>
                     </div>
 
+                    <div className="soil-grid soil-grid-3">
+                        {MACRO_FIELDS.map(([name, label, unitLabel]) => (
+                            <div className="soil-field" key={name}>
+                                <label htmlFor={name}>
+                                    {label} <em>({form.nutrientUnit === "ppm" ? "ppm" : unitLabel})</em>
+                                </label>
+                                <div className="soil-input-suffix">
+                                    <input
+                                        id={name}
+                                        name={name}
+                                        type="number"
+                                        min="0"
+                                        step={form.nutrientUnit === "ppm" ? "0.1" : "1"}
+                                        placeholder={name === "nitrogen" ? "260" : name === "phosphorus" ? "12" : name === "potassium" ? "150" : "—"}
+                                        value={form[name]}
+                                        onChange={handleChange}
+                                    />
+                                    <span>{form.nutrientUnit === "ppm" ? "ppm" : "kg/ha"}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* 05 — MICRONUTRIENTS */}
+
+                <section className="soil-panel">
+                    <header className="soil-panel-head">
+                        <span className="soil-step">05</span>
+                        <div>
+                            <h2>Micronutrients</h2>
+                            <p>DTPA-extractable Zn, Fe, Mn, Cu · hot-water B. In ppm.</p>
+                        </div>
+                    </header>
+
+                    <div className="soil-grid soil-grid-5">
+                        {MICRO_FIELDS.map(([name, label, unitLabel]) => (
+                            <div className="soil-field" key={name}>
+                                <label htmlFor={name}>{label}</label>
+                                <div className="soil-input-suffix">
+                                    <input
+                                        id={name}
+                                        name={name}
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="—"
+                                        value={form[name]}
+                                        onChange={handleChange}
+                                    />
+                                    <span>ppm</span>
+                                </div>
+                                <small className="soil-field-hint">{unitLabel}</small>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* ACTIONS BAR */}
+
+                <div className="soil-run-bar no-print">
+                    <button
+                        type="button"
+                        className="soil-run-primary"
+                        onClick={analyzeSoil}
+                        disabled={analyzing}
+                    >
+                        <FlaskConical size={19} aria-hidden="true" />
+                        {analyzing
+                            ? "Running laboratory analysis…"
+                            : "Run Laboratory Analysis"}
+                    </button>
+
+                    <button
+                        type="button"
+                        className="soil-run-secondary"
+                        onClick={resetForm}
+                        disabled={analyzing}
+                    >
+                        <RotateCcw size={16} aria-hidden="true" />
+                        Reset sample
+                    </button>
+
+                    <p className="soil-run-hint">
+                        Every field except crop, stage and soil type is optional —
+                        the report marks untested parameters as “Not tested”.
+                    </p>
                 </div>
 
+                {error && (
+                    <div className="soil-error no-print" role="alert">
+                        <XCircle size={18} aria-hidden="true" />
+                        <span>{error}</span>
+                    </div>
+                )}
             </div>
 
-
-            {/* ================================
-                ANALYZE
-            ================================= */}
-
-            <button
-                className="soil-analyze"
-                onClick={analyzeSoil}
-                disabled={analyzing}
-            >
-                {analyzing
-                    ? "Analyzing Soil Intelligence..."
-                    : "Analyze Soil Intelligence"
-                }
-            </button>
-
-
-            {/* ================================
-                RESULTS
-            ================================= */}
+            {/* ================= REPORT ================= */}
 
             {analyzed && result && (
 
-                <div className="soil-results">
+                <article className="soil-report" id="soil-report">
 
-                    <section className="soil-fingerprint">
+                    {/* LETTERHEAD */}
 
-                        <div className="section-top">
-
+                    <header className="report-letterhead">
+                        <div className="report-letterhead-left">
+                            <div className="report-lab-badge">
+                                <FlaskConical size={26} aria-hidden="true" />
+                            </div>
                             <div>
-
-                                <span className="section-label">
-                                    SOIL FINGERPRINT
-                                </span>
-
-                                <h2>
-                                    Your soil at a glance
-                                </h2>
-
-                                <p>
-                                    A high-level view of how
-                                    your soil is performing.
-                                </p>
-
+                                <div className="report-lab-name">
+                                    GROWELL AGRICULTURAL LABORATORY
+                                </div>
+                                <div className="report-lab-tag">
+                                    Soil &amp; Plant Nutrition Advisory Unit
+                                </div>
                             </div>
-
-
-                            <div className="soil-score">
-
-                                <strong>
-                                    {scoreValue(result.score)}
-                                </strong>
-
-                                <span>
-                                    /100
-                                </span>
-
-                                <small>
-                                    {result.overallStatus}
-                                </small>
-
-                            </div>
-
                         </div>
 
-
-                        <div className="fingerprint-grid">
-
-                            <div>
-                                <span>Fertility</span>
-
-                                <strong
-                                    className={getStatusClass(
-                                        result.overallStatus
-                                    )}
-                                >
-                                    {result.overallStatus}
-                                </strong>
+                        <div className="report-letterhead-right">
+                            <div className="report-doc-title">
+                                SOIL TEST REPORT
                             </div>
-
-
-                            <div>
-                                <span>
-                                    Nutrient Balance
-                                </span>
-
-                                <strong
-                                    className={getStatusClass(
-                                        getRisk(
-                                            "nutrientDepletion"
-                                        )
-                                    )}
-                                >
-                                    {getRisk(
-                                        "nutrientDepletion"
-                                    )}
-                                </strong>
+                            <div className="report-doc-meta">
+                                <span>Report No.: <strong>{result.reportId}</strong></span>
+                                <span>Date of analysis: <strong>{form.sampleDate}</strong></span>
                             </div>
-
-
-                            <div>
-                                <span>
-                                    Salinity
-                                </span>
-
-                                <strong
-                                    className={getStatusClass(
-                                        getRisk("salinity")
-                                    )}
-                                >
-                                    {getRisk("salinity")}
-                                </strong>
-                            </div>
-
-
-                            <div>
-                                <span>
-                                    Organic Matter
-                                </span>
-
-                                <strong
-                                    className={getStatusClass(
-                                        getParameter(
-                                            "organicCarbon"
-                                        )?.status
-                                    )}
-                                >
-                                    {getParameter(
-                                        "organicCarbon"
-                                    )?.status ||
-                                        "Unknown"}
-                                </strong>
-                            </div>
-
                         </div>
-
-                    </section>
-
-
-                    <div className="intelligence-grid">
-
-                        <section className="soil-result-card">
-
-                            <span className="section-label">
-                                SOIL DIAGNOSIS
-                            </span>
-
-                            <h2>
-                                What is limiting your soil?
-                            </h2>
-
-
-                            {getPrimaryConstraint() ? (
-
-                                <div className="constraint primary">
-
-                                    <div className="constraint-number">
-                                        01
-                                    </div>
-
-                                    <div>
-
-                                        <small>
-                                            PRIMARY CONSTRAINT
-                                        </small>
-
-                                        <strong>
-                                            {
-                                                getPrimaryConstraint()
-                                                    .name
-                                            }
-                                        </strong>
-
-                                        <p>
-                                            {
-                                                getPrimaryConstraint()
-                                                    .reason
-                                            }
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-                            ) : (
-
-                                <div className="constraint primary">
-
-                                    <div className="constraint-number">
-                                        ✓
-                                    </div>
-
-                                    <div>
-
-                                        <small>
-                                            PRIMARY CONSTRAINT
-                                        </small>
-
-                                        <strong>
-                                            No major constraint detected
-                                        </strong>
-
-                                        <p>
-                                            The submitted soil
-                                            values are currently
-                                            within the screening
-                                            ranges used by GroWell.
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-                            )}
-
-
-                            {getSecondaryConstraint() && (
-
-                                <div className="constraint">
-
-                                    <div className="constraint-number">
-                                        02
-                                    </div>
-
-                                    <div>
-
-                                        <small>
-                                            SECONDARY CONSTRAINT
-                                        </small>
-
-                                        <strong>
-                                            {
-                                                getSecondaryConstraint()
-                                                    .name
-                                            }
-                                        </strong>
-
-                                        <p>
-                                            {
-                                                getSecondaryConstraint()
-                                                    .reason
-                                            }
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-                            )}
-
-                        </section>
-
-
-                        <section className="soil-result-card">
-
-                            <span className="section-label">
-                                CROP–SOIL FIT
-                            </span>
-
-                            <h2>
-                                How well does your soil support the crop?
-                            </h2>
-
-
-                            <div className="fit-score">
-
-                                <strong>
-                                    {scoreValue(
-                                        result.cropFit
-                                    )}%
-                                </strong>
-
-                                <span>
-                                    {result.cropFitStatus}
-                                </span>
-
-                            </div>
-
-
-                            <div className="fit-row">
-
-                                <span>
-                                    pH suitability
-                                </span>
-
-                                <strong
-                                    className={getStatusClass(
-                                        getParameter(
-                                            "ph"
-                                        )?.status
-                                    )}
-                                >
-                                    {getParameter(
-                                        "ph"
-                                    )?.status ||
-                                        "Unknown"}
-                                </strong>
-
-                            </div>
-
-
-                            <div className="fit-row">
-
-                                <span>
-                                    Nutrient availability
-                                </span>
-
-                                <strong
-                                    className={getStatusClass(
-                                        getRisk(
-                                            "nutrientDepletion"
-                                        )
-                                    )}
-                                >
-                                    {getRisk(
-                                        "nutrientDepletion"
-                                    )}
-                                </strong>
-
-                            </div>
-
-
-                            <div className="fit-row">
-
-                                <span>
-                                    Salinity behavior
-                                </span>
-
-                                <strong
-                                    className={getStatusClass(
-                                        getParameter(
-                                            "ec"
-                                        )?.status
-                                    )}
-                                >
-                                    {getParameter(
-                                        "ec"
-                                    )?.status ||
-                                        "Unknown"}
-                                </strong>
-
-                            </div>
-
-                        </section>
-
+                    </header>
+
+                    {/* SAMPLE REGISTER LINE */}
+
+                    <div className="report-register">
+                        <div><span>Farm / Grower</span><strong>{result.sampleMeta?.farmName || "—"}</strong></div>
+                        <div><span>Field / Plot</span><strong>{result.sampleMeta?.fieldName || "—"}</strong></div>
+                        <div><span>Sampling depth</span><strong>{result.sampleMeta?.sampleDepth || "0–15 cm"}</strong></div>
+                        <div><span>Crop</span><strong>{result.crop}</strong></div>
+                        <div><span>Growth stage</span><strong>{result.growthStage}</strong></div>
+                        <div><span>Soil texture</span><strong>{result.soilType}</strong></div>
                     </div>
 
+                    {/* A — SUMMARY */}
 
-                    {recommendation && (
+                    <section className="report-section">
+                        <h3 className="report-section-title">
+                            <span>A</span> Summary of Findings
+                        </h3>
 
-                        <section className="soil-result-card growell-recommendation">
+                        <div className="report-summary">
 
-                            <span className="section-label">
-                                GROWell RECOMMENDATION
-                            </span>
-
-                            <h2>
-                                Your soil, translated into action.
-                            </h2>
-
-                            <p>
-                                A practical path based on
-                                your crop, growth stage and
-                                current soil condition.
-                            </p>
-
-
-                            <div className="recommendation-grid">
-
-                                <div className="recommendation-item">
-                                    <span>
-                                        PRIMARY PRIORITY
-                                    </span>
-
-                                    <strong>
-                                        {
-                                            recommendation
-                                                .cropPriority
-                                                ?.priority ||
-                                            getPrimaryConstraint()
-                                                ?.name ||
-                                            "Balanced Soil"
-                                        }
-                                    </strong>
-                                </div>
-
-
-                                <div className="recommendation-item">
-                                    <span>CROP</span>
-
-                                    <strong>
-                                        {result.crop}
-                                    </strong>
-                                </div>
-
-
-                                <div className="recommendation-item">
-                                    <span>
-                                        GROWTH STAGE
-                                    </span>
-
-                                    <strong>
-                                        {result.growthStage}
-                                    </strong>
-                                </div>
-
-
-                                <div className="recommendation-item">
-                                    <span>
-                                        CROP–SOIL FIT
-                                    </span>
-
-                                    <strong>
-                                        {scoreValue(
-                                            result.cropFit
-                                        )}%
-                                        {" — "}
-                                        {result.cropFitStatus}
-                                    </strong>
-                                </div>
-
-                            </div>
-
-
-                            <div className="recommendation-box">
-
-                                <div className="recommendation-box-icon">
-                                    ✓
-                                </div>
-
-                                <div>
-
-                                    <span>
-                                        NUTRIENT INTELLIGENCE
-                                    </span>
-
-                                    <p>
-                                        {
-                                            recommendation
-                                                .nutritionalMessage
-                                        }
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-
-                            <div className="recommendation-box">
-
-                                <div className="recommendation-box-icon">
-                                    ◈
-                                </div>
-
-                                <div>
-
-                                    <span>
-                                        CROP + GROWTH STAGE
-                                    </span>
-
-                                    <p>
-                                        {
-                                            recommendation
-                                                .cropPriority
-                                                ?.reason
-                                        }
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-
-                            <div className="recommendation-box">
-
-                                <div className="recommendation-box-icon">
-                                    ◉
-                                </div>
-
-                                <div>
-
-                                    <span>
-                                        SOIL-TYPE INTELLIGENCE
-                                    </span>
-
-                                    <p>
-                                        {
-                                            recommendation
-                                                .soilAdvice
-                                        }
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-                        </section>
-
-                    )}
-
-
-                    {/* NPK */}
-
-                    <section className="soil-result-card">
-
-                        <span className="section-label">
-                            NUTRIENT INTELLIGENCE
-                        </span>
-
-                        <h2>
-                            Nutrient Balance
-                        </h2>
-
-
-                        <div className="nutrient-grid">
-
-                            {[
-                                "nitrogen",
-                                "phosphorus",
-                                "potassium"
-                            ].map((name) => (
-
-                                <div
-                                    className="nutrient-item"
-                                    key={name}
+                            <div className="report-score-wrap">
+                                <svg
+                                    className="report-score-ring"
+                                    viewBox="0 0 120 120"
+                                    role="img"
+                                    aria-label={`Soil health score ${scoreValue(result.score)} out of 100`}
                                 >
-
-                                    <div>
-
-                                        <span>
-                                            {name.toUpperCase()}
-                                        </span>
-
-                                        <strong
-                                            className={getStatusClass(
-                                                getParameter(
-                                                    name
-                                                )?.status
-                                            )}
-                                        >
-                                            {
-                                                getParameter(
-                                                    name
-                                                )?.status ||
-                                                "Unknown"
-                                            }
-                                        </strong>
-
-                                    </div>
-
-
-                                    <div className="nutrient-bar">
-
-                                        <i
-                                            style={{
-                                                width:
-                                                    `${getParameterScore(
-                                                        name
-                                                    )}%`
-                                            }}
-                                        ></i>
-
-                                    </div>
-
-
-                                    <small>
-                                        {getParameterScore(
-                                            name
-                                        )}/100
-                                    </small>
-
-                                </div>
-
-                            ))}
-
-                        </div>
-
-                    </section>
-
-
-                    {/* RISK RADAR */}
-
-                    <section className="soil-result-card">
-
-                        <span className="section-label">
-                            SOIL RISK RADAR
-                        </span>
-
-                        <h2>
-                            What should you watch?
-                        </h2>
-
-
-                        <div className="risk-grid">
-
-                            {[
-                                [
-                                    "Nutrient depletion",
-                                    "nutrientDepletion"
-                                ],
-                                [
-                                    "Acidity",
-                                    "acidity"
-                                ],
-                                [
-                                    "Salinity",
-                                    "salinity"
-                                ],
-                                [
-                                    "Organic matter decline",
-                                    "organicMatterDecline"
-                                ]
-                            ].map(([label, key]) => (
-
-                                <div key={key}>
-
-                                    <span>
-                                        {label}
-                                    </span>
-
-                                    <strong
-                                        className={getStatusClass(
-                                            getRisk(key)
-                                        )}
+                                    <circle
+                                        className="ring-track"
+                                        cx="60" cy="60" r="50"
+                                    />
+                                    <circle
+                                        className="ring-value"
+                                        cx="60" cy="60" r="50"
+                                        strokeDasharray={`${2 * Math.PI * 50}`}
+                                        strokeDashoffset={`${2 * Math.PI * 50 * (1 - scoreValue(result.score) / 100)}`}
+                                        transform="rotate(-90 60 60)"
+                                    />
+                                    <text
+                                        x="60" y="58"
+                                        textAnchor="middle"
+                                        className="ring-number"
                                     >
-                                        {getRisk(key)}
-                                    </strong>
+                                        {scoreValue(result.score)}
+                                    </text>
+                                    <text
+                                        x="60" y="76"
+                                        textAnchor="middle"
+                                        className="ring-caption"
+                                    >
+                                        / 100
+                                    </text>
+                                </svg>
 
+                                <div className="report-score-text">
+                                    <div className="report-score-status">
+                                        {result.overallStatus}
+                                    </div>
+                                    <div className="report-score-sub">
+                                        Composite Soil Health Score
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="report-summary-right">
+                                <div className="report-verdict-line">
+                                    <ShieldCheck size={18} aria-hidden="true" />
+                                    <div>
+                                        <span>Laboratory verdict</span>
+                                        <strong>{result.verdict}</strong>
+                                    </div>
                                 </div>
 
-                            ))}
+                                <div className="report-index-line">
+                                    <div>
+                                        <span>Parker Nutrient Index</span>
+                                        <strong>
+                                            {result.parkerIndex
+                                                ? `${result.parkerIndex.value} — ${result.parkerIndex.category}`
+                                                : "Not enough data"}
+                                        </strong>
+                                        {result.parkerIndex && (
+                                            <small>
+                                                Computed from {result.parkerIndex.testedCount} tested parameter(s); low = 1, medium = 2, high = 3.
+                                            </small>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <span>Crop–soil fit</span>
+                                        <strong>
+                                            {scoreValue(result.cropFit)}% — {result.cropFitStatus}
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
 
                         </div>
-
                     </section>
 
+                    {/* B — TEST RESULTS TABLE */}
 
-                    {/* ACTION PLAN */}
+                    <section className="report-section">
+                        <h3 className="report-section-title">
+                            <span>B</span> Test Results
+                        </h3>
 
-                    <section className="action-card">
-
-                        <span className="section-label">
-                            GROWell ACTION PLAN
-                        </span>
-
-                        <h2>
-                            What should you do next?
-                        </h2>
-
-
-                        <div className="action-list">
-
-                            {result.actions &&
-                                result.actions
-                                    .slice(0, 3)
-                                    .map(
-                                        (
-                                            action,
-                                            index
-                                        ) => (
-
-                                            <div
-                                                key={index}
-                                            >
-
-                                                <b>
-                                                    {String(
-                                                        index + 1
-                                                    ).padStart(
-                                                        2,
-                                                        "0"
-                                                    )}
-                                                </b>
-
-                                                <p>
-
-                                                    <strong>
-                                                        {
-                                                            action.timing
-                                                        }
-                                                    </strong>
-
-                                                    {
-                                                        action.action
+                        <div className="report-table-wrap">
+                            <table className="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Method</th>
+                                        <th className="num">Result</th>
+                                        <th>Unit</th>
+                                        <th>Rating</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {resultRows.map(row => (
+                                        <tr
+                                            key={row.label}
+                                            className={row.value === null ? "untested" : ""}
+                                        >
+                                            <td>{row.label}</td>
+                                            <td className="method">{row.method}</td>
+                                            <td className="num">
+                                                {row.value === null
+                                                    ? "—"
+                                                    : fmt(row.value, row.digits)}
+                                            </td>
+                                            <td>{row.unit || "—"}</td>
+                                            <td>
+                                                <span
+                                                    className={
+                                                        "rating-pill " + ratingClass(row.level)
                                                     }
+                                                >
+                                                    {row.rating}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
 
-                                                </p>
+                        {result.nutrientUnit === "ppm" && (
+                            <p className="report-footnote">
+                                Values entered in mg/kg (ppm) were converted to kg/ha for a
+                                0–15 cm furrow slice using the factor 2.24 (bulk density 1.28 g/cm³).
+                            </p>
+                        )}
+                    </section>
 
-                                            </div>
+                    {/* C — INTERPRETATION */}
 
-                                        )
+                    <section className="report-section">
+                        <h3 className="report-section-title">
+                            <span>C</span> Interpretation &amp; Diagnosis
+                        </h3>
+
+                        <ul className="report-interpretation">
+                            {result.interpretation?.map((point, index) => (
+                                <li key={index} className={point.level}>
+                                    {point.level === "ok" && <CheckCircle2 size={16} aria-hidden="true" />}
+                                    {point.level === "warn" && <AlertTriangle size={16} aria-hidden="true" />}
+                                    {point.level === "bad" && <XCircle size={16} aria-hidden="true" />}
+                                    <span>{point.text}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+
+                    {/* D — FERTILIZER RECOMMENDATION */}
+
+                    <section className="report-section">
+                        <h3 className="report-section-title">
+                            <span>D</span> Fertilizer Recommendation
+                        </h3>
+
+                        <div className="report-table-wrap">
+                            <table className="report-table report-fertilizer">
+                                <thead>
+                                    <tr>
+                                        <th>Nutrient</th>
+                                        <th>Soil-test status</th>
+                                        <th className="num">Dose (kg/ha)</th>
+                                        <th>Reference sources &amp; timing</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {result.fertilizerPlan?.rows.map(row => (
+                                        <tr key={row.nutrient}>
+                                            <td>{row.nutrient}</td>
+                                            <td>{row.testStatus}</td>
+                                            <td className="num">
+                                                {row.doseKgHa === 0
+                                                    ? "Skip (soil sufficient)"
+                                                    : row.doseKgHa}
+                                            </td>
+                                            <td className="sources">
+                                                <div>{row.sources}</div>
+                                                <small>{row.timing}</small>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <p className="report-footnote">
+                            {result.fertilizerPlan?.basis}
+                        </p>
+
+                        {/* Amendments */}
+
+                        {(result.fertilizerPlan?.amendments?.length > 0 ||
+                            result.limeRequirement ||
+                            result.gypsumRequirement) && (
+                            <div className="report-amendments">
+                                <h4>Soil amendments &amp; organic nutrition</h4>
+                                <ul>
+                                    {result.fertilizerPlan?.amendments?.map((item, index) => (
+                                        <li key={index}>
+                                            <strong>{item.material} — {item.dose}.</strong>{" "}
+                                            {item.note}
+                                        </li>
+                                    ))}
+
+                                    {result.limeRequirement && (
+                                        <li>
+                                            <strong>
+                                                Agricultural lime (CaCO₃) — ≈ {result.limeRequirement.tonnesPerHa} t/ha.
+                                            </strong>{" "}
+                                            {result.limeRequirement.basis}. {result.limeRequirement.note}
+                                        </li>
                                     )}
 
-                        </div>
+                                    {result.gypsumRequirement && (
+                                        <li>
+                                            <strong>
+                                                Gypsum (CaSO₄·2H₂O) —{" "}
+                                                {result.gypsumRequirement.tonnesPerHa !== null
+                                                    ? `≈ ${result.gypsumRequirement.tonnesPerHa} t/ha`
+                                                    : "CEC required to compute"}
+                                                .
+                                            </strong>{" "}
+                                            {result.gypsumRequirement.basis}. {result.gypsumRequirement.note}
+                                        </li>
+                                    )}
 
+                                    {result.micronutrientCorrections?.map((item, index) => (
+                                        <li key={`micro-${index}`}>
+                                            <strong>{item.nutrient} — {item.material}.</strong>{" "}
+                                            {item.dose}. {item.note}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                     </section>
 
+                    {/* E — RISKS & ACTION PLAN */}
 
-                    {/* REGENERATION */}
+                    <section className="report-section">
+                        <h3 className="report-section-title">
+                            <span>E</span> Risk Radar &amp; Action Plan
+                        </h3>
 
-                    <section className="regeneration-card">
-
-                        <div>
-
-                            <span className="section-label">
-                                SOIL REGENERATION
-                            </span>
-
-                            <h2>
-                                Build soil that performs
-                                for the next crop.
-                            </h2>
-
-                            <p>
-                                GroWell looks beyond
-                                today's nutrient values
-                                and focuses on long-term
-                                soil resilience.
-                            </p>
-
+                        <div className="report-risk-grid">
+                            {[
+                                ["Nutrient depletion", result.risks?.nutrientDepletion],
+                                ["Acidity", result.risks?.acidity],
+                                ["Alkalinity", result.risks?.alkalinity],
+                                ["Salinity", result.risks?.salinity],
+                                ["Organic matter decline", result.risks?.organicMatterDecline]
+                            ].map(([label, value]) => (
+                                <div key={label} className="report-risk-item">
+                                    <span>{label}</span>
+                                    <strong className={getStatusClass(value)}>
+                                        {value || "Unknown"}
+                                    </strong>
+                                </div>
+                            ))}
                         </div>
 
-
-                        <div className="regeneration-score">
-
-                            <strong>
-                                {getParameterScore(
-                                    "organicCarbon"
-                                )}
-                            </strong>
-
-                            <span>
-                                /100
-                            </span>
-
-                        </div>
-
+                        <ol className="report-actions">
+                            {result.actions?.slice(0, 6).map((action, index) => (
+                                <li key={index}>
+                                    <span className="report-action-num">
+                                        {String(index + 1).padStart(2, "0")}
+                                    </span>
+                                    <div>
+                                        <small>{action.timing}</small>
+                                        <p>{action.action}</p>
+                                    </div>
+                                </li>
+                            ))}
+                        </ol>
                     </section>
 
-                </div>
+                    {/* F — METHODS & DISCLAIMER */}
+
+                    <section className="report-section">
+                        <h3 className="report-section-title">
+                            <span>F</span> Methods, Validation &amp; Disclaimer
+                        </h3>
+
+                        <div className="report-methods">
+                            {result.methods?.map((method, index) => (
+                                <div key={index} className="report-method-row">
+                                    <strong>{method.parameter}</strong>
+                                    <span>{method.method}</span>
+                                    <em>{method.reference}</em>
+                                </div>
+                            ))}
+                        </div>
+
+                        <p className="report-disclaimer">
+                            This report is a decision-support screening generated by the GroWell
+                            Soil Intelligence engine from the values entered. It does not replace
+                            an accredited laboratory certificate for regulatory, subsidy or
+                            contractual purposes. Recommendations are general; local agro-climatic
+                            conditions, crop variety and irrigation quality may modify them.
+                            Always confirm corrective dosing (lime, gypsum, micronutrients) with
+                            your nearest soil-testing laboratory or Krishi Vigyan Kendra before
+                            bulk application.
+                        </p>
+
+                        <div className="report-signatures">
+                            <div className="report-signature-block">
+                                <span className="report-signature-line" />
+                                <small>Analysed by — GroWell Soil Intelligence Engine</small>
+                            </div>
+                            <div className="report-signature-block">
+                                <span className="report-signature-line" />
+                                <small>Agronomist / Field officer verification</small>
+                            </div>
+                            <div className="report-signature-block">
+                                <span className="report-signature-line" />
+                                <small>Farmer acknowledgement</small>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* REPORT ACTIONS */}
+
+                    <div className="report-actions-bar no-print">
+                        <button
+                            type="button"
+                            className="soil-run-primary"
+                            onClick={printReport}
+                        >
+                            <Printer size={18} aria-hidden="true" />
+                            Print soil test report
+                        </button>
+
+                        <div className="report-actions-note">
+                            <FileText size={16} aria-hidden="true" />
+                            Use your browser’s “Save as PDF” to get a digital certificate.
+                        </div>
+                    </div>
+
+                </article>
 
             )}
 

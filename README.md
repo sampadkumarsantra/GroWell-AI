@@ -211,19 +211,28 @@ to:
 
 Soil is the foundation of agriculture.
 
-GroWell AI provides a soil intelligence interface using parameters such as:
+GroWell AI provides a professional, laboratory-style soil analysis workflow — from sample registration to a printable report — using parameters such as:
 
-- Soil pH
-- Electrical conductivity
-- Organic carbon
-- Nitrogen
-- Phosphorus
-- Potassium
-- Soil type
-- Crop
-- Growth stage
+- Sample & field details (farm, field, depth, collection date, report number)
+- Soil pH and electrical conductivity
+- Organic carbon (Walkley & Black method)
+- Available nitrogen, phosphorus (Olsen or Bray-1), potassium, sulphur, calcium and magnesium
+- DTPA-extractable micronutrients: zinc, iron, manganese, copper, and hot-water boron
+- Cation exchange capacity, exchangeable sodium (ESP), base saturation and buffer pH (all optional)
+- Soil texture and bulk density
+- Crop and growth stage
 
-These parameters can be interpreted to provide agricultural insights and recommendations.
+The analysis applies standard laboratory interpretation:
+
+- Classification bands for every parameter (e.g. strongly acidic → strongly alkaline, non-saline → very strongly saline, low / medium / high nutrient status)
+- Parker's Nutrient Index (low = 1, medium = 2, high = 3)
+- Soil-test-adjusted NPK fertiliser recommendation (Low ×1.25, Medium ×1.0, High ×0 for P and K; N scaled accordingly), with reference urea / SSP / DAP / MOP equivalents
+- Lime requirement for acidic soils (SMP buffer or texture-based field estimate)
+- Gypsum requirement for sodic soils (when ESP and CEC are known): GR = (ESP − 15) × CEC ÷ 100; gypsum t/ha = GR × 1.72
+- Micronutrient correction plan (Zn, Fe, Mn, Cu, B, S)
+- Resulting actions are folded into the single action plan shown in the app
+
+Every report is a printable "Soil Test Report" certificate (A4, letterhead, method references, interpretation, disclaimer and signature blocks).
 
 The long-term objective is to create increasingly personalized soil intelligence based on the farmer's actual field conditions.
 

@@ -41,17 +41,82 @@ const LIMITS = {
 
     nitrogen: {
         min: 0,
-        max: 2000
+        max: 20000
     },
 
     phosphorus: {
         min: 0,
-        max: 500
+        max: 5000
     },
 
     potassium: {
         min: 0,
-        max: 1500
+        max: 15000
+    },
+
+    calcium: {
+        min: 0,
+        max: 30000
+    },
+
+    magnesium: {
+        min: 0,
+        max: 15000
+    },
+
+    sulphur: {
+        min: 0,
+        max: 5000
+    },
+
+    zinc: {
+        min: 0,
+        max: 100
+    },
+
+    iron: {
+        min: 0,
+        max: 200
+    },
+
+    manganese: {
+        min: 0,
+        max: 200
+    },
+
+    copper: {
+        min: 0,
+        max: 100
+    },
+
+    boron: {
+        min: 0,
+        max: 20
+    },
+
+    cec: {
+        min: 0,
+        max: 150
+    },
+
+    esp: {
+        min: 0,
+        max: 100
+    },
+
+    bufferPh: {
+        min: 4,
+        max: 9
+    },
+
+    baseSaturation: {
+        min: 0,
+        max: 100
+    },
+
+    bulkDensity: {
+        min: 0.5,
+        max: 2.5
     }
 };
 
@@ -291,6 +356,758 @@ const SOIL_PROFILES = {
     }
 };
 
+
+/*
+|--------------------------------------------------------------------------
+| PROFESSIONAL SOIL TESTING LAYER
+|--------------------------------------------------------------------------
+| Classification bands follow widely used reference ranges (Indian /
+| international soil-testing convention). Values entered in ppm are
+| converted to kg/ha using the 0–15 cm furrow-slice factor 2.24.
+*/
+
+const PPM_TO_KGHA = 2.24;
+
+function bandOf(value, bands) {
+
+    if (value === null) {
+        return null;
+    }
+
+    for (const band of bands) {
+        if (value < band.upTo) {
+            return band.label;
+        }
+    }
+
+    return bands[bands.length - 1].label;
+}
+
+function levelOf(value, bands) {
+
+    if (value === null) {
+        return null;
+    }
+
+    for (const band of bands) {
+        if (value < band.upTo) {
+            return band.level;
+        }
+    }
+
+    return bands[bands.length - 1].level;
+}
+
+const BANDS = {
+
+    ph: [
+        { upTo: 4.5, label: "Strongly acidic", level: "low" },
+        { upTo: 5.5, label: "Moderately acidic", level: "low" },
+        { upTo: 6.5, label: "Slightly acidic", level: "medium" },
+        { upTo: 7.3, label: "Neutral", level: "high" },
+        { upTo: 8.0, label: "Slightly alkaline", level: "medium" },
+        { upTo: 8.5, label: "Moderately alkaline", level: "low" },
+        { upTo: Infinity, label: "Strongly alkaline", level: "low" }
+    ],
+
+    ec: [
+        { upTo: 2, label: "Non-saline", level: "high" },
+        { upTo: 4, label: "Slightly saline", level: "medium" },
+        { upTo: 8, label: "Moderately saline", level: "low" },
+        { upTo: 16, label: "Strongly saline", level: "low" },
+        { upTo: Infinity, label: "Very strongly saline", level: "low" }
+    ],
+
+    organicCarbon: [
+        { upTo: 0.5, label: "Low", level: "low" },
+        { upTo: 0.75, label: "Medium", level: "medium" },
+        { upTo: Infinity, label: "High", level: "high" }
+    ],
+
+    nitrogen: [
+        { upTo: 280, label: "Low", level: "low" },
+        { upTo: 560, label: "Medium", level: "medium" },
+        { upTo: Infinity, label: "High", level: "high" }
+    ],
+
+    /* Olsen extraction (pH > 7.3 soils). */
+    phosphorusOlsen: [
+        { upTo: 11, label: "Low", level: "low" },
+        { upTo: 22, label: "Medium", level: "medium" },
+        { upTo: Infinity, label: "High", level: "high" }
+    ],
+
+    /* Bray-1 extraction (acidic / neutral soils). */
+    phosphorusBray: [
+        { upTo: 22, label: "Low", level: "low" },
+        { upTo: 45, label: "Medium", level: "medium" },
+        { upTo: Infinity, label: "High", level: "high" }
+    ],
+
+    potassium: [
+        { upTo: 108, label: "Low", level: "low" },
+        { upTo: 280, label: "Medium", level: "medium" },
+        { upTo: Infinity, label: "High", level: "high" }
+    ],
+
+    sulphur: [
+        { upTo: 10, label: "Low", level: "low" },
+        { upTo: 20, label: "Medium", level: "medium" },
+        { upTo: Infinity, label: "High", level: "high" }
+    ],
+
+    calcium: [
+        { upTo: 400, label: "Low", level: "low" },
+        { upTo: 1000, label: "Medium", level: "medium" },
+        { upTo: Infinity, label: "High", level: "high" }
+    ],
+
+    magnesium: [
+        { upTo: 130, label: "Low", level: "low" },
+        { upTo: 290, label: "Medium", level: "medium" },
+        { upTo: Infinity, label: "High", level: "high" }
+    ],
+
+    zinc: [
+        { upTo: 0.6, label: "Low", level: "low" },
+        { upTo: 1.2, label: "Medium", level: "medium" },
+        { upTo: Infinity, label: "High", level: "high" }
+    ],
+
+    iron: [
+        { upTo: 4.5, label: "Low", level: "low" },
+        { upTo: 10, label: "Adequate", level: "medium" },
+        { upTo: Infinity, label: "High", level: "high" }
+    ],
+
+    manganese: [
+        { upTo: 1.0, label: "Low", level: "low" },
+        { upTo: 3.5, label: "Adequate", level: "medium" },
+        { upTo: Infinity, label: "High", level: "high" }
+    ],
+
+    copper: [
+        { upTo: 0.2, label: "Low", level: "low" },
+        { upTo: 0.8, label: "Adequate", level: "medium" },
+        { upTo: Infinity, label: "High", level: "high" }
+    ],
+
+    boron: [
+        { upTo: 0.5, label: "Low", level: "low" },
+        { upTo: 1.0, label: "Adequate", level: "medium" },
+        { upTo: Infinity, label: "High", level: "high" }
+    ],
+
+    cec: [
+        { upTo: 10, label: "Low (sandy)", level: "low" },
+        { upTo: 25, label: "Medium (loamy)", level: "medium" },
+        { upTo: Infinity, label: "High (clayey)", level: "high" }
+    ],
+
+    esp: [
+        { upTo: 10, label: "Normal", level: "high" },
+        { upTo: 15, label: "Borderline sodic", level: "medium" },
+        { upTo: 25, label: "Sodic", level: "low" },
+        { upTo: Infinity, label: "Strongly sodic", level: "low" }
+    ],
+
+    baseSaturation: [
+        { upTo: 50, label: "Low", level: "low" },
+        { upTo: 80, label: "Adequate", level: "medium" },
+        { upTo: Infinity, label: "High", level: "high" }
+    ],
+
+    bulkDensity: [
+        { upTo: 1.1, label: "Loose", level: "high" },
+        { upTo: 1.4, label: "Ideal", level: "high" },
+        { upTo: 1.6, label: "Compact", level: "medium" },
+        { upTo: Infinity, label: "Highly compacted", level: "low" }
+    ]
+};
+
+function classify(value, bands) {
+
+    if (value === null) {
+        return {
+            value: null,
+            label: "Not tested",
+            level: null
+        };
+    }
+
+    return {
+        value,
+        label: bandOf(value, bands),
+        level: levelOf(value, bands)
+    };
+}
+
+/* Parker's Nutrient Index: low = 1, medium = 2, high = 3. */
+function parkerNutrientIndex(items) {
+
+    const tested =
+        items.filter(item => item.level !== null);
+
+    if (tested.length === 0) {
+        return null;
+    }
+
+    const score =
+        tested.reduce((sum, item) => {
+            if (item.level === "high") {
+                return sum + 3;
+            }
+
+            if (item.level === "medium") {
+                return sum + 2;
+            }
+
+            return sum + 1;
+        }, 0);
+
+    const index =
+        score / tested.length;
+
+    let category = "Low fertility";
+
+    if (index > 2.33) {
+        category = "High fertility";
+    } else if (index >= 1.67) {
+        category = "Medium fertility";
+    }
+
+    return {
+        value: Number(index.toFixed(2)),
+        category,
+        testedCount: tested.length
+    };
+}
+
+function limeRequirement(ph, soilType, bufferPh) {
+
+    if (ph === null || ph >= 5.5) {
+        return null;
+    }
+
+    const round1 = v => Math.round(v * 10) / 10;
+
+    if (bufferPh !== null) {
+
+        const lr =
+            clamp((8.00 - bufferPh) * 1.5, 0, 12);
+
+        return {
+            tonnesPerHa: round1(lr),
+            targetPh: 6.5,
+            basis:
+                `SMP-buffer estimate: (8.00 − ${bufferPh.toFixed(1)}) × 1.5 t CaCO₃/ha`,
+            note:
+                "Mineral soil estimate to lift pH toward 6.4–6.5. Confirm with a buffer-pH test at your nearest soil-testing laboratory before bulk liming."
+        };
+    }
+
+    const texture =
+        soilType === "Clay" || soilType === "Clay Loam"
+            ? "clay"
+            : soilType === "Sandy" || soilType === "Sandy Loam"
+                ? "sandy"
+                : "loam";
+
+    let tonnes;
+
+    if (ph > 5.0) {
+        tonnes = { sandy: 1.0, loam: 1.5, clay: 2.0 }[texture];
+    } else if (ph > 4.5) {
+        tonnes = { sandy: 1.5, loam: 2.25, clay: 3.0 }[texture];
+    } else {
+        tonnes = { sandy: 2.0, loam: 3.0, clay: 4.0 }[texture];
+    }
+
+    return {
+        tonnesPerHa: tonnes,
+        targetPh: 6.5,
+        basis:
+            `Field estimate for ${texture} soil at pH ${ph.toFixed(1)} (target ≈ 6.5)`,
+        note:
+            "Apply agricultural lime (CaCO₃ ≥ 85%) in split doses with incorporation; re-test pH after one season."
+    };
+}
+
+function gypsumRequirement(esp, cec) {
+
+    if (esp === null || esp <= 15) {
+        return null;
+    }
+
+    if (cec === null) {
+        return {
+            tonnesPerHa: null,
+            basis:
+                "GR = (ESP − 15) × CEC ÷ 100; gypsum (t/ha) = GR × 1.72",
+            note:
+                "ESP exceeds the sodic threshold (15), but CEC was not supplied — gypsum requirement cannot be computed. Provide CEC (cmol(+)/kg) or consult your soil-testing laboratory."
+        };
+    }
+
+    const gr = ((esp - 15) * cec) / 100;
+    const tonnes = gr * 1.72;
+
+    return {
+        tonnesPerHa: Math.round(tonnes * 10) / 10,
+        basis:
+            `GR = (${esp.toFixed(1)} − 15) × ${cec.toFixed(1)} ÷ 100 = ${gr.toFixed(2)} cmol(+)/kg; gypsum = GR × 1.72 t/ha`,
+        note:
+            "Apply mined gypsum (CaSO₄·2H₂O ≥ 90%) in split doses with leaching irrigations; keep field ponded where possible; re-test ESP after one season."
+    };
+}
+
+/* Generic (blanket) recommendations, adjusted by soil-test status. */
+
+const BLANKET_RECOMMENDATIONS = {
+    Rice:      { n: 120, p: 60, k: 40 },
+    Wheat:     { n: 120, p: 60, k: 40 },
+    Maize:     { n: 150, p: 60, k: 40 },
+    Cotton:    { n: 120, p: 60, k: 60 },
+    Potato:    { n: 150, p: 80, k: 100 },
+    Tomato:    { n: 120, p: 80, k: 80 },
+    Soybean:   { n: 25,  p: 60, k: 40 },
+    Groundnut: { n: 20,  p: 40, k: 60 },
+    Other:     { n: 100, p: 50, k: 50 }
+};
+
+const STATUS_ADJUSTMENT = {
+    low: 1.25,
+    medium: 1.0,
+    high: 0
+};
+
+const N_ADJUSTMENT = {
+    low: 1.2,
+    medium: 1.0,
+    high: 0.8
+};
+
+function adjustmentFactor(level, table) {
+
+    if (!level) {
+        return 1;
+    }
+
+    return table[level] ?? 1;
+}
+
+function buildFertilizerPlan({ crop, classifications, organicCarbon }) {
+
+    const base =
+        BLANKET_RECOMMENDATIONS[crop] ||
+        BLANKET_RECOMMENDATIONS.Other;
+
+    const nLevel = classifications.nitrogen.level;
+    const pLevel = classifications.phosphorus.level;
+    const kLevel = classifications.potassium.level;
+
+    const nDose =
+        Math.round(base.n * adjustmentFactor(nLevel, N_ADJUSTMENT));
+
+    const pDose =
+        Math.round(base.p * adjustmentFactor(pLevel, STATUS_ADJUSTMENT));
+
+    const kDose =
+        Math.round(base.k * adjustmentFactor(kLevel, STATUS_ADJUSTMENT));
+
+    const rows = [
+        {
+            nutrient: "Nitrogen (N)",
+            testStatus: classifications.nitrogen.label,
+            doseKgHa: nDose,
+            sources:
+                "Urea (46% N): " +
+                Math.round(nDose / 0.46) +
+                " kg/ha",
+            timing:
+                "Split 50% basal, 25% at tillering / early vegetative, 25% at panicle initiation / flowering."
+        },
+        {
+            nutrient: "Phosphorus (P₂O₅)",
+            testStatus: classifications.phosphorus.label,
+            doseKgHa: pDose,
+            sources:
+                "SSP (16% P₂O₅): " +
+                Math.round(pDose / 0.16) +
+                " kg/ha  or  DAP (46%): " +
+                Math.round(pDose / 0.46) +
+                " kg/ha",
+            timing:
+                "Full dose as basal, placed near the root zone. If using DAP, its N contribution (18%) may replace part of the urea requirement."
+        },
+        {
+            nutrient: "Potash (K₂O)",
+            testStatus: classifications.potassium.label,
+            doseKgHa: kDose,
+            sources:
+                "MOP (60% K₂O): " +
+                Math.round(kDose / 0.6) +
+                " kg/ha",
+            timing:
+                "Full dose as basal for field crops; 30–40% split at tuber initiation / fruiting in potato and tomato."
+        }
+    ];
+
+    const amendments = [];
+
+    if (organicCarbon !== null) {
+
+        amendments.push({
+            material: "FYM / compost",
+            dose:
+                organicCarbon < 0.5
+                    ? "10–15 t/ha"
+                    : "5 t/ha (maintenance)",
+            note:
+                organicCarbon < 0.5
+                    ? "Incorporate well-rotted farmyard manure 3–4 weeks before sowing to rebuild organic matter."
+                    : "Maintain organic matter through residues and green manure."
+        });
+    } else {
+
+        amendments.push({
+            material: "FYM / compost",
+            dose: "5–10 t/ha",
+            note:
+                "Organic carbon was not supplied; a maintenance farmyard application is recommended."
+        });
+    }
+
+    return {
+        crop,
+        basis:
+            "General crop recommendation adjusted by soil-test status (Low ×1.25, Medium ×1.0, High ×0 for P and K; N scaled ×1.2 / ×1.0 / ×0.8). Values not tested are left at the medium (×1.0) rate.",
+        rows,
+        amendments
+    };
+}
+
+function buildMicronutrientCorrections(classifications) {
+
+    const corrections = [];
+
+    if (classifications.zinc.level === "low") {
+        corrections.push({
+            nutrient: "Zinc (Zn)",
+            material: "Zinc sulphate monohydrate (33% Zn)",
+            dose: "25 kg/ha once every 2–3 seasons, or 0.5% foliar ZnSO₄ at early vegetative stage",
+            note:
+                "Zinc deficiency is the most common micronutrient disorder in Indian soils; most responsive in cereals, pulses and oilseeds."
+        });
+    }
+
+    if (classifications.iron.level === "low") {
+        corrections.push({
+            nutrient: "Iron (Fe)",
+            material: "Ferrous sulphate (19% Fe)",
+            dose: "25 kg/ha soil application, or 1% FeSO₄ foliar spray at first chlorosis symptoms",
+            note:
+                "Common on calcareous / high-pH soils; prefer foliar correction for standing crops."
+        });
+    }
+
+    if (classifications.manganese.level === "low") {
+        corrections.push({
+            nutrient: "Manganese (Mn)",
+            material: "Manganese sulphate (26–28% Mn)",
+            dose: "10–20 kg/ha soil application, or 0.5% MnSO₄ foliar spray",
+            note:
+                "Frequently deficient in high-pH and over-limed soils; watch cereals and legumes."
+        });
+    }
+
+    if (classifications.copper.level === "low") {
+        corrections.push({
+            nutrient: "Copper (Cu)",
+            material: "Copper sulphate (25% Cu)",
+            dose: "5 kg/ha soil application",
+            note:
+                "Rarely required; apply only on confirmed deficiency, typically in organic / peat soils."
+        });
+    }
+
+    if (classifications.boron.level === "low") {
+        corrections.push({
+            nutrient: "Boron (B)",
+            material: "Borax (11% B)",
+            dose: "1 kg/ha soil application, or 0.2% boric-acid foliar spray before flowering",
+            note:
+                "Critical for pollen germination and fruit set; essential in oilseeds, pulses and cotton."
+        });
+    }
+
+    if (classifications.sulphur.level === "low") {
+        corrections.push({
+            nutrient: "Sulphur (S)",
+            material: "Elemental sulphur (90% S) or gypsum (18% S)",
+            dose: "20–40 kg S/ha, or 100–200 kg gypsum/ha",
+            note:
+                "Sulphur boosts oil content in oilseeds and N-use efficiency; single super phosphate also supplies S."
+        });
+    }
+
+    return corrections;
+}
+
+function buildInterpretation({ ph, ec, organicCarbon, classifications, lime, gypsum, esp }) {
+
+    const points = [];
+
+    if (ph !== null) {
+
+        if (ph < 5.5) {
+            points.push({
+                level: "bad",
+                text:
+                    `Soil is ${classifications.ph.label.toLowerCase()} (pH ${ph.toFixed(1)}). Aluminium and manganese toxicity risk is elevated; apply lime${lime ? ` (≈${lime.tonnesPerHa} t CaCO₃/ha)` : ""} before sowing.`
+            });
+        } else if (ph > 8.5) {
+            points.push({
+                level: "bad",
+                text:
+                    `Soil is ${classifications.ph.label.toLowerCase()} (pH ${ph.toFixed(1)}). Iron, zinc, manganese and phosphorus availability decline sharply; apply elemental sulphur and organic matter, and prefer acid-forming fertilizers.`
+            });
+        } else if (ph >= 6.5 && ph <= 7.3) {
+            points.push({
+                level: "ok",
+                text:
+                    `Soil reaction is neutral (pH ${ph.toFixed(1)}) — the optimum window for most field crops.`
+            });
+        } else {
+            points.push({
+                level: "warn",
+                text:
+                    `Soil is ${classifications.ph.label.toLowerCase()} (pH ${ph.toFixed(1)}). Monitor micronutrient availability and re-test annually.`
+            });
+        }
+    }
+
+    if (ec !== null) {
+
+        if (ec >= 4) {
+            points.push({
+                level: "bad",
+                text:
+                    `Electrical conductivity ${ec.toFixed(2)} dS/m indicates ${classifications.ec.label.toLowerCase()} conditions. Leach salts with good-quality irrigation, improve drainage and select salt-tolerant varieties.`
+            });
+        } else if (ec >= 2) {
+            points.push({
+                level: "warn",
+                text:
+                    `EC ${ec.toFixed(2)} dS/m — mild salinity affecting sensitive crops (beans, carrots, peas). Monitor and leach periodically.`
+            });
+        } else {
+            points.push({
+                level: "ok",
+                text:
+                    `EC ${ec.toFixed(2)} dS/m — no salinity constraint.`
+            });
+        }
+    }
+
+    if (esp !== null && esp > 15) {
+
+        points.push({
+            level: "bad",
+            text:
+                `ESP ${esp.toFixed(1)} exceeds the sodicity threshold (15). Sodium must be displaced with gypsum${gypsum && gypsum.tonnesPerHa ? ` (≈${gypsum.tonnesPerHa} t/ha)` : ""} followed by leaching; reclaim before sowing.`
+        });
+    }
+
+    if (organicCarbon !== null) {
+
+        if (organicCarbon < 0.5) {
+            points.push({
+                level: "bad",
+                text:
+                    `Organic carbon ${organicCarbon.toFixed(2)}% is low. Nutrient cycling, aggregation and water holding are degraded — prioritise FYM/compost and residue retention.`
+            });
+        } else if (organicCarbon >= 0.75) {
+            points.push({
+                level: "ok",
+                text:
+                    `Organic carbon ${organicCarbon.toFixed(2)}% — satisfactory for sustained fertility.`
+            });
+        } else {
+            points.push({
+                level: "warn",
+                text:
+                    `Organic carbon ${organicCarbon.toFixed(2)}% — medium. Build organic matter gradually.`
+            });
+        }
+    }
+
+    for (const [key, label] of [
+        ["nitrogen", "Nitrogen"],
+        ["phosphorus", "Available phosphorus"],
+        ["potassium", "Available potash"],
+        ["sulphur", "Sulphur"],
+        ["zinc", "Zinc"],
+        ["iron", "Iron"],
+        ["manganese", "Manganese"],
+        ["copper", "Copper"],
+        ["boron", "Boron"],
+        ["calcium", "Calcium"],
+        ["magnesium", "Magnesium"]
+    ]) {
+
+        const item = classifications[key];
+
+        if (item && item.level === "low") {
+            points.push({
+                level: "bad",
+                text:
+                    `${label} is ${item.label === "Low" ? "LOW" : item.label} — dependent on soil-test correction before the next crop.`
+            });
+        }
+    }
+
+    if (points.every(p => p.level === "ok")) {
+
+        points.push({
+            level: "ok",
+            text:
+                "No major limiting factor detected in the supplied results. Maintain balanced nutrition and re-test annually."
+        });
+    }
+
+    return points;
+}
+
+function buildVerdict({ score, ph, ec, esp }) {
+
+    if (
+        (ph !== null && ph < 5) ||
+        (ec !== null && ec >= 8) ||
+        (esp !== null && esp > 15)
+    ) {
+        return "Amelioration required before sowing";
+    }
+
+    if (score === null || score >= 80) {
+        return "Highly suitable — maintain soil health";
+    }
+
+    if (score >= 60) {
+        return "Suitable with nutrient management";
+    }
+
+    if (score >= 40) {
+        return "Marginal — correct limiting factors first";
+    }
+
+    return "Not suitable without amelioration";
+}
+
+function buildMethods({ provided, phosphorusMethod, nutrientUnit }) {
+
+    const methods = [];
+
+    const add = (parameter, method, reference) =>
+        methods.push({ parameter, method, reference });
+
+    if (provided.ph) {
+        add("pH", "1:2.5 soil : water suspension", "Jackson, 1973");
+    }
+
+    if (provided.ec) {
+        add("EC", "1:2 soil : water extract, conductivity bridge", "Jackson, 1973");
+    }
+
+    if (provided.organicCarbon) {
+        add("Organic carbon", "Walkley & Black wet oxidation", "Walkley & Black, 1934");
+    }
+
+    if (provided.nitrogen) {
+        add("Available nitrogen", "Alkaline potassium permanganate", "Subbiah & Asija, 1956");
+    }
+
+    if (provided.phosphorus) {
+        add(
+            "Available phosphorus",
+            phosphorusMethod === "Bray-1"
+                ? "Bray & Kurtz No. 1 extractant"
+                : "0.5 M NaHCO₃ (Olsen) extractant",
+            phosphorusMethod === "Bray-1"
+                ? "Bray & Kurtz, 1945"
+                : "Olsen et al., 1954"
+        );
+    }
+
+    if (provided.potassium) {
+        add("Available potash", "Neutral normal ammonium acetate, flame photometry", "Jackson, 1973");
+    }
+
+    if (provided.sulphur) {
+        add("Available sulphur", "Calcium chloride extractable, turbidimetric", "Chesnin & Yien, 1950");
+    }
+
+    if (provided.calcium || provided.magnesium) {
+        add("Exchangeable Ca / Mg", "Neutral normal ammonium acetate", "Jackson, 1973");
+    }
+
+    if (provided.zinc || provided.iron || provided.manganese || provided.copper) {
+        add("DTPA-extractable Zn, Fe, Mn, Cu", "DTPA chelate extraction, AAS", "Lindsay & Norvell, 1978");
+    }
+
+    if (provided.boron) {
+        add("Available boron", "Hot-water soluble, colorimetric (Azomethine-H)", "Berger & Truog, 1939");
+    }
+
+    if (provided.cec) {
+        add("CEC", "Ammonium acetate saturation, distillation", "Jackson, 1973");
+    }
+
+    if (provided.esp) {
+        add("ESP / exchangeable sodium", "Ammonium acetate; ESP = (Na / CEC) × 100", "Jackson, 1973");
+    }
+
+    if (provided.bufferPh) {
+        add("Buffer pH / lime requirement", "SMP buffer", "Shoemaker et al., 1961");
+    }
+
+    if (nutrientUnit === "ppm") {
+        add(
+            "Unit conversion",
+            "Values entered in mg/kg (ppm) converted to kg/ha for the 0–15 cm furrow slice using factor 2.24",
+            "Bulk density 1.28 g/cm³ assumed"
+        );
+    }
+
+    return methods;
+}
+
+function generateReportId() {
+
+    const now = new Date();
+
+    const ymd =
+        String(now.getFullYear()) +
+        String(now.getMonth() + 1).padStart(2, "0") +
+        String(now.getDate()).padStart(2, "0");
+
+    const random =
+        Math.random().toString(36).slice(2, 6).toUpperCase();
+
+    return `GW-${ymd}-${random}`;
+}
+
+function cleanText(value, maxLength = 80) {
+
+    if (value === null || value === undefined) {
+        return "";
+    }
+
+    return String(value)
+        .replace(/[<>]/g, "")
+        .trim()
+        .slice(0, maxLength);
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -939,6 +1756,122 @@ function analyzeSoil(input) {
 
 
     /*
+    Unit handling. Macronutrients may be entered in ppm
+    (mg/kg); convert to kg/ha for the 0–15 cm furrow slice.
+    */
+
+    const nutrientUnit =
+        input.nutrientUnit === "ppm" ? "ppm" : "kgha";
+
+    const toKgHa = value =>
+        nutrientUnit === "ppm" && value !== null
+            ? value * PPM_TO_KGHA
+            : value;
+
+    const nitrogenKgHa =
+        toKgHa(nitrogen);
+
+    const phosphorusKgHa =
+        toKgHa(phosphorus);
+
+    const potassiumKgHa =
+        toKgHa(potassium);
+
+
+    /*
+    Additional professional parameters (all optional).
+    */
+
+    const calcium =
+        toKgHa(
+            validateNumber(
+                "calcium",
+                number(input.calcium)
+            )
+        );
+
+    const magnesium =
+        toKgHa(
+            validateNumber(
+                "magnesium",
+                number(input.magnesium)
+            )
+        );
+
+    const sulphur =
+        toKgHa(
+            validateNumber(
+                "sulphur",
+                number(input.sulphur)
+            )
+        );
+
+    /* Micronutrients are always reported in ppm (DTPA / hot water). */
+    const zinc =
+        validateNumber("zinc", number(input.zinc));
+
+    const iron =
+        validateNumber("iron", number(input.iron));
+
+    const manganese =
+        validateNumber("manganese", number(input.manganese));
+
+    const copper =
+        validateNumber("copper", number(input.copper));
+
+    const boron =
+        validateNumber("boron", number(input.boron));
+
+    const cec =
+        validateNumber("cec", number(input.cec));
+
+    const esp =
+        validateNumber("esp", number(input.esp));
+
+    const bufferPh =
+        validateNumber("bufferPh", number(input.bufferPh));
+
+    const baseSaturation =
+        validateNumber(
+            "baseSaturation",
+            number(input.baseSaturation)
+        );
+
+    const bulkDensity =
+        validateNumber(
+            "bulkDensity",
+            number(input.bulkDensity)
+        );
+
+    const phosphorusMethod =
+        input.phosphorusMethod === "Bray-1" ? "Bray-1" : "Olsen";
+
+
+    /*
+    Sample metadata (echoed back for the report).
+    */
+
+    const sampleMeta = {
+
+        farmName:
+            cleanText(input.farmName, 80),
+
+        fieldName:
+            cleanText(input.fieldName, 80),
+
+        sampleDepth:
+            cleanText(input.sampleDepth, 20) || "0–15 cm",
+
+        sampleDate:
+            cleanText(input.sampleDate, 20),
+
+        reportId:
+            cleanText(input.reportId, 40) ||
+            generateReportId()
+    };
+
+
+    /*
     Profiles.
     */
 
@@ -958,19 +1891,19 @@ function analyzeSoil(input) {
 
     const baseNitrogen =
         calculateNutrientBase(
-            nitrogen,
+            nitrogenKgHa,
             1000
         );
 
     const basePhosphorus =
         calculateNutrientBase(
-            phosphorus,
+            phosphorusKgHa,
             100
         );
 
     const basePotassium =
         calculateNutrientBase(
-            potassium,
+            potassiumKgHa,
             600
         );
 
@@ -1182,6 +2115,255 @@ function analyzeSoil(input) {
 
 
     /*
+    |--------------------------------------------------------------
+    | PROFESSIONAL SOIL-TEST LAYER
+    |--------------------------------------------------------------
+    */
+
+    const pBands =
+        phosphorusMethod === "Bray-1"
+            ? BANDS.phosphorusBray
+            : BANDS.phosphorusOlsen;
+
+    const classifications = {
+
+        ph:
+            classify(ph, BANDS.ph),
+
+        ec:
+            classify(ec, BANDS.ec),
+
+        organicCarbon:
+            classify(
+                organicCarbon,
+                BANDS.organicCarbon
+            ),
+
+        nitrogen:
+            classify(
+                nitrogenKgHa,
+                BANDS.nitrogen
+            ),
+
+        phosphorus:
+            classify(
+                phosphorusKgHa,
+                pBands
+            ),
+
+        potassium:
+            classify(
+                potassiumKgHa,
+                BANDS.potassium
+            ),
+
+        sulphur:
+            classify(
+                sulphur,
+                BANDS.sulphur
+            ),
+
+        calcium:
+            classify(
+                calcium,
+                BANDS.calcium
+            ),
+
+        magnesium:
+            classify(
+                magnesium,
+                BANDS.magnesium
+            ),
+
+        zinc:
+            classify(zinc, BANDS.zinc),
+
+        iron:
+            classify(iron, BANDS.iron),
+
+        manganese:
+            classify(
+                manganese,
+                BANDS.manganese
+            ),
+
+        copper:
+            classify(
+                copper,
+                BANDS.copper
+            ),
+
+        boron:
+            classify(boron, BANDS.boron),
+
+        cec:
+            classify(cec, BANDS.cec),
+
+        esp:
+            classify(esp, BANDS.esp),
+
+        baseSaturation:
+            classify(
+                baseSaturation,
+                BANDS.baseSaturation
+            ),
+
+        bulkDensity:
+            classify(
+                bulkDensity,
+                BANDS.bulkDensity
+            )
+    };
+
+    const parkerIndex =
+        parkerNutrientIndex([
+            classifications.organicCarbon,
+            classifications.nitrogen,
+            classifications.phosphorus,
+            classifications.potassium,
+            classifications.sulphur,
+            classifications.zinc,
+            classifications.iron,
+            classifications.manganese,
+            classifications.copper,
+            classifications.boron
+        ]);
+
+    const lime =
+        limeRequirement(ph, soilType, bufferPh);
+
+    const gypsum =
+        gypsumRequirement(esp, cec);
+
+    const fertilizerPlan =
+        buildFertilizerPlan({
+            crop,
+            classifications,
+            organicCarbon
+        });
+
+    const micronutrientCorrections =
+        buildMicronutrientCorrections(
+            classifications
+        );
+
+    const provided = {
+
+        ph:
+            ph !== null,
+
+        ec:
+            ec !== null,
+
+        organicCarbon:
+            organicCarbon !== null,
+
+        nitrogen:
+            nitrogenKgHa !== null,
+
+        phosphorus:
+            phosphorusKgHa !== null,
+
+        potassium:
+            potassiumKgHa !== null,
+
+        sulphur:
+            sulphur !== null,
+
+        calcium:
+            calcium !== null,
+
+        magnesium:
+            magnesium !== null,
+
+        zinc:
+            zinc !== null,
+
+        iron:
+            iron !== null,
+
+        manganese:
+            manganese !== null,
+
+        copper:
+            copper !== null,
+
+        boron:
+            boron !== null,
+
+        cec:
+            cec !== null,
+
+        esp:
+            esp !== null,
+
+        bufferPh:
+            bufferPh !== null
+    };
+
+    const methods =
+        buildMethods({
+            provided,
+            phosphorusMethod,
+            nutrientUnit
+        });
+
+    const interpretation =
+        buildInterpretation({
+            ph,
+            ec,
+            organicCarbon,
+            classifications,
+            lime,
+            gypsum,
+            esp
+        });
+
+    const verdict =
+        buildVerdict({
+            score,
+            ph,
+            ec,
+            esp
+        });
+
+    /*
+    Amendment actions are appended to the standard plan so
+    the farmer sees them in one place.
+    */
+
+    if (lime) {
+
+        actions.unshift({
+            timing: "Before sowing",
+            action:
+                `Apply agricultural lime (CaCO₃) at approximately ${lime.tonnesPerHa} t/ha to raise soil pH toward 6.5. ${lime.note}`
+        });
+    }
+
+    if (gypsum && gypsum.tonnesPerHa) {
+
+        actions.unshift({
+            timing: "Before sowing",
+            action:
+                `Apply gypsum at approximately ${gypsum.tonnesPerHa} t/ha in split doses with leaching irrigation to reclaim sodic soil. ${gypsum.note}`
+        });
+    }
+
+    for (const correction of micronutrientCorrections) {
+
+        actions.unshift({
+            timing: "Before sowing",
+            action:
+                `${correction.nutrient}: ${correction.dose}. ${correction.note}`
+        });
+    }
+
+    const professionalActions =
+        actions.slice(0, 8);
+
+
+    /*
     Final response.
     */
 
@@ -1204,6 +2386,41 @@ function analyzeSoil(input) {
 
         cropFitStatus:
             cropFitStatus(cropFit),
+
+
+        /*
+        Professional soil-test report fields.
+        */
+
+        reportId:
+            sampleMeta.reportId,
+
+        sampleMeta,
+
+        nutrientUnit,
+
+        phosphorusMethod,
+
+
+        classifications,
+
+        parkerIndex,
+
+        limeRequirement:
+            lime,
+
+        gypsumRequirement:
+            gypsum,
+
+        fertilizerPlan,
+
+        micronutrientCorrections,
+
+        interpretation,
+
+        verdict,
+
+        methods,
 
 
         calculatedScores: {
@@ -1284,7 +2501,7 @@ function analyzeSoil(input) {
 
             nitrogen: {
 
-                value: nitrogen,
+                value: nitrogenKgHa,
 
                 status:
                     nutrientStatus(
@@ -1297,7 +2514,7 @@ function analyzeSoil(input) {
 
             phosphorus: {
 
-                value: phosphorus,
+                value: phosphorusKgHa,
 
                 status:
                     nutrientStatus(
@@ -1310,7 +2527,7 @@ function analyzeSoil(input) {
 
             potassium: {
 
-                value: potassium,
+                value: potassiumKgHa,
 
                 status:
                     nutrientStatus(
@@ -1373,7 +2590,7 @@ function analyzeSoil(input) {
 
         risks,
 
-        actions
+        actions: professionalActions
     };
 }
 
