@@ -9,7 +9,7 @@ services:
     name: growell-ai-2
     runtime: node
     rootDir: .
-    buildCommand: cd client && npm install && npm run build
+    buildCommand: cd client && npm install && VITE_API_URL=https://growell-ai-2.onrender.com npm run build
     startCommand: node server.js
 
     # Subscription state is written by the Razorpay webhook. A
@@ -58,4 +58,13 @@ services:
         sync: false
 
       - key: GOOGLE_CLIENT_ID
+        sync: false
+
+      - key: OPENWEATHER_API_KEY
+        sync: false
+
+      - key: CEDA_API_KEY
+        sync: false
+
+      - key: DATA_GOV_API_KEY
         sync: false
