@@ -51,6 +51,10 @@ const PLANS = {
                 included: true
             },
             {
+                label: "Soil Intelligence — pH, NPK and crop fit",
+                included: true
+            },
+            {
                 label: "Deep Reasoning — multi-step analysis",
                 included: false
             },
@@ -97,6 +101,10 @@ const PLANS = {
             },
             {
                 label: "Detailed agronomy breakdowns",
+                included: true
+            },
+            {
+                label: "Soil Intelligence — pH, NPK and crop fit",
                 included: true
             },
             {
