@@ -7,5 +7,6 @@ dist/
 build/
 .vite/
 *.log
+logs/
 .DS_Store
 mandi_cache.json
