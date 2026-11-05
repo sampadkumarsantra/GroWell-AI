@@ -52,14 +52,18 @@ export async function apiRequest(path, options = {}) {
 
     const candidates = [];
 
-    if (PRIMARY_BASE_URL) {
-        candidates.push(PRIMARY_BASE_URL);
+    // In production the SPA and API are served from the same origin,
+    // so the relative request hits the deployed backend directly on
+    // any device (no localhost needed). It must be tried even when
+    // VITE_API_URL is set, otherwise a stale cross-origin URL is
+    // the only production path and a missing route there renders
+    // the Market page blank.
+    if (import.meta.env.PROD) {
+        candidates.push("");
     }
 
-    // In production the SPA and API are served from the same origin,
-    // so relative requests work on any device (no localhost needed).
-    if (import.meta.env.PROD && !PRIMARY_BASE_URL) {
-        candidates.push("");
+    if (PRIMARY_BASE_URL && !candidates.includes(PRIMARY_BASE_URL)) {
+        candidates.push(PRIMARY_BASE_URL);
     }
 
     for (const base of FALLBACK_BASES) {

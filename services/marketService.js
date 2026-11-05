@@ -33,7 +33,11 @@ function loadDiskCache() {
 
                 if (normalized.length > 0) {
                     cachedRecords = normalized;
-                    cacheTimestamp = parsed.timestamp || Date.now();
+                    // Treat the disk cache as fresh from server start so the
+                    // first request serves it instantly. The committed cache
+                    // file is the source of truth when the production host
+                    // (US region) cannot reach data.gov.in.
+                    cacheTimestamp = Date.now();
                     cacheMeta = computeCacheMeta(normalized);
                     console.log(`[MarketService] Hydrated ${normalized.length} live records from mandi_cache.json.`);
                     return true;
@@ -341,6 +345,9 @@ async function fetchAgmarknetRecords(forceRefresh = false) {
 
     inFlightFetch = (async () => {
         try {
+            if (!DATA_GOV_API_KEY) {
+                throw new Error("DATA_GOV_API_KEY is not set");
+            }
             console.log("Fetching live mandi records from data.gov.in...");
 
             // Fetch in parallel chunks of 10,000 to get all ~14,500 records
@@ -407,6 +414,10 @@ async function fetchAgmarknetRecords(forceRefresh = false) {
         }
 
         if (cachedRecords && cachedRecords.length > 0) {
+            // Refresh the TTL so a failed live fetch (e.g. data.gov.in
+            // unreachable from the production region) does not make every
+            // subsequent request pay the live-fetch timeout again.
+            cacheTimestamp = Date.now();
             return cachedRecords;
         }
 
@@ -835,6 +846,15 @@ async function getRawRecords({
     if (district && district !== "All") {
         const dLower = district.trim().toLowerCase();
         filtered = filtered.filter((r) => r.district.toLowerCase() === dLower);
+    }
+
+    if (market && market !== "All") {
+        const mLower = market.trim().toLowerCase();
+        filtered = filtered.filter(
+            (r) =>
+                r.mandi.toLowerCase() === mLower ||
+                r.market.toLowerCase() === mLower
+        );
     }
 
     if (variety && variety !== "All") {

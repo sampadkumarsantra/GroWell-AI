@@ -290,6 +290,16 @@ function Market() {
                         return exists ? prev : commList[0].commodity;
                     });
                 }
+                loaded = true;
+            }
+
+            // In production there is no direct browser fallback (data.gov.in
+            // blocks CORS), so a failed backend request would otherwise
+            // leave a silently blank section. Surface the reason instead.
+            if (!loaded) {
+                setError(
+                    "Market data could not be loaded from data.gov.in. Check your connection and try Refresh Live Feed."
+                );
             }
         } catch (err) {
             console.error("MARKET SUMMARY LOAD ERROR:", err);
