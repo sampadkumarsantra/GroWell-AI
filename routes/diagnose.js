@@ -142,7 +142,7 @@ router.post(
 
                 confidence:
                     result?.confidence ??
-                    0,
+                    "Not available",
 
                 severity:
                     result?.severity ||
@@ -150,7 +150,7 @@ router.post(
 
                 symptoms:
                     result?.symptoms ||
-                    [],
+                    "Not reported",
 
                 cause:
                     result?.cause ||
@@ -158,15 +158,15 @@ router.post(
 
                 organicTreatment:
                     result?.organicTreatment ||
-                    [],
+                    "Not reported",
 
                 chemicalTreatment:
                     result?.chemicalTreatment ||
-                    [],
+                    "Not reported",
 
                 prevention:
                     result?.prevention ||
-                    [],
+                    "Not reported",
 
                 recommendation:
                     result?.recommendation ||

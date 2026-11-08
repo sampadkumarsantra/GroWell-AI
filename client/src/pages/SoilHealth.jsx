@@ -1130,6 +1130,43 @@ function SoilHealth() {
                         </div>
                     </section>
 
+                    {/* A2 — DERIVED LAB METRICS */}
+
+                    {(result.derived?.organicMatter != null || result.derived?.usdaSalinitySodicity || result.derived?.compaction) && (
+                        <section className="report-section">
+                            <h3 className="report-section-title">
+                                <span>A2</span> Derived Laboratory Metrics
+                            </h3>
+                            <div className="report-risk-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+                                {result.derived?.organicMatter != null && (
+                                    <div className="report-risk-item">
+                                        <span>Organic matter (calculated)</span>
+                                        <strong>{Number(result.derived.organicMatter).toFixed(2)}%</strong>
+                                        <small style={{ color: "var(--gw-faint)", fontSize: 10 }}>OM = OC × 1.724</small>
+                                    </div>
+                                )}
+                                {result.derived?.usdaSalinitySodicity && (
+                                    <div className="report-risk-item">
+                                        <span>Salinity / sodicity (USDA screening)</span>
+                                        <strong className={getStatusClass(result.derived.usdaSalinitySodicity.risk === "High" ? "High" : result.derived.usdaSalinitySodicity.risk === "Moderate" ? "Moderate" : "Low")}>
+                                            {result.derived.usdaSalinitySodicity.class}
+                                        </strong>
+                                        <small style={{ color: "var(--gw-faint)", fontSize: 10 }}>{result.derived.usdaSalinitySodicity.formula}</small>
+                                    </div>
+                                )}
+                                {result.derived?.compaction && (
+                                    <div className="report-risk-item">
+                                        <span>Compaction (bulk density)</span>
+                                        <strong className={getStatusClass(result.derived.compaction.risk === "High" ? "High" : result.derived.compaction.risk === "Moderate" ? "Moderate" : "Low")}>
+                                            {result.derived.compaction.status}
+                                        </strong>
+                                        <small style={{ color: "var(--gw-faint)", fontSize: 10 }}>BD {Number(result.derived.compaction.bulkDensity).toFixed(2)} g/cm³ · limit ~{result.derived.compaction.textureLimit_g_cm3}</small>
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    )}
+
                     {/* B — TEST RESULTS TABLE */}
 
                     <section className="report-section">

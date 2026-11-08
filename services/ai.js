@@ -20,23 +20,27 @@ const DEEP_MODEL      = "llama-3.3-70b-versatile";
 const EFFORT_CONFIG = {
     Quick: {
         model: FAST_MODEL,
-        maxTokens: 450,
-        temperature: 0.15
+        maxTokens: 420,
+        temperature: 0.12,
+        top_p: 0.9
     },
     Balanced: {
         model: PRIMARY_MODEL,
-        maxTokens: 1200,
-        temperature: 0.3
+        maxTokens: 1100,
+        temperature: 0.22,
+        top_p: 0.92
     },
     Detailed: {
         model: PRIMARY_MODEL,
-        maxTokens: 2400,
-        temperature: 0.4
+        maxTokens: 2200,
+        temperature: 0.32,
+        top_p: 0.94
     },
     Deep: {
         model: DEEP_MODEL,
-        maxTokens: 4500,
-        temperature: 0.25
+        maxTokens: 4200,
+        temperature: 0.2,
+        top_p: 0.92
     }
 };
 

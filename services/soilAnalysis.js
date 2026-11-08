@@ -542,6 +542,97 @@ function classify(value, bands) {
     };
 }
 
+/*
+|--------------------------------------------------------------------------
+| PREMIUM LAB CALCULATIONS (derived metrics & formulas)
+|--------------------------------------------------------------------------
+*/
+
+function calculateOrganicMatter(organicCarbon) {
+    if (organicCarbon === null || organicCarbon === undefined) return null;
+    // Van Bemmelen factor
+    return Math.round(organicCarbon * 1.724 * 100) / 100;
+}
+
+function classifyUsdaSalinitySodicity(ec, esp, ph) {
+    if (ec === null && esp === null) return null;
+    const ECe = ec; // 1:2 extract proxy note in interpretation; EC used as indicator
+    const saline = ECe !== null && ECe >= 4;
+    const sodic = esp !== null && esp >= 15;
+    const highPh = ph !== null && ph > 8.5;
+
+    if (saline && sodic) {
+        return {
+            class: "Saline–sodic (USDA screening)",
+            formula: "EC ≥ 4 dS/m and ESP ≥ 15%",
+            risk: "High",
+            note: "High salts and sodium; reclaim with gypsum and leaching using adequate drainage."
+        };
+    }
+    if (saline) {
+        return {
+            class: "Saline (USDA screening)",
+            formula: "EC ≥ 4 dS/m and ESP < 15%",
+            risk: ec >= 8 ? "High" : "Moderate",
+            note: "Leach salts with good-quality water and improve drainage; choose salt-tolerant crops."
+        };
+    }
+    if (sodic || (highPh && esp !== null && esp >= 10)) {
+        return {
+            class: sodic ? "Sodic (USDA screening)" : "Sodicity risk (screening)",
+            formula: sodic ? "ESP ≥ 15% (and typically pH > 8.5)" : "Elevated ESP / alkaline pH trend",
+            risk: sodic ? "High" : "Moderate",
+            note: "Disperse clay and poor infiltration risk; gypsum/acidifying amendments and organic matter help."
+        };
+    }
+    return {
+        class: "Normal (non-saline, non-sodic)",
+        formula: "EC < 4 dS/m and ESP < 15%",
+        risk: "Low",
+        note: "No major salt/sodium hazard indicated by supplied EC/ESP."
+    };
+}
+
+function calculateNutrientSufficiency(value, low, high) {
+    if (value === null || value === undefined) return null;
+    // Sufficiency % relative to medium-high threshold
+    const target = high;
+    if (!target) return null;
+    return Math.max(0, Math.min(150, Math.round((value / target) * 100)));
+}
+
+function estimateCompaction(bulkDensity, soilType) {
+    if (bulkDensity === null || bulkDensity === undefined) return null;
+    // General rooting restriction thresholds vary by texture
+    const limits = {
+        Sandy: 1.8, "Sandy Loam": 1.75, Loam: 1.7, "Silty Loam": 1.65, "Clay Loam": 1.6, Clay: 1.55
+    };
+    const limit = limits[soilType] || 1.7;
+    let status = "Favorable";
+    let risk = "Low";
+    if (bulkDensity >= limit) { status = "Root restriction likely"; risk = "High"; }
+    else if (bulkDensity >= limit - 0.1) { status = "Moderately compacted"; risk = "Moderate"; }
+    return {
+        bulkDensity,
+        textureLimit_g_cm3: limit,
+        status,
+        risk,
+        formula: "Interpretation vs texture-based rooting restriction thresholds (g/cm³)",
+        note: status === "Favorable"
+            ? "Bulk density is within a typical range for root growth in this texture."
+            : "Consider deep rooting crops, controlled traffic, residue retention, and avoid working wet soil."
+    };
+}
+
+function phAvailabilityNotes(ph) {
+    if (ph === null) return [];
+    const notes = [];
+    if (ph < 5.5) notes.push({ nutrient: "P, Ca, Mg, Mo", effect: "Reduced availability / fixation or leaching", formula: "Low pH increases Al³⁺/Mn²⁺ solubility and P fixation" });
+    if (ph > 7.5) notes.push({ nutrient: "Fe, Mn, Zn, Cu, B, P", effect: "Reduced availability", formula: "High pH precipitates micronutrients and forms Ca-phosphates" });
+    if (ph >= 6.0 && ph <= 7.2) notes.push({ nutrient: "Most nutrients", effect: "Near-maximum availability window", formula: "Optimal solubility balance for macro/micronutrients" });
+    return notes;
+}
+
 /* Parker's Nutrient Index: low = 1, medium = 2, high = 3. */
 function parkerNutrientIndex(items) {
 
@@ -854,7 +945,7 @@ function buildMicronutrientCorrections(classifications) {
     return corrections;
 }
 
-function buildInterpretation({ ph, ec, organicCarbon, classifications, lime, gypsum, esp }) {
+function buildInterpretation({ ph, ec, organicCarbon, classifications, lime, gypsum, esp, derived }) {
 
     const points = [];
 
@@ -887,7 +978,15 @@ function buildInterpretation({ ph, ec, organicCarbon, classifications, lime, gyp
         }
     }
 
-    if (ec !== null) {
+    if (derived?.usdaSalinitySodicity) {
+        const u = derived.usdaSalinitySodicity;
+        if (u.risk !== "Low") {
+            points.push({
+                level: u.risk === "High" ? "bad" : "warn",
+                text: `${u.class} (${u.formula}). ${u.note}`
+            });
+        }
+    } else if (ec !== null) {
 
         if (ec >= 4) {
             points.push({
@@ -920,24 +1019,41 @@ function buildInterpretation({ ph, ec, organicCarbon, classifications, lime, gyp
     }
 
     if (organicCarbon !== null) {
+        const om = derived?.organicMatter;
 
         if (organicCarbon < 0.5) {
             points.push({
                 level: "bad",
                 text:
-                    `Organic carbon ${organicCarbon.toFixed(2)}% is low. Nutrient cycling, aggregation and water holding are degraded — prioritise FYM/compost and residue retention.`
+                    `Organic carbon ${organicCarbon.toFixed(2)}%${om ? ` (organic matter ≈ ${om.toFixed(2)}% by OM = OC × 1.724)` : ""} is low. Nutrient cycling, aggregation and water holding are degraded — prioritise FYM/compost and residue retention.`
             });
         } else if (organicCarbon >= 0.75) {
             points.push({
                 level: "ok",
                 text:
-                    `Organic carbon ${organicCarbon.toFixed(2)}% — satisfactory for sustained fertility.`
+                    `Organic carbon ${organicCarbon.toFixed(2)}%${om ? ` (organic matter ≈ ${om.toFixed(2)}%)` : ""} — satisfactory for sustained fertility.`
             });
         } else {
             points.push({
                 level: "warn",
                 text:
-                    `Organic carbon ${organicCarbon.toFixed(2)}% — medium. Build organic matter gradually.`
+                    `Organic carbon ${organicCarbon.toFixed(2)}%${om ? ` (organic matter ≈ ${om.toFixed(2)}%)` : ""} — medium. Build organic matter gradually.`
+            });
+        }
+    }
+
+    if (derived?.compaction?.risk && derived.compaction.risk !== "Low") {
+        points.push({
+            level: derived.compaction.risk === "High" ? "bad" : "warn",
+            text: `Bulk density ${derived.compaction.bulkDensity.toFixed(2)} g/cm³ indicates ${derived.compaction.status.toLowerCase()} for ${derived.compaction.textureLimit_g_cm3 ? "this texture" : "soil"}. ${derived.compaction.note}`
+        });
+    }
+
+    for (const n of (derived?.phAvailabilityNotes || [])) {
+        if (n.effect !== "Near-maximum availability window") {
+            points.push({
+                level: "warn",
+                text: `pH-driven availability: ${n.nutrient} — ${n.effect.toLowerCase()}. (${n.formula})`
             });
         }
     }
@@ -2308,6 +2424,23 @@ function analyzeSoil(input) {
             nutrientUnit
         });
 
+    const derived = {
+        organicMatter: calculateOrganicMatter(organicCarbon),
+        usdaSalinitySodicity: classifyUsdaSalinitySodicity(ec, esp, ph),
+        compaction: estimateCompaction(bulkDensity, soilType),
+        phAvailabilityNotes: phAvailabilityNotes(ph),
+        formulas: {
+            organicMatter: "OM (%) = OC (%) × 1.724 (Van Bemmelen factor)",
+            unitConversion: "kg/ha (0–15 cm) ≈ ppm (mg/kg) × 2.24 (bulk density assumption 1.28 g/cm³)",
+            soilHealthScore: "Weighted index of available pH, EC, OC, N, P, K scores (normalized by tested weights)",
+            parkerIndex: "PNI = mean(class codes 1=Low,2=Medium,3=High) across tested fertility parameters",
+            lime_SMP: "Lime (t CaCO₃/ha) ≈ (target buffer pH − buffer pH) × factor (screening estimate)",
+            gypsum_GR: "GR (cmol(+)/kg) = (ESP − 15) × CEC / 100; Gypsum (t/ha) ≈ GR × 1.72",
+            usdaSalinitySodicity: "Saline: EC ≥ 4 dS/m; Sodic: ESP ≥ 15%; Saline–sodic: both (screening)",
+            cropFit: "Blended suitability of pH/EC/N/P/K scores with soil water behavior and nutrient retention, stage-adjusted"
+        }
+    };
+
     const interpretation =
         buildInterpretation({
             ph,
@@ -2316,7 +2449,8 @@ function analyzeSoil(input) {
             classifications,
             lime,
             gypsum,
-            esp
+            esp,
+            derived
         });
 
     const verdict =
@@ -2421,6 +2555,8 @@ function analyzeSoil(input) {
         verdict,
 
         methods,
+
+        derived,
 
 
         calculatedScores: {

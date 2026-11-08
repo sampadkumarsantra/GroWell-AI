@@ -8,10 +8,9 @@ const { GoogleGenAI } = require("@google/genai");
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // You can change this later from .env
-// Example:
-// GEMINI_VISION_MODEL=gemini-1.5-flash
+// Prefer fast, current vision-capable Flash models for low latency.
 const GEMINI_VISION_MODEL =
-    process.env.GEMINI_VISION_MODEL || "gemini-1.5-flash";
+    process.env.GEMINI_VISION_MODEL || "gemini-2.0-flash";
 
 if (!GEMINI_API_KEY) {
     console.error("❌ GEMINI_API_KEY is missing from .env");
@@ -86,9 +85,10 @@ function isAvailabilityError(error) {
 // =====================================================
 
 const FALLBACK_MODELS = [
-    "gemini-1.5-pro",
-    "gemini-1.5-flash-8b",
-    "gemini-1.0-pro-vision"
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro"
 ];
 
 function buildModelChain() {
@@ -321,7 +321,9 @@ Return ONLY valid JSON - no markdown, no code fences, nothing else before or aft
                                 responseMimeType:
                                     "application/json",
 
-                                temperature: 0.2
+                                temperature: 0.15,
+
+                                maxOutputTokens: 2048
 
                             }
 

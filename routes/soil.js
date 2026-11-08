@@ -2,14 +2,15 @@ const express = require("express");
 const router = express.Router();
 
 const { analyzeSoil } = require("../services/soilAnalysis");
-const { authenticateToken } = require("../middleware/auth");
+const { optionalAuth } = require("../middleware/auth");
 
 /*
- * Soil Intelligence is now available for all users.
+ * Soil Intelligence is available for all users (no login required).
+ * When a session is present, it is attached for context but never gates access.
  */
 router.post(
     "/analyze",
-    authenticateToken,
+    optionalAuth,
     (req, res) => {
         try {
             const result = analyzeSoil(req.body);

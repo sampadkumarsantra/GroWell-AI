@@ -2,11 +2,19 @@ const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 
+const DATA_GOV_RESOURCE_ID =
+    process.env.DATAGOV_AGMARKNET_RESOURCE_ID ||
+    process.env.DATA_GOV_RESOURCE_ID ||
+    "9ef84268-d588-465a-a308-a864a43d0070";
+
 const DATA_GOV_API_URL =
-    "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070";
+    `https://api.data.gov.in/resource/${DATA_GOV_RESOURCE_ID}`;
 
 const DATA_GOV_API_KEY =
-    process.env.DATA_GOV_API_KEY;
+    process.env.DATA_GOV_API_KEY ||
+    process.env.DATAGOV_API_KEY ||
+    process.env.DATA_GOV_IN_API_KEY ||
+    "";
 
 const CACHE_FILE_PATH = path.join(__dirname, "mandi_cache.json");
 
@@ -33,13 +41,11 @@ function loadDiskCache() {
 
                 if (normalized.length > 0) {
                     cachedRecords = normalized;
-                    // Treat the disk cache as fresh from server start so the
-                    // first request serves it instantly. The committed cache
-                    // file is the source of truth when the production host
-                    // (US region) cannot reach data.gov.in.
-                    cacheTimestamp = Date.now();
+                    // Serve disk cache immediately, but leave a short window for a live
+                    // refresh attempt so data can stay current when data.gov.in is reachable.
+                    cacheTimestamp = Date.now() - (CACHE_TTL_MS - 90 * 1000);
                     cacheMeta = computeCacheMeta(normalized);
-                    console.log(`[MarketService] Hydrated ${normalized.length} live records from mandi_cache.json.`);
+                    console.log(`[MarketService] Hydrated ${normalized.length} records from mandi_cache.json (live refresh eligible in ~90s).`);
                     return true;
                 }
             }
@@ -794,12 +800,13 @@ async function getHistory({ commodity, month, year, state = "", mandi = "" } = {
         maxPrice: s.max === -Infinity ? null : s.max
     })).sort((a, b) => b.mandisCount - a.mandisCount);
 
+    const canonicalCommodity = (matchedRecords[0]?.commodity || commodity || "").trim();
     return {
         success: true,
-        commodity: matchedRecords[0]?.commodity || commodity,
-        label: cleanCommodityLabel(matchedRecords[0]?.commodity || commodity),
-        category: matchedRecords[0]?.category || categorizeCommodity(commodity),
-        source: "data.gov.in — AGMARKNET",
+        commodity: canonicalCommodity,
+        label: cleanCommodityLabel(canonicalCommodity),
+        category: matchedRecords[0]?.category || categorizeCommodity(canonicalCommodity),
+        source: "data.gov.in — AGMARKNET (OGD India)",
         totalReportingMandis: filteredMandis.length,
         totalReportingStates: stateStats.length,
         latestPrice: nationalAvgPrice,
@@ -809,7 +816,7 @@ async function getHistory({ commodity, month, year, state = "", mandi = "" } = {
         monthly: monthlyAnalysis,
         data: monthlyAnalysis.series, // Backwards compatible with existing chart key
         stateStats,
-        mandisToday: filteredMandis.slice(0, 500) // All reporting mandis straight up from data.gov.in
+        mandisToday: filteredMandis.slice(0, 500) // Reporting mandis from the current data.gov.in bulletin
     };
 }
 

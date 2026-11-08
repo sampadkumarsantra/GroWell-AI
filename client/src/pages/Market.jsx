@@ -120,7 +120,7 @@ function Market() {
     // Historical & Monthly Price Graph State
     const [history, setHistory] = useState(null);
     const [historyLoading, setHistoryLoading] = useState(false);
-    const [chartMode, setChartMode] = useState("last30Days"); // "last30Days", "daysInMonth", "stateCompare"
+    const [chartMode, setChartMode] = useState("daysInMonth"); // "daysInMonth" is reliable for every commodity; "last30Days" uses available arrivals
 
     // Today's Mandis table filters
     const [mandiSearch, setMandiSearch] = useState("");
@@ -569,13 +569,33 @@ function Market() {
     }, [history]);
 
     // Last 30 Days price series (rolling 30 calendar days)
+    // Prefers real arrival-date distribution when available; otherwise derives the
+    // last 30 points from the month timeline so a graph is visible for every commodity.
     const last30DaysSeries = useMemo(() => {
+        const fromMonthlyTail = () => {
+            const monthly = history?.monthly?.series;
+            if (!Array.isArray(monthly) || monthly.length === 0) return [];
+            const currentDay = Math.max(1, Number(history?.monthly?.currentDay) || monthly.length);
+            const start = Math.max(0, currentDay - 30);
+            return monthly.slice(start, currentDay).map((d, index) => ({
+                dayNumber: index + 1,
+                day: `Day ${index + 1}`,
+                dayLabel: d.dayLabel || d.day || `D${index + 1}`,
+                date: d.date,
+                price: d.price,
+                modalPrice: d.modalPrice ?? d.price,
+                minPrice: d.minPrice,
+                maxPrice: d.maxPrice,
+                spread: d.spread ?? Math.round(((d.maxPrice || 0) - (d.minPrice || 0)) * 100) / 100,
+                isToday: !!d.isToday
+            }));
+        };
+
         if (!history?.mandisToday || !Array.isArray(history.mandisToday)) {
-            return [];
+            return fromMonthlyTail();
         }
         const now = new Date();
-        const series = [];
-        
+
         // Get unique dates from mandisToday records, sort descending, take last 30
         const datePriceMap = new Map();
         history.mandisToday.forEach((record) => {
@@ -590,12 +610,18 @@ function Market() {
                 }
             }
         });
-        
+
         // Sort dates and take last 30
         const sortedDates = Array.from(datePriceMap.keys())
             .sort((a, b) => new Date(a) - new Date(b))
             .slice(-30);
-        
+
+        // A single bulletin day is not a trend; use the month timeline instead.
+        if (sortedDates.length < 2) {
+            return fromMonthlyTail();
+        }
+
+        const series = [];
         sortedDates.forEach((date, index) => {
             const data = datePriceMap.get(date);
             const d = new Date(date);
@@ -613,7 +639,7 @@ function Market() {
                 isToday: date === now.toISOString().split("T")[0]
             });
         });
-        
+
         return series;
     }, [history]);
 
@@ -689,8 +715,8 @@ function Market() {
                     </div>
                     <h1>📈 GroWell Market Intelligence</h1>
                     <p>
-                        Real-time agricultural commodity prices extracted straight from data.gov.in.
-                        All India wholesale mandis aggregated with graphical price analysis across days in month and pin-point spot details.
+                        Agricultural commodity prices sourced from <strong>data.gov.in (AGMARKNET)</strong>, Ministry of Agriculture &amp; Farmers Welfare.
+                        Compare mandi rates across India with a price graph for every commodity, state-wise breakdowns, and pin-point spot details.
                     </p>
                 </div>
 
@@ -1035,8 +1061,8 @@ function Market() {
                                         </span>
                                         <span className="chart-subtitle">
                                             <Calendar size={13} />
-                                            {chartMode === "last30Days" ? "Rolling 30 Calendar Days from data.gov.in Mandi Records (₹ / Quintal)" :
-                                             chartMode === "daysInMonth" ? `${history?.monthly?.monthName || "Current Month"} · Day 1 to Day ${history?.monthly?.daysInMonth || 31} Timeline (₹ / Quintal)` :
+                                            {chartMode === "last30Days" ? "Recent price movement anchored to current AGMARKNET mandi data (₹ / Quintal)" :
+                                             chartMode === "daysInMonth" ? `${history?.monthly?.monthName || "Current Month"} · Day 1 to Day ${history?.monthly?.daysInMonth || 31} trend anchored to live AGMARKNET average (₹ / Quintal)` :
                                              `Average mandi prices across top reporting states for ${history?.label || selectedCrop} (₹ / Quintal)`}
                                         </span>
                                     </div>
