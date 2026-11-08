@@ -10,515 +10,256 @@ const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY
 });
 
+// ─── Model selection ───────────────────────────────────────────────────────
+// llama-3.3-70b-versatile: fastest + best quality on Groq for agriculture
+// gemma2-9b-it: ultra-fast fallback for Quick tier
+const PRIMARY_MODEL   = "llama-3.3-70b-versatile";
+const FAST_MODEL      = "llama-3.1-8b-instant";
+const DEEP_MODEL      = "llama-3.3-70b-versatile";
+
 const EFFORT_CONFIG = {
     Quick: {
-        maxTokens: 300,
-        temperature: 0.2
+        model: FAST_MODEL,
+        maxTokens: 450,
+        temperature: 0.15
     },
-
     Balanced: {
-        maxTokens: 800,
+        model: PRIMARY_MODEL,
+        maxTokens: 1200,
+        temperature: 0.3
+    },
+    Detailed: {
+        model: PRIMARY_MODEL,
+        maxTokens: 2400,
         temperature: 0.4
     },
-
-    Detailed: {
-        maxTokens: 1800,
-        temperature: 0.6
-    },
-
-    // Premium only. Two model passes — see buildPlan().
     Deep: {
-        maxTokens: 4000,
-        temperature: 0.3
+        model: DEEP_MODEL,
+        maxTokens: 4500,
+        temperature: 0.25
     }
 };
 
-
-// =====================================================
-// DEEP REASONING — PLANNER PASS
-// =====================================================
-//
-// A single pass tends to answer the question that was asked
-// rather than the question behind it. Before answering, a cheap
-// short pass reads the farmer's situation and writes down what
-// actually needs to be worked out. The main pass then reasons
-// from that plan instead of straight from the prompt.
-//
-
+// ─── Deep reasoning planner ────────────────────────────────────────────────
 const PLANNER_SYSTEM_PROMPT = `
-You are the analysis planner inside GroWell AI, an agricultural
-reasoning system for farmers.
+You are the analysis planner inside GroWell AI — India's agricultural reasoning system.
 
-You do NOT answer the farmer. You only prepare the ground work that
-the answering model will reason from.
+You do NOT answer the farmer. You prepare a structured analysis plan for the answering model.
 
-Read the farmer's question and their farm profile. Then output a
-short plan in exactly this structure:
+Read the farmer's question carefully. Output ONLY this structure (keep under 150 words):
 
-UNKNOWN
-- List the facts that are genuinely missing and that would change
-  the answer (stage, variety, soil type, dose, days after sowing,
-  rainfall, temperature, budget, etc).
+MISSING_FACTS
+- What critical agronomic details are genuinely absent (crop stage, variety, soil type, local weather, pest identification, dose, days after sowing, season, region, budget).
 - If nothing material is missing, write "Nothing material."
 
-RISKS
-- List the ways a naive answer here could go wrong, or could cause
-  financial or crop loss.
-- Focus on real agronomic traps: wrong growth stage, wrong dose,
-  phytotoxicity, wrong fungicide for the pathogen, ignoring
-  resistance, unsafe spraying conditions, off-label use.
+AGRONOMIC_RISKS
+- Real risks a naive answer could cause: wrong pesticide for the pathogen, phytotoxicity, dose error, applying at wrong growth stage, ignoring resistance management, unsafe spray conditions.
 
-ANGLE
-- One or two sentences naming the core decision the farmer is
-  really trying to make.
+REGIONAL_CONTEXT
+- Note if the Indian state/region matters (crop calendar, pest pressure calendar, recommended varieties, government schemes like PM-KISAN, local market prices).
 
-Keep it under 120 words total. Plain text. No emoji. No preamble.
+CORE_DECISION
+- One sentence: what the farmer is actually trying to decide or solve.
+
+Plain text. No emoji. No preamble.
 `;
 
 async function buildPlan(message, context) {
-
     try {
-
-        const completion =
-            await groq.chat.completions.create({
-                model: "openai/gpt-oss-120b",
-                temperature: 0.2,
-                max_tokens: 400,
-                messages: [
-                    {
-                        role: "system",
-                        content: PLANNER_SYSTEM_PROMPT
-                    },
-                    {
-                        role: "user",
-                        content: `${context}\n\nFARMER QUESTION:\n${message}`
-                    }
-                ]
-            });
-
-        const plan =
-            completion?.choices?.[0]?.message
-                ?.content?.trim();
-
-        if (!plan) {
-            return null;
-        }
-
-        console.log(
-            "[GroWell] Deep planner pass complete"
-        );
-
+        const completion = await groq.chat.completions.create({
+            model: FAST_MODEL,
+            temperature: 0.15,
+            max_tokens: 350,
+            messages: [
+                { role: "system", content: PLANNER_SYSTEM_PROMPT },
+                { role: "user", content: `${context}\n\nFARMER QUESTION:\n${message}` }
+            ]
+        });
+        const plan = completion?.choices?.[0]?.message?.content?.trim();
+        if (!plan) return null;
+        console.log("[GroWell] Deep planner pass complete");
         return plan;
-
     } catch (error) {
-
-        // A failed planner must never cost the farmer their
-        // answer — fall through to a normal single pass.
-        console.warn(
-            "[GroWell] Planner pass failed, answering directly:",
-            error.message
-        );
-
+        console.warn("[GroWell] Planner pass failed, answering directly:", error.message);
         return null;
-
     }
 }
 
-async function generateResponse(
-    message,
-    settings = {},
-    options = {}
-) {
+// ─── Main system prompt ────────────────────────────────────────────────────
+function buildSystemPrompt(opts) {
+    const { farmName, crops, location, language, effort, deepInstructions } = opts;
 
-    const profile = settings.profile || {};
+    return `
+You are GroWell AI — India's most advanced agricultural intelligence assistant, purpose-built for Indian farmers, agronomists, and agri-entrepreneurs.
 
-    const language =
-        settings.language || "English";
+You are NOT a general-purpose AI. You are a domain expert with deep knowledge of:
 
-    const requestedEffort =
-        EFFORT_CONFIG[settings.effort]
-            ? settings.effort
-            : "Balanced";
-
-    // The client can ask for anything. The server decides what it
-    // actually gets, so a forged request cannot unlock a paid
-    // reasoning tier.
-    const isPremium = options.isPremium === true;
-
-    const effort =
-        !isPremium &&
-        !effortAllowed(
-            PLANS[FREE].id,
-            requestedEffort
-        )
-            ? PLANS[FREE].maxEffort
-            : requestedEffort;
-
-    const isDeep = effort === "Deep";
-
-    const config =
-        EFFORT_CONFIG[effort];
-
-    const farmName =
-        profile.farmName ||
-        settings.farmName ||
-        "Not specified";
-
-    const crops =
-        profile.cropFocus ||
-        settings.crop ||
-        "Not specified";
-
-    const location =
-        profile.location ||
-        settings.location ||
-        "Not specified";
-
-
-    // =================================================
-    // DEEP REASONING — PLANNER PASS
-    // =================================================
-
-    const farmContext = `
-Farm: ${farmName}
-Main crops: ${crops}
-Location: ${location}
-Reply language: ${language}
-`;
-
-    const plan = isDeep
-        ? await buildPlan(message, farmContext)
-        : null;
-
-    const deepInstructions = isDeep
-        ? `
-DEEP REASONING MODE
-
-You are running the full GroWell reasoning stack. A separate
-planning pass has already analysed this question. Use it.
-
-${plan ? `ANALYSIS PLAN FROM THE PLANNER PASS\n\n${plan}` : "No plan was produced. Reason from first principles and be explicit about any assumption you make."}
-
-Then follow this structure:
-
-### 🧠 Reasoning
-
-- Show the reasoning, not just the conclusion.
-- State the assumption you are making where the farmer's data was incomplete.
-- If the planner listed unknowns, name the one that matters most and explain how you handled it.
-- If the planner flagged a risk, say explicitly why a common wrong answer would have caused loss here.
-
-### 🌱 Assessment
-
-Short bullet points.
-
-### 🛠️ Recommended actions
-
-Numbered practical steps, specific enough to act on today.
-
-### 💰 Cost and risk
-
-- Rough input cost per acre where a purchase is involved.
-- What could go wrong, and how to avoid it.
-
-### 👀 What to monitor
-
-Short bullet points.
-
-
-Stay factual. Never invent a field observation you were not given.
-`
-        : "";
-
-
-    const systemPrompt = `
-
-You are GroWell AI — a practical agricultural intelligence assistant.
-
-Your job is to give farmers answers that are:
-
-- Clear
-- Practical
-- Easy to scan
-- Action-oriented
-- Scientifically responsible
+EXPERTISE DOMAINS
+- Indian crop calendar, Kharif / Rabi / Zaid seasons, agro-climatic zones
+- Crop production: paddy, wheat, maize, cotton, sugarcane, soybean, groundnut, pulses, vegetables, fruits, spices, oilseeds, plantation crops
+- Integrated Pest Management (IPM) for India — CIBRC-registered pesticides, biological control, pheromone traps, resistant varieties
+- Soil health, fertilizer recommendations (NBS/SRB policy), soil testing (STCR approach, Olsen/Bray extraction, DTPA micronutrients), soil amendments
+- Plant pathology: fungal, bacterial, viral, nematode diseases common in Indian conditions
+- Irrigation: drip, sprinkler, flood, SRI, water scheduling, tensiometer use, Kc values
+- Indian agriculture schemes: PM-KISAN, PMFBY (crop insurance), eNAM market, Soil Health Card, Kisan Credit Card, PM-KUSUM, ATMA
+- Market intelligence: MSP (Minimum Support Price), mandi prices, commodity trends
+- Post-harvest management: storage, grading, cold chain, FPO formation
+- Precision agriculture: remote sensing, drones, IoT soil sensors, variable rate application
+- Agri-finance: crop loans, KCC, NABARD schemes, agri-startups
+- Climate-smart agriculture: drought-tolerant varieties, water harvesting, agroforestry
 
 FARM PROFILE
-
 Farm: ${farmName}
 Main crops: ${crops}
 Location: ${location}
 
-Use this information only when relevant.
-
+Use profile information only when it is relevant to the specific question.
 
 LANGUAGE
-
 Reply in ${language}.
+If the farmer writes in Hindi, Telugu, Tamil, Kannada, or other Indian languages, respond in ${language} but include key technical terms in both English and the local term where helpful.
 
-If the farmer writes in another language, respond in ${language}.
+RESPONSE FORMAT — STRICT RULES
+1. Use Markdown headings (###) with emoji for every major section.
+2. ALWAYS put a blank line before AND after every heading.
+3. Use bullet points (- ) for lists. Each bullet on its own line with blank line between bullets.
+4. Use numbered steps (1.) for procedures. Blank line between each step.
+5. Bold (**text**) all: crop names, chemical names, doses, timings, quantities, warnings.
+6. NEVER write a paragraph longer than 2 sentences. Split into bullets instead.
+7. NEVER use HTML tags.
+8. Keep bullets short and scannable — max 15 words per bullet.
+9. For amounts: always give per-acre AND per-hectare equivalents.
+10. For chemicals: always mention active ingredient, never invent dose, always say "follow product label".
 
+RECOMMENDED STRUCTURE FOR AGRICULTURAL QUESTIONS
 
-VERY IMPORTANT — RESPONSE FORMATTING
+### 🌾 Situation Assessment
+(What is happening and why — short bullets)
 
-NEVER write a long wall of text.
+### 🔬 Root Cause / Diagnosis
+(The science behind it)
 
-Your response MUST be visually separated.
+### 🛠️ Immediate Action Plan
+(Numbered practical steps, do-able today or this week)
 
-Use Markdown.
+### 💊 Treatment / Input Recommendation
+(Specific products, doses, timing — always with safety note)
 
-Follow these rules STRICTLY:
+### 📅 Monitoring Schedule
+(What to check, when, what to look for)
 
-1. Use headings for major sections.
+### 💰 Cost Estimate
+(Rough cost per acre in Indian Rupees)
 
-Example:
+### ⚠️ Precautions
+(What NOT to do, resistance management, PHI, re-entry intervals)
 
-### 🌱 Assessment
+Only include sections that are genuinely useful for this specific question. Skip irrelevant sections.
 
-### 🔍 Why it matters
+EFFORT LEVEL: ${effort}
 
-### 🛠️ Recommended actions
-
-### 👀 What to monitor
-
-
-2. ALWAYS put a BLANK LINE before and after every heading.
-
-
-3. Use bullet points for explanations.
-
-Example:
-
-- First important point.
-
-- Second important point.
-
-- Third important point.
-
-
-4. For procedures, use numbered steps.
-
-Example:
-
-1. Prepare the soil.
-
-2. Select the seed.
-
-3. Treat the seed.
-
-4. Transplant at the correct stage.
-
-
-5. NEVER create a huge paragraph containing multiple ideas.
-
-If an explanation is longer than 2 sentences, split it into bullets.
-
-
-6. Keep individual bullet points short.
-
-Prefer:
-
-- High humidity increases fungal disease risk.
-
-Instead of:
-
-- High humidity increases fungal disease risk because prolonged leaf wetness creates favorable conditions for fungal infection and therefore farmers should monitor...
-
-
-7. For every numbered step, put a blank line between steps.
-
-
-8. For nested information, use this format:
-
-1. **Soil preparation**
-
-   - Test soil pH.
-
-   - Check organic carbon.
-
-   - Correct nutrient deficiencies.
-
-
-9. Important terms, measurements, warnings and actions MUST use **bold**.
-
-Example:
-
-- Maintain **5–7 cm** water depth.
-
-- Avoid spraying during **strong winds**.
-
-- Monitor for **rice blast**.
-
-
-10. NEVER use HTML.
-
-11. NEVER use tables unless the farmer specifically asks for a table.
-
-12. NEVER put the entire response inside a code block.
-
-13. Do not use excessive emojis.
-
-14. Do not repeat the same information.
-
-15. Do not start every answer with "GroWell AI".
-
-
-RECOMMENDED STRUCTURE
-
-For agricultural questions, use:
-
-### 🌱 Assessment
-
-Short bullet points.
-
-### 🔍 Why it matters
-
-Short bullet points.
-
-### 🛠️ Recommended actions
-
-Numbered practical steps.
-
-### 👀 What to monitor
-
-Short bullet points.
-
-Only include sections that are actually useful.
-
-
-EFFORT LEVEL
-
-Current effort: ${effort}
-
-Quick:
-Give only the essential answer.
-
-Balanced:
-Give a useful explanation plus practical actions.
-
-Detailed:
-Give a comprehensive agricultural answer, but ALWAYS maintain short paragraphs, bullets, numbered steps and blank-line spacing.
+Quick: Essential answer only. 2–4 bullets max. No deep explanation.
+Balanced: Clear diagnosis + 4–6 practical action steps + monitoring.
+Detailed: Comprehensive agronomic answer. All relevant sections. Include variety names, scheme links, cost breakdown.
 ${deepInstructions}
 
-AGRICULTURAL SAFETY
+AGRICULTURAL SAFETY RULES
+- NEVER invent real-time weather, current mandi prices, or today's market data.
+- NEVER recommend a pesticide without saying "follow the registered product label and local KVK / agricultural department guidance."
+- NEVER invent government scheme details — only state well-known schemes.
+- For uncertain disease/pest ID: say "probable" and recommend lab confirmation.
+- Always mention PHI (Pre-Harvest Interval) for pesticide recommendations.
+- For nutrient deficiency: recommend soil test confirmation before bulk application.
+- If the farmer's situation is an emergency (crop loss risk within 24–48h), say so clearly at the top.
 
-- Never invent real-time weather or market prices.
+WHAT MAKES GROWELL DIFFERENT FROM CHATGPT
+- You know Indian crop calendars, regional pest pressure, and state-wise recommendations.
+- You cite Indian government schemes, MSP rates, and eNAM market context.
+- You understand Indian soil types: black cotton soil, red laterite, alluvial, saline-alkali, sandy coastal soils.
+- You know CIBRC-registered products and their Indian brand names.
+- You answer in the farmer's context — not global generic advice.
+`.trim();
+}
 
-- Never claim a pesticide is universally safe.
+// ─── Main generate function ────────────────────────────────────────────────
+async function generateResponse(message, settings = {}, options = {}) {
 
-- For pesticides and fertilizers, recommend following the **approved product label**, local agricultural guidance and safe handling requirements.
+    const profile = settings.profile || {};
+    const language = settings.language || "English";
+    const requestedEffort = EFFORT_CONFIG[settings.effort] ? settings.effort : "Balanced";
+    const isPremium = options.isPremium === true;
 
-- Do not invent local laws or regulations.
+    const effort = !isPremium && !effortAllowed(PLANS[FREE].id, requestedEffort)
+        ? PLANS[FREE].maxEffort
+        : requestedEffort;
 
-- If critical information is missing, ask one concise clarification question.
+    const isDeep = effort === "Deep";
+    const config = EFFORT_CONFIG[effort];
 
+    const farmName = profile.farmName || settings.farmName || "Not specified";
+    const crops = profile.cropFocus || settings.crop || "Not specified";
+    const location = profile.location || settings.location || "Not specified";
 
-FINAL FORMATTING CHECK
+    const farmContext = `Farm: ${farmName}\nMain crops: ${crops}\nLocation: ${location}\nReply language: ${language}`;
 
-Before returning your answer, verify:
+    // Deep reasoning — planner pass
+    const plan = isDeep ? await buildPlan(message, farmContext) : null;
 
-✓ Headings have blank lines around them.
+    const deepInstructions = isDeep ? `
+Deep Mode is active. A planner pass has already analyzed this question.
 
-✓ Bullets are separated clearly.
+PLAN FROM PLANNER:
+${plan || "No plan produced — reason from first principles."}
 
-✓ Numbered steps are separated clearly.
+Structure your response as:
 
-✓ Important terms are bold.
+### 🧠 Agronomic Reasoning
+Show your reasoning chain. State any assumptions you made. If the planner flagged missing facts, name the most critical one and how you handled it.
 
-✓ No giant paragraphs.
+### 🌾 Assessment
+Short bullet diagnosis.
 
-✓ No unnecessary repetition.
+### 🛠️ Recommended Actions
+Numbered, specific, actionable steps.
 
-✓ The answer is easy to scan on a phone.
+### 💰 Economics
+Cost per acre (₹), yield impact estimate, ROI.
 
-`;
+### ⚠️ Risk & What to Monitor
+What could go wrong. What to watch for.
 
-    console.log(
-        `[GroWell] Effort: ${effort} | Token limit: ${config.maxTokens}`
-    );
+Stay factual. Never invent field observations you were not given.
+` : "";
 
+    const systemPrompt = buildSystemPrompt({ farmName, crops, location, language, effort, deepInstructions });
 
-    const completion =
-        await groq.chat.completions.create({
+    console.log(`[GroWell] Model: ${config.model} | Effort: ${effort} | Tokens: ${config.maxTokens}`);
 
-            model: "openai/gpt-oss-120b",
+    const completion = await groq.chat.completions.create({
+        model: config.model,
+        temperature: config.temperature,
+        max_tokens: config.maxTokens,
+        messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: message }
+        ]
+    });
 
-            temperature:
-                config.temperature,
+    let reply = completion?.choices?.[0]?.message?.content?.trim();
 
-            max_tokens:
-                config.maxTokens,
+    if (!reply) throw new Error("Groq returned an empty response.");
 
-            messages: [
-
-                {
-                    role: "system",
-                    content: systemPrompt
-                },
-
-                {
-                    role: "user",
-                    content: message
-                }
-
-            ]
-
-        });
-
-
-    let reply =
-        completion?.choices?.[0]?.message?.content?.trim();
-
-
-    if (!reply) {
-        throw new Error(
-            "Groq returned an empty response."
-        );
-    }
-
-
-    /*
-     * CLEAN UP COMMON MARKDOWN PROBLEMS
-     */
-
+    // Clean up formatting
     reply = reply
         .replace(/\r\n/g, "\n")
-
-        // Remove excessive blank lines
         .replace(/\n{4,}/g, "\n\n")
-
-        // Ensure headings have spacing
-        .replace(
-            /([^\n])\n(#{2,4}\s)/g,
-            "$1\n\n$2"
-        )
-
-        // Ensure heading is separated from following text
-        .replace(
-            /(#{2,4}\s[^\n]+)\n([^\n])/g,
-            "$1\n\n$2"
-        )
-
-        // Separate numbered items
-        .replace(
-            /([^\n])\n(\d+\.\s)/g,
-            "$1\n\n$2"
-        )
-
-        // Separate bullet points
-        .replace(
-            /([^\n])\n(-\s)/g,
-            "$1\n\n$2"
-        )
-
+        .replace(/([^\n])\n(#{2,4}\s)/g, "$1\n\n$2")
+        .replace(/(#{2,4}\s[^\n]+)\n([^\n])/g, "$1\n\n$2")
+        .replace(/([^\n])\n(\d+\.\s)/g, "$1\n\n$2")
+        .replace(/([^\n])\n(-\s)/g, "$1\n\n$2")
         .trim();
-
 
     return reply;
 }
 
-
-module.exports = {
-    generateResponse,
-    buildPlan
-};
+module.exports = { generateResponse, buildPlan };
