@@ -317,42 +317,72 @@ const SOIL_PROFILES = {
         waterBehavior: 85,
         drainage: 35,
         nutrientRetention: 90,
-        salinityRisk: 1.10
+        salinityRisk: 1.10,
+        textureFactor: 1.15,
+        compactionRisk: "High",
+        wiltingPoint: 0.25,
+        fieldCapacity: 0.45,
+        availableWater: 0.20
     },
 
     "Clay Loam": {
         waterBehavior: 82,
         drainage: 55,
         nutrientRetention: 82,
-        salinityRisk: 1.00
+        salinityRisk: 1.00,
+        textureFactor: 1.10,
+        compactionRisk: "Moderate",
+        wiltingPoint: 0.22,
+        fieldCapacity: 0.40,
+        availableWater: 0.18
     },
 
     Loam: {
         waterBehavior: 90,
         drainage: 75,
         nutrientRetention: 80,
-        salinityRisk: 0.90
+        salinityRisk: 0.90,
+        textureFactor: 1.00,
+        compactionRisk: "Low",
+        wiltingPoint: 0.18,
+        fieldCapacity: 0.35,
+        availableWater: 0.17
     },
 
     "Sandy Loam": {
         waterBehavior: 65,
         drainage: 90,
         nutrientRetention: 55,
-        salinityRisk: 0.85
+        salinityRisk: 0.85,
+        textureFactor: 0.90,
+        compactionRisk: "Low",
+        wiltingPoint: 0.12,
+        fieldCapacity: 0.25,
+        availableWater: 0.13
     },
 
     Sandy: {
         waterBehavior: 50,
         drainage: 95,
         nutrientRetention: 40,
-        salinityRisk: 0.80
+        salinityRisk: 0.80,
+        textureFactor: 0.80,
+        compactionRisk: "Very Low",
+        wiltingPoint: 0.08,
+        fieldCapacity: 0.18,
+        availableWater: 0.10
     },
 
     "Silty Loam": {
         waterBehavior: 78,
         drainage: 65,
         nutrientRetention: 75,
-        salinityRisk: 0.95
+        salinityRisk: 0.95,
+        textureFactor: 1.05,
+        compactionRisk: "Moderate",
+        wiltingPoint: 0.20,
+        fieldCapacity: 0.38,
+        availableWater: 0.18
     }
 };
 
@@ -631,6 +661,65 @@ function phAvailabilityNotes(ph) {
     if (ph > 7.5) notes.push({ nutrient: "Fe, Mn, Zn, Cu, B, P", effect: "Reduced availability", formula: "High pH precipitates micronutrients and forms Ca-phosphates" });
     if (ph >= 6.0 && ph <= 7.2) notes.push({ nutrient: "Most nutrients", effect: "Near-maximum availability window", formula: "Optimal solubility balance for macro/micronutrients" });
     return notes;
+}
+
+// SAR (Sodium Adsorption Ratio) calculation
+function calculateSAR(na, ca, mg) {
+    // Na, Ca, Mg in cmol(+)/kg
+    if (na === null || ca === null || mg === null) return null;
+    if (ca === 0 && mg === 0) return null;
+    return Number((na / Math.sqrt((ca + mg) / 2)).toFixed(2));
+}
+
+// Cation ratios from exchangeable cations
+function calculateCationRatios(ca, mg, k, na, cec) {
+    const ratios = {};
+    if (cec && cec > 0) {
+        ratios.caPercent = ca ? Number(((ca / cec) * 100).toFixed(1)) : 0;
+        ratios.mgPercent = mg ? Number(((mg / cec) * 100).toFixed(1)) : 0;
+        ratios.kPercent = k ? Number(((k / cec) * 100).toFixed(1)) : 0;
+        ratios.naPercent = na ? Number(((na / cec) * 100).toFixed(1)) : 0;
+        
+        // Ideal ranges: Ca 65-75%, Mg 10-20%, K 2-5%, Na <5%
+        ratios.caMgRatio = ca && mg ? Number((ca / mg).toFixed(2)) : null;
+        ratios.mgKRatio = mg && k ? Number((mg / k).toFixed(2)) : null;
+        ratios.balanceStatus = "";
+        if (ratios.caPercent < 60) ratios.balanceStatus += "Low Ca% ";
+        if (ratios.mgPercent < 10) ratios.balanceStatus += "Low Mg% ";
+        if (ratios.kPercent < 2) ratios.balanceStatus += "Low K% ";
+        if (ratios.naPercent > 5) ratios.balanceStatus += "High Na% ";
+        if (!ratios.balanceStatus) ratios.balanceStatus = "Balanced";
+    }
+    return ratios;
+}
+
+// Base saturation from exchangeable cations
+function calculateBaseSaturation(ca, mg, k, na, cec) {
+    if (!cec || cec === 0) return null;
+    const sum = (ca || 0) + (mg || 0) + (k || 0) + (na || 0);
+    return Number(((sum / cec) * 100).toFixed(1));
+}
+
+// Organic matter from organic carbon
+function calculateOrganicMatter(organicCarbon) {
+    if (organicCarbon === null) return null;
+    return Number((organicCarbon * 1.724).toFixed(2));
+}
+
+// Total dissolved solids from EC
+function calculateTDS(ec) {
+    if (ec === null) return null;
+    return Number((ec * 640).toFixed(0)); // TDS (mg/L) ≈ EC (dS/m) × 640
+}
+
+// Anion-cation balance check
+function calculateIonBalance(cations, anions) {
+    // cations and anions in cmol(+)/kg
+    if (!cations || !anions) return null;
+    const sumCations = (cations.ca || 0) + (cations.mg || 0) + (cations.k || 0) + (cations.na || 0);
+    const sumAnions = (anions.cl || 0) + (anions.so4 || 0) + (anions.hco3 || 0) + (anions.no3 || 0);
+    if (sumCations === 0 && sumAnions === 0) return null;
+    return Number((((sumCations - sumAnions) / (sumCations + sumAnions)) * 100).toFixed(1));
 }
 
 /* Parker's Nutrient Index: low = 1, medium = 2, high = 3. */
@@ -2424,11 +2513,48 @@ function analyzeSoil(input) {
             nutrientUnit
         });
 
+    // Calculate additional professional metrics
+    const sar = cec && esp !== null ? calculateSAR(
+        (esp / 100) * cec, // approximate Na from ESP
+        (classifications.calcium.value || 0) / 200, // approximate Ca in cmol/kg
+        (classifications.magnesium.value || 0) / 120 // approximate Mg in cmol/kg
+    ) : null;
+
+    const cationRatios = cec ? calculateCationRatios(
+        classifications.calcium.value ? classifications.calcium.value / 200 : null,
+        classifications.magnesium.value ? classifications.magnesium.value / 120 : null,
+        classifications.potassium.value ? classifications.potassium.value / 390 : null,
+        esp !== null ? (esp / 100) * cec : null,
+        cec
+    ) : null;
+
+    const baseSat = calculateBaseSaturation(
+        classifications.calcium.value ? classifications.calcium.value / 200 : null,
+        classifications.magnesium.value ? classifications.magnesium.value / 120 : null,
+        classifications.potassium.value ? classifications.potassium.value / 390 : null,
+        esp !== null ? (esp / 100) * cec : null,
+        cec
+    );
+
+    const tds = calculateTDS(ec);
+    const ionBalance = cec ? calculateIonBalance(
+        { ca: classifications.calcium.value ? classifications.calcium.value / 200 : 0,
+          mg: classifications.magnesium.value ? classifications.magnesium.value / 120 : 0,
+          k: classifications.potassium.value ? classifications.potassium.value / 390 : 0,
+          na: esp !== null ? (esp / 100) * cec : 0 },
+        { cl: 0, so4: 0, hco3: 0, no3: 0 }
+    ) : null;
+
     const derived = {
         organicMatter: calculateOrganicMatter(organicCarbon),
         usdaSalinitySodicity: classifyUsdaSalinitySodicity(ec, esp, ph),
         compaction: estimateCompaction(bulkDensity, soilType),
         phAvailabilityNotes: phAvailabilityNotes(ph),
+        sar: sar,
+        cationRatios: cationRatios,
+        baseSaturation: baseSat,
+        tds: tds,
+        ionBalance: ionBalance,
         formulas: {
             organicMatter: "OM (%) = OC (%) × 1.724 (Van Bemmelen factor)",
             unitConversion: "kg/ha (0–15 cm) ≈ ppm (mg/kg) × 2.24 (bulk density assumption 1.28 g/cm³)",
@@ -2437,7 +2563,11 @@ function analyzeSoil(input) {
             lime_SMP: "Lime (t CaCO₃/ha) ≈ (target buffer pH − buffer pH) × factor (screening estimate)",
             gypsum_GR: "GR (cmol(+)/kg) = (ESP − 15) × CEC / 100; Gypsum (t/ha) ≈ GR × 1.72",
             usdaSalinitySodicity: "Saline: EC ≥ 4 dS/m; Sodic: ESP ≥ 15%; Saline–sodic: both (screening)",
-            cropFit: "Blended suitability of pH/EC/N/P/K scores with soil water behavior and nutrient retention, stage-adjusted"
+            cropFit: "Blended suitability of pH/EC/N/P/K scores with soil water behavior and nutrient retention, stage-adjusted",
+            sar: "SAR = Na⁺ / √((Ca²⁺ + Mg²⁺) / 2) — sodicity hazard indicator",
+            baseSaturation: "BS% = (Ca²⁺ + Mg²⁺ + K⁺ + Na⁺) / CEC × 100 — nutrient availability indicator",
+            tds: "TDS (mg/L) ≈ EC (dS/m) × 640 — salinity indicator",
+            ionBalance: "Charge balance % = (Σcations − Σanions) / (Σcations + Σanions) × 100 — analytical quality check"
         }
     };
 

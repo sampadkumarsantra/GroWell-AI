@@ -1167,6 +1167,57 @@ function SoilHealth() {
                         </section>
                     )}
 
+                    {/* A3 — ADVANCED CATION & SALINITY METRICS */}
+
+                    {(result.derived?.sar != null || result.derived?.cationRatios || result.derived?.baseSaturation != null || result.derived?.tds != null || result.derived?.ionBalance != null) && (
+                        <section className="report-section">
+                            <h3 className="report-section-title">
+                                <span>A3</span> Advanced Cation & Salinity Metrics
+                            </h3>
+                            <div className="report-risk-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+                                {result.derived?.sar != null && (
+                                    <div className="report-risk-item">
+                                        <span>Sodium Adsorption Ratio (SAR)</span>
+                                        <strong>{Number(result.derived.sar).toFixed(2)}</strong>
+                                        <small style={{ color: "var(--gw-faint)", fontSize: 10 }}>SAR = Na⁺ / √((Ca²⁺ + Mg²⁺) / 2) — sodicity hazard indicator</small>
+                                    </div>
+                                )}
+                                {result.derived?.cationRatios && (
+                                    <div className="report-risk-item">
+                                        <span>Cation balance (ESP-calculated)</span>
+                                        <strong>{result.derived.cationRatios.balanceStatus}</strong>
+                                        <small style={{ color: "var(--gw-faint)", fontSize: 10 }}>Ca {result.derived.cationRatios.caPercent}% · Mg {result.derived.cationRatios.mgPercent}% · K {result.derived.cationRatios.kPercent}% · Na {result.derived.cationRatios.naPercent}%</small>
+                                    </div>
+                                )}
+                                {result.derived?.baseSaturation != null && (
+                                    <div className="report-risk-item">
+                                        <span>Base saturation (calculated)</span>
+                                        <strong className={getStatusClass(result.derived.baseSaturation >= 80 ? "High" : result.derived.baseSaturation >= 50 ? "Moderate" : "Low")}>
+                                            {Number(result.derived.baseSaturation).toFixed(1)}%
+                                        </strong>
+                                        <small style={{ color: "var(--gw-faint)", fontSize: 10 }}>BS% = (Ca+Mg+K+Na) / CEC × 100</small>
+                                    </div>
+                                )}
+                                {result.derived?.tds != null && (
+                                    <div className="report-risk-item">
+                                        <span>Total dissolved solids (est.)</span>
+                                        <strong>{Number(result.derived.tds).toLocaleString()} mg/L</strong>
+                                        <small style={{ color: "var(--gw-faint)", fontSize: 10 }}>TDS ≈ EC × 640</small>
+                                    </div>
+                                )}
+                                {result.derived?.ionBalance != null && (
+                                    <div className="report-risk-item">
+                                        <span>Ion charge balance</span>
+                                        <strong className={getStatusClass(Math.abs(result.derived.ionBalance) > 10 ? "High" : Math.abs(result.derived.ionBalance) > 5 ? "Moderate" : "Low")}>
+                                            {Number(result.derived.ionBalance).toFixed(1)}%
+                                        </strong>
+                                        <small style={{ color: "var(--gw-faint)", fontSize: 10 }}>Charge balance % — analytical quality check</small>
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    )}
+
                     {/* B — TEST RESULTS TABLE */}
 
                     <section className="report-section">

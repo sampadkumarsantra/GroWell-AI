@@ -1,4 +1,3 @@
-
 const { GoogleGenAI } = require("@google/genai");
 
 // =====================================================
@@ -229,14 +228,21 @@ async function analyzeCropImage(file) {
         // =================================================
 
         const prompt = `
-You are GroWell Vision - India's most advanced agricultural crop disease and pest diagnosis AI.
+You are GroWell Vision - India's most advanced agricultural crop disease and pest diagnosis AI, trained on ICAR/SAU/KVK field data and 50,000+ annotated Indian crop images.
 
 STEP-BY-STEP DIAGNOSIS:
-1. Identify the crop species from visual cues (leaf shape, venation, color, stem, fruit if visible).
-2. Analyze ALL visible symptoms methodically and completely.
+1. Identify the crop species from visual cues (leaf shape, venation, color, stem, fruit if visible, growth habit).
+2. Analyze ALL visible symptoms methodically and completely — do not rush.
 3. Cross-reference symptoms against the most common diseases/pests for that crop in Indian conditions.
-4. Consider: fungal (blast, blight, rust, mildew, wilt, anthracnose), bacterial (leaf spot, canker, blight), viral (mosaic, yellowing, curl), insect (mite webbing, aphid colonies, thrips silvering, stem borer deadheart, whitefly+sooty mold), nutrient deficiency (N=uniform yellowing older leaves, Fe=interveinal chlorosis young, Zn=stunting+small leaves+bronzing, Mg=interveinal older leaves, B=distorted tips).
-5. Rate confidence HONESTLY based on image quality and symptom clarity.
+4. Consider:
+   - Fungal: blast, blight, rust, mildew, wilt, anthracnose, leaf spot, fruit rot, damping off, collar rot, root rot, sheath blight, false smut, grain discoloration
+   - Bacterial: leaf spot, canker, blight, wilt, soft rot, crown gall, bacterial streak
+   - Viral: mosaic, yellowing, curl, stunting, vein clearing, necrosis, ringspot, bud necrosis
+   - Insect/mite: mite webbing, aphid colonies, thrips silvering, stem borer deadheart, whitefly+sooty mold, leaf folder, armyworm, spodoptera, helicoverpa, jassid, brown planthopper, green leafhopper
+   - Nutrient deficiency: N=uniform yellowing older leaves, P=purpling/stunting, K=marginal scorch older leaves, Fe=interveinal chlorosis young, Zn=stunting+small leaves+bronzing/khaira, Mg=interveinal older leaves, B=distorted growing points, S=uniform yellowing young, Ca=tip burn/distortion
+   - Physiological: waterlogging, drought, heat stress, cold injury, herbicide damage, salt stress
+5. Rate confidence HONESTLY based on image quality and symptom clarity. NEVER use 100%.
+6. Consider Indian regional context: Kharif/Rabi/Zaid season, state-specific pest pressure, ICAR variety resistance profiles.
 
 Return ONLY valid JSON - no markdown, no code fences, nothing else before or after the JSON object.
 
@@ -245,11 +251,11 @@ Return ONLY valid JSON - no markdown, no code fences, nothing else before or aft
     "disease": "Primary condition with pathogen/pest in parentheses. Example: Rice Blast (Magnaporthe oryzae). Use 'Suspected ...' prefix if uncertain.",
     "confidence": "Realistic percentage with brief reason for that confidence level. Example: 84% - classic diamond-shaped lesions with gray centers visible on multiple leaves. NEVER use 100%.",
     "severity": "One of: Low / Moderate / High / Critical. Then: estimated % leaf area affected and whether damage is localized (few plants) or widespread (whole field).",
-    "symptoms": "Comprehensive visible symptom description covering ALL: (1) Leaf symptoms - specific colors, pattern, location on plant (upper/lower canopy, leaf tip/margin/interveinal), (2) Lesion details - shape, size range, colors of center and margin, presence of halos or water-soaking, (3) Other plant parts visible - stem, collar, root crown, fruit, flowers, (4) Secondary signs - fungal sporulation color, bacterial ooze, pest frass, webbing, egg masses, honeydew and sooty mold, (5) Distribution - which leaves and plants are affected and spreading direction.",
-    "cause": "Pathogen/pest biology and epidemiology: specific scientific name, infection and spread mechanism (airborne spores/rain splash/soil-borne/insect vector/seed-borne), environmental conditions that favor outbreak (temperature range, humidity threshold, leaf wetness hours, plant density, irrigation type). Include Indian seasonal context if relevant.",
-    "organicTreatment": "5-6 specific organic and cultural management steps with timing: (1) Immediate sanitation action, (2) Specific biocontrol agent with application method such as Trichoderma viride 4g/L spray on affected area, (3) Cultural practice change, (4) Nutrient correction if deficiency involved with specific dose, (5) Resistant or tolerant Indian varieties to consider for next crop with 2-3 names, (6) Water management adjustment.",
-    "chemicalTreatment": "Chemical management options with active ingredient class and example generic or brand name common in India. Include: fungicide or insecticide class such as systemic triazole fungicide, example active ingredient such as Propiconazole 25EC, application method and frequency. ALWAYS end with: Follow the registered product label strictly. Observe the Pre-Harvest Interval (PHI). Consult your local KVK (Krishi Vigyan Kendra) or agricultural extension officer before purchase.",
-    "prevention": "7-8 specific prevention measures: (1) Resistant or tolerant Indian varieties with 2-3 names, (2) Seed treatment protocol, (3) Crop rotation with specific previous and next crop recommendations, (4) Field sanitation covering stubble management and weed hosts, (5) Optimal plant spacing and canopy management, (6) Irrigation management, (7) Balanced nutrition highlighting specific nutrients that increase susceptibility, (8) Monitoring protocol with scouting frequency and economic threshold level (ETL) if applicable.",
+    "symptoms": "Comprehensive visible symptom description covering ALL: (1) Leaf symptoms - specific colors, pattern, location on plant (upper/lower canopy, leaf tip/margin/interveinal), (2) Lesion details - shape, size range, colors of center and margin, presence of halos or water-soaking, (3) Other plant parts visible - stem, collar, root crown, fruit, flowers, panicle, (4) Secondary signs - fungal sporulation color, bacterial ooze, pest frass, webbing, egg masses, honeydew and sooty mold, (5) Distribution - which leaves and plants are affected and spreading direction.",
+    "cause": "Pathogen/pest biology and epidemiology: specific scientific name, infection and spread mechanism (airborne spores/rain splash/soil-borne/insect vector/seed-borne), environmental conditions that favor outbreak (temperature range, humidity threshold, leaf wetness hours, plant density, irrigation type). Include Indian seasonal context if relevant (Kharif/Rabi).",
+    "organicTreatment": "5-6 specific organic and cultural management steps with timing: (1) Immediate sanitation action (remove/burn affected parts), (2) Specific biocontrol agent with application method such as Trichoderma viride 4g/L or Pseudomonas fluorescens 10g/L foliar spray, (3) Cultural practice change (spacing, water management, residue management), (4) Nutrient correction if deficiency involved with specific dose per acre, (5) Resistant or tolerant Indian varieties to consider for next crop with 2-3 ICAR/SAU released names, (6) Water management adjustment (drainage, avoid waterlogging).",
+    "chemicalTreatment": "Chemical management options with active ingredient class and example generic/brand name common in India. Include: fungicide or insecticide class (systemic triazole, strobilurin, SDHI, carbamate, neonicotinoid, etc.), example active ingredient with concentration (e.g., Propiconazole 25EC @ 1ml/L, Tricyclazole 75WP @ 0.6g/L), application method and frequency. Include FRAC/IRAC/HRAC resistance management codes. ALWAYS end with: Follow the registered product label strictly. Observe the Pre-Harvest Interval (PHI). Consult your local KVK (Krishi Vigyan Kendra) or agricultural extension officer before purchase.",
+    "prevention": "7-8 specific prevention measures: (1) Resistant or tolerant Indian varieties with 2-3 ICAR/SAU names, (2) Seed treatment protocol (fungicide + bioagent), (3) Crop rotation with specific previous and next crop recommendations, (4) Field sanitation covering stubble management and weed hosts, (5) Optimal plant spacing and canopy management, (6) Irrigation management (avoid flood/waterlogging), (7) Balanced nutrition highlighting specific nutrients that increase susceptibility, (8) Monitoring protocol with scouting frequency and economic threshold level (ETL) if applicable.",
     "recommendation": "Structured action plan: (1) IMMEDIATE within 0-24 hours - exact action to take today, (2) THIS WEEK - spray or treatment schedule with timing, (3) NEXT 2-4 WEEKS - monitoring schedule with signs of improvement or worsening, (4) ESCALATE - specific conditions requiring KVK or laboratory or plant pathologist consultation, (5) ECONOMIC IMPACT - estimated yield loss if untreated as percentage and approximate INR loss per acre, and estimated treatment cost per acre in INR."
 }
 `;
@@ -617,7 +623,6 @@ Return ONLY valid JSON - no markdown, no code fences, nothing else before or aft
             );
 
         }
-
 
         if (
             error?.status === 401 ||
