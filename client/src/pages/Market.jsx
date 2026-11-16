@@ -32,7 +32,7 @@ import "./Market.css";
 import { apiRequest } from "../services/api";
 
 const DEFAULT_DATA_GOV_KEY =
-    import.meta.env.VITE_DATA_GOV_API_KEY || "";
+    import.meta.env.VITE_DATA_GOV_API_KEY || "579b464db66ec23bdd0000015b3d75ad377f48fe78b631c30652d5ac";
 
 const DATA_GOV_API_URL =
     "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070";
@@ -185,9 +185,9 @@ function Market() {
                 // Backend not reachable, proceed to direct data.gov.in fetch (dev only)
             }
 
-            // Strategy B: Direct browser fetch to data.gov.in — ONLY IN DEVELOPMENT
-            // In production, data.gov.in blocks CORS from browser; must use backend proxy
-            if (!loaded && import.meta.env.DEV) {
+            // Strategy B: Direct browser fetch to data.gov.in
+            // Falls back to direct API when backend is unavailable
+            if (!loaded) {
                 console.log("Fetching live mandi feed directly from data.gov.in API (dev mode)...");
                 const directUrl = `${DATA_GOV_API_URL}?api-key=${encodeURIComponent(apiKey)}&format=json&limit=1000`;
                 const directResp = await fetch(directUrl);
@@ -341,8 +341,8 @@ function Market() {
                     // Fall back to direct query
                 }
 
-                // If backend was 404 or down, fetch filtered records directly from data.gov.in (dev only)
-                if (!loaded && active && import.meta.env.DEV) {
+                // If backend was 404 or down, fetch filtered records directly from data.gov.in
+                if (!loaded && active) {
                     const directUrl = `${DATA_GOV_API_URL}?api-key=${encodeURIComponent(
                         apiKey
                     )}&format=json&limit=500&filters[commodity]=${encodeURIComponent(
@@ -463,8 +463,8 @@ function Market() {
                     // Fall back to direct query
                 }
 
-                // If backend was down or 404, query data.gov.in directly (dev only)
-                if (!loaded && active && import.meta.env.DEV) {
+                // If backend was down or 404, query data.gov.in directly
+                if (!loaded && active) {
                     const offset = (rawPage - 1) * rawLimit;
                     let directUrl = `${DATA_GOV_API_URL}?api-key=${encodeURIComponent(
                         apiKey
