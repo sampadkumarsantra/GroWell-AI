@@ -14,7 +14,7 @@ const DATA_GOV_API_KEY =
     process.env.DATA_GOV_API_KEY ||
     process.env.DATAGOV_API_KEY ||
     process.env.DATA_GOV_IN_API_KEY ||
-    "";
+    "579b464db66ec23bdd0000015b3d75ad377f48fe78b631c30652d5ac";
 
 const CACHE_FILE_PATH = path.join(__dirname, "mandi_cache.json");
 
@@ -390,24 +390,61 @@ async function fetchAgmarknetRecords(forceRefresh = false) {
                     .filter((r) => r.commodity && r.price != null && r.price > 0);
 
                 if (normalized.length > 0) {
-                    cachedRecords = normalized;
+                    let finalNormalized = normalized;
+                    let finalRaw = combined;
+
+                    if (cachedRecords && cachedRecords.length > 0 && normalized.length < 3500) {
+                        const existingRaw = [];
+                        try {
+                            if (fs.existsSync(CACHE_FILE_PATH)) {
+                                const parsed = JSON.parse(fs.readFileSync(CACHE_FILE_PATH, "utf8"));
+                                if (Array.isArray(parsed.records)) {
+                                    existingRaw.push(...parsed.records);
+                                }
+                            }
+                        } catch {}
+
+                        const rawMap = new Map();
+                        existingRaw.forEach((r) => {
+                            const key = `${r.state}__${r.market || r.mandi}__${r.commodity}`.toLowerCase();
+                            rawMap.set(key, r);
+                        });
+                        combined.forEach((r) => {
+                            const key = `${r.state}__${r.market || r.mandi}__${r.commodity}`.toLowerCase();
+                            rawMap.set(key, r);
+                        });
+                        finalRaw = Array.from(rawMap.values());
+
+                        const normMap = new Map();
+                        cachedRecords.forEach((r) => {
+                            const key = `${r.state}__${r.mandi || r.market}__${r.commodity}`.toLowerCase();
+                            normMap.set(key, r);
+                        });
+                        normalized.forEach((r) => {
+                            const key = `${r.state}__${r.mandi || r.market}__${r.commodity}`.toLowerCase();
+                            normMap.set(key, r);
+                        });
+                        finalNormalized = Array.from(normMap.values());
+                    }
+
+                    cachedRecords = finalNormalized;
                     cacheTimestamp = Date.now();
-                    cacheMeta = computeCacheMeta(normalized);
+                    cacheMeta = computeCacheMeta(finalNormalized);
                     console.log(
-                        `Successfully ingested ${normalized.length} records straight from data.gov.in across ${cacheMeta.totalCommodities} commodities and ${cacheMeta.totalStates} states.`
+                        `Successfully ingested ${normalized.length} fresh records straight from data.gov.in. Total active catalog: ${finalNormalized.length} records across ${cacheMeta.totalCommodities} commodities and ${cacheMeta.totalStates} states.`
                     );
 
                     // Persist to disk cache asynchronously
                     try {
                         fs.writeFile(
                             CACHE_FILE_PATH,
-                            JSON.stringify({ timestamp: cacheTimestamp, total: combined.length, records: combined }),
+                            JSON.stringify({ timestamp: cacheTimestamp, total: finalRaw.length, records: finalRaw }),
                             "utf8",
                             () => {}
                         );
                     } catch {}
 
-                    return normalized;
+                    return finalNormalized;
                 }
             }
         } catch (error) {

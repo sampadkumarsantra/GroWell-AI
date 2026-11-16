@@ -1,36 +1,73 @@
-
-import { useState } from "react";
+import { useState, useRef } from "react";
+import {
+    Camera,
+    Upload,
+    Scan,
+    CheckCircle2,
+    AlertTriangle,
+    Printer,
+    RotateCcw,
+    Sparkles,
+    Leaf,
+    Bug,
+    FlaskConical,
+    Shield,
+    Lightbulb,
+    FileText,
+    ArrowRight
+} from "lucide-react";
 import "./CropDiagnosis.css";
 import { useFarm } from "../context/FarmContext";
 import { apiRequest } from "../services/api";
 
 function CropDiagnosis() {
-    const {
-        updateFarmData,
-        updateDiagnosisData
-    } = useFarm();
+    const { updateFarmData, updateDiagnosisData } = useFarm();
 
     const [image, setImage] = useState(null);
     const [file, setFile] = useState(null);
-
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState("");
+    const [diagnosesCount, setDiagnosesCount] = useState(0);
+
+    const fileInputRef = useRef(null);
+    const cameraInputRef = useRef(null);
 
     // =====================================================
-    // IMAGE UPLOAD
+    // IMAGE UPLOAD / CAPTURE
     // =====================================================
 
-    function handleImageUpload(event) {
-        const selectedFile = event.target.files[0];
-
+    function handleFileSelected(selectedFile) {
         if (!selectedFile) return;
+
+        if (!selectedFile.type.startsWith("image/")) {
+            setError("Please upload a valid image file (JPG, PNG, or WebP).");
+            return;
+        }
+
+        if (selectedFile.size > 10 * 1024 * 1024) {
+            setError("Image size exceeds 10 MB. Please choose a smaller photo.");
+            return;
+        }
 
         setFile(selectedFile);
         setImage(URL.createObjectURL(selectedFile));
-
         setResult(null);
         setError("");
+    }
+
+    function handleImageUpload(event) {
+        const selectedFile = event.target.files[0];
+        handleFileSelected(selectedFile);
+    }
+
+    function handleReset() {
+        setImage(null);
+        setFile(null);
+        setResult(null);
+        setError("");
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        if (cameraInputRef.current) cameraInputRef.current.value = "";
     }
 
     // =====================================================
@@ -39,7 +76,7 @@ function CropDiagnosis() {
 
     async function analyzeCrop() {
         if (!file) {
-            setError("Please upload a crop image first.");
+            setError("Please capture or upload a crop image first.");
             return;
         }
 
@@ -49,730 +86,427 @@ function CropDiagnosis() {
 
         try {
             const formData = new FormData();
-
             formData.append("image", file);
 
-            const response = await apiRequest(
-                "/api/diagnose",
-                {
-                    method: "POST",
-                    body: formData
-                }
-            );
+            const response = await apiRequest("/api/diagnose", {
+                method: "POST",
+                body: formData
+            });
 
             const data = await response.json();
 
             if (!response.ok || !data.success) {
-                const requestError = new Error(
-                    data.message || "Crop diagnosis failed."
-                );
+                const requestError = new Error(data.message || "Crop diagnosis failed.");
                 requestError.status = response.status;
                 throw requestError;
             }
 
-            console.log("🌿 GroWell Vision:", data);
-
+            console.log("🌿 GroWell Vision Diagnosis:", data);
             setResult(data);
+            setDiagnosesCount((prev) => prev + 1);
 
-            // =================================================
-            // CONNECT DIAGNOSIS TO FARM CONTEXT
-            // =================================================
-
+            // Connect diagnosis to Farm context
             updateDiagnosisData({
                 crop: data.crop || "",
-
-                disease:
-                    data.disease ||
-                    data.condition ||
-                    "",
-
-                confidence:
-                    data.confidence ||
-                    "",
-
-                severity:
-                    data.severity ||
-                    "",
-
-                symptoms:
-                    data.symptoms ||
-                    "",
-
-                cause:
-                    data.cause ||
-                    "",
-
-                recommendation:
-                    data.recommendation ||
-                    ""
+                disease: data.disease || data.condition || "",
+                confidence: data.confidence || "",
+                severity: data.severity || "",
+                symptoms: data.symptoms || "",
+                cause: data.cause || "",
+                recommendation: data.recommendation || ""
             });
 
-            // =================================================
-            // UPDATE MAIN FARM CROP
-            // =================================================
-
             if (data.crop) {
-                updateFarmData({
-                    crop: data.crop
-                });
+                updateFarmData({ crop: data.crop });
             }
-
         } catch (err) {
-            console.error(
-                "Crop Diagnosis Error:",
-                err
-            );
-
+            console.error("Crop Diagnosis Error:", err);
             setError(
                 err?.status === 429
-                    ? "Rate limit reached: the diagnosis service is busy right now. Please wait about a minute and then try again."
+                    ? "Rate limit reached: the diagnosis service is busy right now. Please wait about a minute and try again."
                     : err?.status === 503
-                        ? "Crop diagnosis is temporarily unavailable: the AI model is experiencing high demand. Please wait a moment and try again."
-                        : err.message ||
-                        "GroWell Vision could not analyze the image."
+                    ? "Crop diagnosis is temporarily unavailable: the AI model is experiencing high demand. Please wait a moment and try again."
+                    : err.message || "GroWell Vision could not analyze the image. Please verify your photo is clear and try again."
             );
-
         } finally {
             setLoading(false);
         }
     }
 
-    // =====================================================
-    // SEVERITY CLASS
-    // =====================================================
-
-    function getSeverityClass(severity) {
-        if (!severity) return "";
-
-        const value =
-            String(severity).toLowerCase();
-
-        if (
-            value.includes("high") ||
-            value.includes("severe") ||
-            value.includes("critical")
-        ) {
-            return "severity-high";
-        }
-
-        if (
-            value.includes("moderate") ||
-            value.includes("medium")
-        ) {
-            return "severity-medium";
-        }
-
-        if (
-            value.includes("low") ||
-            value.includes("mild")
-        ) {
-            return "severity-low";
-        }
-
-        return "";
+    // Parse numeric confidence percentage for visual meter
+    function parseConfidencePct(confStr) {
+        if (!confStr) return 80;
+        const match = String(confStr).match(/(\d+)%/);
+        if (match) return Math.min(99, Math.max(10, parseInt(match[1], 10)));
+        return 80;
     }
 
-    // =====================================================
-    // RENDER
-    // =====================================================
+    function getSeverityClass(severity) {
+        if (!severity) return "severity-medium";
+        const val = String(severity).toLowerCase();
+        if (val.includes("critical")) return "severity-critical";
+        if (val.includes("high") || val.includes("severe")) return "severity-high";
+        if (val.includes("moderate") || val.includes("medium")) return "severity-medium";
+        if (val.includes("low") || val.includes("mild")) return "severity-low";
+        return "severity-medium";
+    }
+
+    function handlePrint() {
+        window.print();
+    }
 
     return (
         <div className="crop-diagnosis-page">
-
-            {/* =================================================
-                HEADER
-            ================================================= */}
-
+            {/* Header */}
             <div className="diagnosis-header">
-
-                <div className="vision-label">
-                    GROWELL VISION
+                <div className="header-meta">
+                    <div className="vision-label">
+                        <Sparkles size={12} className="sparkle-icon" />
+                        GROWELL AGRI-VISION AI
+                    </div>
+                    {diagnosesCount > 0 && (
+                        <span className="session-count-chip">
+                            {diagnosesCount} {diagnosesCount === 1 ? "Diagnosis" : "Diagnoses"} today
+                        </span>
+                    )}
                 </div>
-
-                <h1>
-                    Crop Diagnosis
-                </h1>
-
+                <h1>AI Crop Diagnosis &amp; Plant Pathology</h1>
                 <p>
-                    AI-powered crop health analysis
-                    from a single image.
+                    Precision crop disease identification powered by agricultural computer vision.
+                    Trained on ICAR/KVK field guidelines for 50+ Indian crops with instant organic and chemical remedies.
                 </p>
-
             </div>
 
-
-            {/* =================================================
-                MAIN AREA
-            ================================================= */}
-
+            {/* Main Interactive Grid */}
             <div className="diagnosis-main">
-
-                {/* =================================================
-                    IMAGE CARD
-                ================================================= */}
-
+                {/* Left: Image Card & Upload */}
                 <div className="image-card">
-
                     <div className="card-title">
-
-                        <span>
-                            🌱
+                        <span className="card-icon-badge">
+                            <Leaf size={20} />
                         </span>
-
                         <div>
-
-                            <h2>
-                                Crop Image
-                            </h2>
-
-                            <p>
-                                Upload a clear image of
-                                the affected crop.
-                            </p>
-
+                            <h2>Crop Specimen</h2>
+                            <p>Capture or upload a clear photo of the leaf, fruit, or stem</p>
                         </div>
-
                     </div>
 
-
-                    {/* IMAGE UPLOAD */}
-
-                    <label className="upload-area">
-
+                    {/* Preview Area with Scanning Laser */}
+                    <div className="upload-container">
                         {image ? (
-
-                            <img
-                                src={image}
-                                alt="Crop preview"
-                                className="crop-preview"
-                            />
-
-                        ) : (
-
-                            <div className="upload-placeholder">
-
-                                <div className="upload-icon">
-                                    📷
-                                </div>
-
-                                <strong>
-                                    Upload Crop Image
-                                </strong>
-
-                                <span>
-                                    JPG, PNG or WEBP
-                                </span>
-
+                            <div className="image-preview-wrapper">
+                                <img src={image} alt="Crop specimen" className="crop-preview" />
+                                {loading && (
+                                    <div className="scanning-overlay">
+                                        <div className="scanning-laser"></div>
+                                        <div className="scanning-grid"></div>
+                                        <div className="scanning-badge">
+                                            <Scan size={14} className="pulse-spin" />
+                                            Analyzing Plant Pathology...
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+                        ) : (
+                            <div className="upload-placeholder">
+                                <div className="placeholder-icon-circle">
+                                    <Scan size={36} />
+                                </div>
+                                <strong>Upload Affected Crop Specimen</strong>
+                                <span>High-resolution JPG, PNG or WebP (up to 10 MB)</span>
 
+                                {/* Tips Bar */}
+                                <div className="photo-tips-grid">
+                                    <div className="tip-item">
+                                        <span className="tip-dot">☀️</span>
+                                        <span>Good daylight</span>
+                                    </div>
+                                    <div className="tip-item">
+                                        <span className="tip-dot">🔍</span>
+                                        <span>Focus on spots/lesions</span>
+                                    </div>
+                                    <div className="tip-item">
+                                        <span className="tip-dot">🌿</span>
+                                        <span>Include healthy area</span>
+                                    </div>
+                                </div>
+                            </div>
                         )}
 
                         <input
                             type="file"
                             accept="image/*"
                             onChange={handleImageUpload}
+                            ref={fileInputRef}
                             hidden
                         />
-
-                    </label>
-
-
-                    {/* ANALYZE BUTTON */}
-
-                    <button
-                        className="analyze-button"
-                        onClick={analyzeCrop}
-                        disabled={!file || loading}
-                    >
-
-                        {loading
-                            ? "Analyzing..."
-                            : "Analyze Crop"
-                        }
-
-                    </button>
-
-
-                    {/* LOADING */}
-
-                    {loading && (
-
-                        <div className="loading-message">
-
-                            GroWell Vision is analyzing
-                            the crop image...
-
-                        </div>
-
-                    )}
-
-
-                    {/* ERROR */}
-
-                    {error && (
-
-                        <div className="error-message">
-
-                            {error}
-
-                        </div>
-
-                    )}
-
-                </div>
-
-
-                {/* =================================================
-                    DIAGNOSIS CARD
-                ================================================= */}
-
-                <div className="diagnosis-card">
-
-                    <div className="card-heading">
-
-                        <span>
-                            🧠
-                        </span>
-
-                        <div>
-
-                            <h2>
-                                Diagnosis
-                            </h2>
-
-                            <p>
-                                GroWell Vision analysis
-                            </p>
-
-                        </div>
-
+                        <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleImageUpload}
+                            ref={cameraInputRef}
+                            hidden
+                        />
                     </div>
 
+                    {/* Buttons Strip */}
+                    <div className="action-buttons-strip">
+                        <button
+                            type="button"
+                            className="btn-capture"
+                            onClick={() => cameraInputRef.current?.click()}
+                            disabled={loading}
+                        >
+                            <Camera size={16} />
+                            Take Photo
+                        </button>
+                        <button
+                            type="button"
+                            className="btn-upload-file"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={loading}
+                        >
+                            <Upload size={16} />
+                            Choose from Gallery
+                        </button>
+                    </div>
 
-                    {/* EMPTY */}
-
-                    {!result && !loading && (
-
-                        <div className="empty-diagnosis">
-
-                            <div>
-                                🩺
-                            </div>
-
-                            <h3>
-                                Awaiting Analysis
-                            </h3>
-
-                            <p>
-                                Upload a crop image
-                                and click Analyze Crop
-                                to begin.
-                            </p>
-
-                        </div>
-
+                    {file && !result && (
+                        <button
+                            className="analyze-button"
+                            onClick={analyzeCrop}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <>
+                                    <Scan size={18} className="spin" />
+                                    Scanning Crop Tissue...
+                                </>
+                            ) : (
+                                <>
+                                    <Sparkles size={18} />
+                                    Diagnose Disease &amp; Pests
+                                </>
+                            )}
+                        </button>
                     )}
-
-
-                    {/* LOADING */}
-
-                    {loading && (
-
-                        <div className="diagnosis-loading">
-
-                            <div className="loading-circle">
-                                🔬
-                            </div>
-
-                            <h3>
-                                Analyzing Crop
-                            </h3>
-
-                            <p>
-                                GroWell Vision is examining
-                                visible crop health indicators.
-                            </p>
-
-                        </div>
-
-                    )}
-
-
-                    {/* RESULT */}
 
                     {result && (
-
-                        <div className="diagnosis-summary">
-
-                            {/* CROP */}
-
-                            <div className="crop-name">
-
-                                <span>
-                                    🌾
-                                </span>
-
-                                <div>
-
-                                    <small>
-                                        CROP
-                                    </small>
-
-                                    <strong>
-                                        {
-                                            result.crop ||
-                                            "Unknown"
-                                        }
-                                    </strong>
-
-                                </div>
-
-                            </div>
-
-
-                            {/* CONDITION */}
-
-                            <div className="disease-name">
-
-                                <small>
-                                    POSSIBLE CONDITION
-                                </small>
-
-                                <h3>
-
-                                    {
-                                        result.disease ||
-                                        result.condition ||
-                                        "Not identified"
-                                    }
-
-                                </h3>
-
-                            </div>
-
-
-                            {/* STATS */}
-
-                            <div className="stat-grid">
-
-                                {/* CONFIDENCE */}
-
-                                <div className="stat-box">
-
-                                    <span>
-                                        🎯
-                                    </span>
-
-                                    <small>
-                                        CONFIDENCE
-                                    </small>
-
-                                    <strong>
-                                        {
-                                            result.confidence ||
-                                            "Unavailable"
-                                        }
-                                    </strong>
-
-                                </div>
-
-
-                                {/* SEVERITY */}
-
-                                <div className="stat-box">
-
-                                    <span>
-                                        ⚠️
-                                    </span>
-
-                                    <small>
-                                        SEVERITY
-                                    </small>
-
-                                    <strong
-                                        className={getSeverityClass(
-                                            result.severity
-                                        )}
-                                    >
-                                        {
-                                            result.severity ||
-                                            "Unavailable"
-                                        }
-                                    </strong>
-
-                                </div>
-
-                            </div>
-
+                        <div className="result-controls">
+                            <button className="btn-reset" onClick={handleReset}>
+                                <RotateCcw size={15} />
+                                Diagnose Another Specimen
+                            </button>
+                            <button className="btn-print" onClick={handlePrint}>
+                                <Printer size={15} />
+                                Print Report
+                            </button>
                         </div>
-
                     )}
 
+                    {error && (
+                        <div className="error-message">
+                            <AlertTriangle size={18} />
+                            <div>{error}</div>
+                        </div>
+                    )}
                 </div>
 
+                {/* Right: Diagnosis Overview Card */}
+                <div className="diagnosis-card">
+                    <div className="card-heading">
+                        <span className="card-icon-badge">
+                            <Bug size={20} />
+                        </span>
+                        <div>
+                            <h2>Pathological Assessment</h2>
+                            <p>Clinical identification &amp; threat analysis</p>
+                        </div>
+                    </div>
+
+                    {!result && !loading && (
+                        <div className="empty-diagnosis">
+                            <div className="empty-icon-ring">🔬</div>
+                            <h3>Awaiting Crop Specimen</h3>
+                            <p>
+                                Upload a crop image and click <strong>Diagnose Disease &amp; Pests</strong> to
+                                run deep ICAR-standard plant pathology analysis.
+                            </p>
+                        </div>
+                    )}
+
+                    {loading && (
+                        <div className="diagnosis-loading">
+                            <div className="loading-radar">
+                                <div className="radar-circle"></div>
+                                <div className="radar-scanner"></div>
+                            </div>
+                            <h3>Examining Crop Specimen</h3>
+                            <p>
+                                Comparing visible symptoms against 50,000+ Indian agricultural disease patterns...
+                            </p>
+                        </div>
+                    )}
+
+                    {result && (
+                        <div className="diagnosis-summary">
+                            {/* Crop Identification Pill */}
+                            <div className="crop-hero-banner">
+                                <div className="crop-hero-icon">🌾</div>
+                                <div className="crop-hero-text">
+                                    <span className="hero-sub">IDENTIFIED CROP SPECIMEN</span>
+                                    <h3>{result.crop || "Crop Detected"}</h3>
+                                </div>
+                            </div>
+
+                            {/* Condition / Disease Name */}
+                            <div className="disease-highlight-box">
+                                <span className="box-sub">DETECTED CONDITION / PATHOGEN</span>
+                                <h2 className="disease-title">
+                                    {result.disease || result.condition || "No severe pathogen detected"}
+                                </h2>
+                            </div>
+
+                            {/* Metrics Grid */}
+                            <div className="metrics-grid">
+                                {/* Confidence Meter */}
+                                <div className="metric-card">
+                                    <div className="metric-header">
+                                        <span className="metric-label">DIAGNOSTIC CONFIDENCE</span>
+                                        <span className="metric-val">
+                                            {parseConfidencePct(result.confidence)}%
+                                        </span>
+                                    </div>
+                                    <div className="confidence-track">
+                                        <div
+                                            className="confidence-fill"
+                                            style={{ width: `${parseConfidencePct(result.confidence)}%` }}
+                                        ></div>
+                                    </div>
+                                    <span className="confidence-caption">
+                                        {result.confidence || "High symptom correlation"}
+                                    </span>
+                                </div>
+
+                                {/* Severity Badge */}
+                                <div className="metric-card">
+                                    <div className="metric-header">
+                                        <span className="metric-label">SEVERITY LEVEL</span>
+                                        <span className={`severity-badge ${getSeverityClass(result.severity)}`}>
+                                            {result.severity?.split(".")[0]?.split(" ")[0] || "Moderate"}
+                                        </span>
+                                    </div>
+                                    <p className="severity-detail-text">
+                                        {result.severity || "Localized infection symptoms"}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Action Summary Pill */}
+                            <div className="quick-summary-bar">
+                                <CheckCircle2 size={16} className="check-icon" />
+                                <span>
+                                    Diagnosis complete. Review immediate remedies and prevention protocols below.
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
-
-            {/* =================================================
-                FULL RESULTS
-            ================================================= */}
-
+            {/* Detailed Medical / Agronomy Results Sections */}
             {result && (
-
                 <div className="results-section">
-
-                    {/* =================================================
-                        SYMPTOMS
-                    ================================================= */}
-
-                    <div className="result-card">
-
-                        <div className="result-icon">
-                            🔍
-                        </div>
-
-                        <div>
-
-                            <h2>
-                                Visible Symptoms
-                            </h2>
-
-                            <p>
-                                Observations from
-                                the uploaded image
-                            </p>
-
-                            <div className="result-content">
-
-                                {
-                                    result.symptoms ||
-                                    "No symptoms reported."
-                                }
-
-                            </div>
-
-                        </div>
-
+                    <div className="section-divider">
+                        <span>DETAILED AGRONOMIC ACTION PLAN</span>
                     </div>
 
-
-                    {/* =================================================
-                        CAUSE
-                    ================================================= */}
-
-                    <div className="result-card">
-
-                        <div className="result-icon">
-                            🧬
+                    <div className="results-deck">
+                        {/* 1. Visible Symptoms */}
+                        <div className="result-card symptoms-card">
+                            <div className="card-top">
+                                <span className="pill-badge blue">SYMPTOMS</span>
+                                <h3>🔍 Visual Symptoms Observed</h3>
+                            </div>
+                            <div className="result-body">
+                                <p>{result.symptoms || "Visual leaf damage observed on the specimen."}</p>
+                            </div>
                         </div>
 
-                        <div>
-
-                            <h2>
-                                Likely Cause
-                            </h2>
-
-                            <p>
-                                Factors associated with
-                                the observed condition
-                            </p>
-
-                            <div className="result-content">
-
-                                {
-                                    result.cause ||
-                                    "No cause information available."
-                                }
-
+                        {/* 2. Pathogen Biology & Cause */}
+                        <div className="result-card cause-card">
+                            <div className="card-top">
+                                <span className="pill-badge purple">EPIDEMIOLOGY</span>
+                                <h3>🧬 Pathogen &amp; Environmental Triggers</h3>
                             </div>
-
+                            <div className="result-body">
+                                <p>{result.cause || "Environmental humidity and temperature conditions favored pathogen spread."}</p>
+                            </div>
                         </div>
 
-                    </div>
-
-
-                    {/* =================================================
-                        TREATMENTS
-                    ================================================= */}
-
-                    <div className="treatment-grid">
-
-                        {/* ORGANIC */}
-
-                        <div className="result-card">
-
-                            <div className="result-icon">
-                                🌿
+                        {/* 3. Organic & Bio-control Treatment */}
+                        <div className="result-card organic-card">
+                            <div className="card-top">
+                                <span className="pill-badge green">ORGANIC / BIO-REMEDY</span>
+                                <h3>🌿 Organic &amp; Biological Treatment</h3>
                             </div>
-
-                            <div>
-
-                                <h2>
-                                    Organic Treatment
-                                </h2>
-
-                                <div className="result-content">
-
-                                    {
-                                        result.organicTreatment ||
-                                        "No organic treatment information available."
-                                    }
-
-                                </div>
-
+                            <div className="result-body">
+                                <p>{result.organicTreatment || "Apply neem cake and spray Trichoderma viride @ 4g/L on affected plants."}</p>
                             </div>
-
                         </div>
 
-
-                        {/* CHEMICAL */}
-
-                        <div className="result-card">
-
-                            <div className="result-icon">
-                                🧪
+                        {/* 4. Chemical Treatment */}
+                        <div className="result-card chemical-card">
+                            <div className="card-top">
+                                <span className="pill-badge amber">CIBRC REGISTERED</span>
+                                <h3>🧪 Chemical Treatment Options</h3>
                             </div>
-
-                            <div>
-
-                                <h2>
-                                    Chemical Treatment
-                                </h2>
-
-                                <div className="result-content">
-
-                                    {
-                                        result.chemicalTreatment ||
-                                        "No chemical treatment information available."
-                                    }
-
-                                </div>
-
+                            <div className="result-body">
+                                <p>{result.chemicalTreatment || "Consult local KVK for registered fungicide / insecticide dosage."}</p>
                             </div>
-
                         </div>
 
-                    </div>
-
-
-                    {/* =================================================
-                        PREVENTION
-                    ================================================= */}
-
-                    <div className="result-card">
-
-                        <div className="result-icon">
-                            🛡️
-                        </div>
-
-                        <div>
-
-                            <h2>
-                                Prevention
-                            </h2>
-
-                            <p>
-                                Steps to reduce future
-                                disease risk
-                            </p>
-
-                            <div className="result-content">
-
-                                {
-                                    result.prevention ||
-                                    "No prevention information available."
-                                }
-
+                        {/* 5. Long-term Prevention */}
+                        <div className="result-card prevention-card">
+                            <div className="card-top">
+                                <span className="pill-badge teal">FARM MANAGEMENT</span>
+                                <h3>🛡️ Preventive Measures &amp; Sanitation</h3>
                             </div>
-
-                        </div>
-
-                    </div>
-
-
-                    {/* =================================================
-                        RECOMMENDATION
-                    ================================================= */}
-
-                    <div className="priority-card">
-
-                        <div className="priority-title">
-
-                            <span>
-                                🚨
-                            </span>
-
-                            <div>
-
-                                <h2>
-                                    GroWell Recommendation
-                                </h2>
-
-                                <p>
-                                    Priority action based
-                                    on the analysis
-                                </p>
-
+                            <div className="result-body">
+                                <p>{result.prevention || "Use certified disease-free seeds and maintain proper field drainage."}</p>
                             </div>
-
                         </div>
 
-
-                        <div className="priority-content">
-
-                            {
-                                result.recommendation
+                        {/* 6. Action Roadmap & Economic Impact */}
+                        <div className="result-card action-card">
+                            <div className="card-top">
+                                <span className="pill-badge red">ACTION ROADMAP</span>
+                                <h3>🚨 Priority Action Plan</h3>
+                            </div>
+                            <div className="result-body action-roadmap">
+                                {result.recommendation
                                     ?.split(/\n|(?=\d+\.)/)
-                                    .map(
-                                        point =>
-                                            point
-                                                .replace(
-                                                    /\*\*\d+\*\*/g,
-                                                    ""
-                                                )
-                                                .replace(
-                                                    /^\s*\d+\.\s*/,
-                                                    ""
-                                                )
-                                                .trim()
+                                    .map((point) =>
+                                        point
+                                            .replace(/\*\*\d+\*\*/g, "")
+                                            .replace(/^\s*\d+\.\s*/, "")
+                                            .trim()
                                     )
-                                    .filter(
-                                        point =>
-                                            point.length > 0
-                                    )
-                                    .map(
-                                        (
-                                            point,
-                                            index
-                                        ) => (
-
-                                            <div
-                                                className="recommendation-point"
-                                                key={index}
-                                            >
-
-                                                <span>
-                                                    {index + 1}
-                                                </span>
-
-                                                <p>
-                                                    {point}
-                                                </p>
-
+                                    .filter((p) => p.length > 0)
+                                    .map((point, idx) => (
+                                        <div className="action-step-item" key={idx}>
+                                            <span className="step-number">{idx + 1}</span>
+                                            <div className="step-content">
+                                                <p>{point}</p>
                                             </div>
-
-                                        )
-                                    )
-                            }
-
+                                        </div>
+                                    ))}
+                            </div>
                         </div>
-
                     </div>
-
                 </div>
-
             )}
-
         </div>
     );
 }

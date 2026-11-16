@@ -467,24 +467,15 @@ Return ONLY valid JSON - no markdown, no code fences, nothing else before or aft
         // CLEAN MARKDOWN IF GEMINI ADDS IT
         // =================================================
 
-        if (text.startsWith("```")) {
-
-            text =
-                text
-                    .replace(
-                        /^```json\s*/i,
-                        ""
-                    )
-                    .replace(
-                        /^```\s*/i,
-                        ""
-                    )
-                    .replace(
-                        /\s*```$/i,
-                        ""
-                    )
-                    .trim();
-
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            text = jsonMatch[0];
+        } else if (text.startsWith("```")) {
+            text = text
+                .replace(/^```json\s*/i, "")
+                .replace(/^```\s*/i, "")
+                .replace(/\s*```$/i, "")
+                .trim();
         }
 
 
